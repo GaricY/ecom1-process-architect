@@ -1,0 +1,10 @@
+TABLE inventory  PK(store_id, sku)
+  store_id              TEXT     NOT NULL  → stores.id
+  sku                   TEXT     NOT NULL  → products.sku
+  on_hand               INTEGER  NOT NULL
+  reserved              INTEGER  NOT NULL
+  available_today       INTEGER  NOT NULL
+  incoming_quantity     INTEGER  NOT NULL
+  next_arrival_in_days  INTEGER
+  INDEX inventory_sku_idx    (sku)
+  INDEX inventory_store_idx  (store_id)

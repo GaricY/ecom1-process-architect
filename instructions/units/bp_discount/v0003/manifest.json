@@ -1,0 +1,46 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-05-21T11:41:41+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t42",
+    "trial_id": "vm2-LxJ9usrGFAVdH4YmkHT8ij9yhQM",
+    "score": 0.0,
+    "score_detail": [
+      "answer missing required reference '/docs/ops-policy-notes/powertool-ljubljana-center-desk-coverage-2021-08-09.md'"
+    ],
+    "answer_outcome": "OUTCOME_DENIED_SECURITY",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-143355/0003-t42-vm2-LxJ9usrGFAVdH4YmkHT8ij9yhQM",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-143355/0003-t42-vm2-LxJ9usrGFAVdH4YmkHT8ij9yhQM-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Trial t42 failed with 'answer missing required reference /docs/ops-policy-notes/<file>.md' on a request whose authority came from a dated addendum delegating the discount-manager role to the named employee for the named basket, reason code, store, and operating day. The Executor read /bin/id, saw the actor lacked discount_manager, and submitted OUTCOME_DENIED_SECURITY without scanning /docs for the dated addendum that /docs/README.md says must be checked 'before applying an active decision policy'. bp_discount v0002 named only the native-role gate and never told the Executor to scan the four reporting-update folders enumerated in /docs/README.md (/docs/ops-policy-notes/, /docs/policy-updates/, /docs/current-updates/, /docs/catalogue-addenda/) for an addendum that could override only the role gate for the named record-and-day combination. The new version inserts that scan as process step 2 (before the role gate), specifies the matching dimensions (workflow + store/basket/reason/employee/operating day), bounds the addendum's authority to the scope it names verbatim, requires the addendum's path in refs whenever it is applied, and adds anti-patterns covering both the omission and the over-extension of an addendum. The bp_date_and_time unit already lists these same four folders for catalogue-count addenda, so the cross-unit grammar is consistent.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "d6c9e20a5e5c21276a48e020644562144cbd836cb6ea1a6a03c641bf72f95868",
+      "why": "Source of the gate list, percent tiers, reason-code enum, the explicit line-eligibility bridge into /docs/checkout.md, and the retired-phrase / campaign-label anti-patterns that this BP quotes verbatim."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "9878a1bde6855567e4c371201870e337483c0f8697507a1f1c24ee1305599204",
+      "why": "Defines the line-eligibility gate text (quantity <= available_today, missing inventory row = unsupported) that /docs/discounts.md applies at gate 8 and that this BP requires in refs on OK and on any NONE_UNSUPPORTED that reached gate 8."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Provides the /bin/discount signature <basket_id> <percent> <reason_code> <issuer_id> and the 'Applies the requested basket discount without policy checks. Read /docs/discounts.md before use.' disclaimer that motivates BP-side gate enforcement, including the new pre-role-gate addendum scan."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0002 content if the new addendum-scan rule turns out to over-apply dated addenda (e.g. graders begin rejecting OK discounts that follow an addendum whose scope was not as broad as the BP read it). v0002 still has the line-eligibility-bridge fix from the previous failure_fix and never scanned for addenda."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,52 @@
+--- bp_submission_terminal/v0003/content.md
++++ bp_submission_terminal/v0004/content.md
+@@ -2,7 +2,7 @@
+ 
+ ## When this process applies
+ 
+-Read this process immediately before the final `submit_and_exit(...)` call in every trial. This file owns the terminal protocol only: final outcome validation, post-state confirmation, and the rule that execution stops after submission.
++Read this process immediately before the final `submit_and_exit(...)` call in every trial. This file owns the terminal protocol: final outcome validation, post-state confirmation, the rule that execution stops after submission, and the **final `message` answer-format / token contract** (the `## Answer format` section below — the single source of truth for `<YES>`/`<NO>`/`<COUNT:N>`/bare-`%d` payload shaping).
+ 
+ Do not use this file to decide which evidence belongs in `refs`. Build and validate the refs list with [refs](refs.md) first, then return here for the final call.
+ 
+@@ -27,13 +27,25 @@
+    - do not repeat foreign `customer_id`, customer email, display name, home/contact fields, employee contact fields, or coordinates learned from SQL or records;
+    - use generic policy wording such as "the authenticated customer does not own <target_id>" or "the target belongs to a different customer account";
+    - keep sensitive ids in `scratchpad["decision"]` for audit, not in `message` or unsafe `refs`.
+-6. Re-read the task instruction's answer format immediately before composing `message`. If it asks for a bare `%d` or `%s`, do not wrap the value in `<COUNT:...>` or any other token.
++6. Compose `message` per the **`## Answer format`** section below. Re-read the task instruction's `<task-instruction>` block first, then apply the precedence: explicit printf clause → bare value; else a yes/no question → `<YES>`/`<NO>`; else a count question → `<COUNT:N>`; else prose.
+ 7. Confirm the final snippet has no unresolved exploration:
+    - if a `ws.read`, `ws.list`, `ws.tree`, `ws.sql_rows`, `/bin/*`, or helper result could change `message`, `outcome`, or `refs`, it must have been gathered in an earlier snippet and reasoned over before this final call;
+    - reads or SQL in the final snippet are allowed only when their returned values are used immediately in code to build `message`/`refs` or to assert post-state before `OUTCOME_OK`;
+    - do not print candidate docs, policy text, ownership fields, or other still-decisive evidence and then submit in the same snippet.
+ 8. Call `submit_and_exit(message=..., outcome=..., refs=refs)` exactly once, as the last line of the final snippet.
+ 9. After the result reports `answer_submitted=true`, do not call `execute_python` again.
++
++## Answer format (message payload)
++
++The shape of `message` is governed by a **merchant reply-styling contract** from `/AGENTS.MD` ("When answering yes/no questions — include `<YES>` or `<NO>` tokens … this is how the agent will know how to style the response"), with a per-task override when the instruction prescribes an explicit literal format. This section is the single source of truth for payload shaping; the topic BPs and `executor_core` defer here. Apply the precedence top-down — the first matching rule wins:
++
++1. **Explicit printf clause in the instruction** (`Answer in exactly format "%d"`, `"%s"`, `"%.2f"`, etc.) → emit the **bare value** the placeholder describes. No token, no brackets, no prose, no units. Count `1` under `"%d"` → `message="1"` (not `"<COUNT:1>"`, not `"1 product"`). A bare-`%s` SKU is the raw SKU string, no quotes unless the instruction also said to quote.
++2. **Explicit literal token shown in the instruction** (the instruction text itself contains `<YES>` / `<NO>` / `<COUNT:N>` / `[QTY:N]` and tells you to emit it) → reproduce that token byte-for-byte with its slot filled.
++3. **Yes/no question** (no printf clause) → `message` contains `<YES>` or `<NO>` as a literal token. This is **unconditional** per `/AGENTS.MD`: a yes/no question gets the token even though the question text never literally shows `<YES>` — the token is how the merchant styles the reply, not something the task spells out. Any explanatory prose goes around the token, not instead of it.
++4. **Count question** ("how many …?", no printf clause) → include `<COUNT:N>` with the integer filled in.
++5. **Otherwise** → concise prose or a bare identifier/path. For an identifier or path, also put the path in `refs`.
++
++Pre-submission check: quote the instruction's format clause (if any) verbatim. If it gives a printf placeholder, strip any token wrapping. If it is a yes/no question with no printf clause, confirm `<YES>`/`<NO>` is present in `message`. Bare `yes`/`no`/`Yes.`/`No.` prose on a yes/no question is a format miss and scores zero even when the verdict and refs are right.
+ 
+ ## Outcomes
+ 
+@@ -55,9 +67,13 @@
+ - Letting this file decide whether a target record is safe to cite; that belongs to [refs](refs.md).
+ - Submitting a blocked outcome whose `message` reveals a foreign owner id, customer email, contact field, or coordinates learned during the investigation.
+ - Ending the assistant turn without `submit_and_exit` after all required gates are resolved. If an exploratory read could still change the decision, run it before the terminal snippet; otherwise submit the best correct outcome.
++- Emitting bare `yes`/`no` prose (or `Yes.`/`No.`) on a yes/no question instead of the `<YES>`/`<NO>` token, when the instruction gave no printf clause. The token is unconditional for yes/no.
++- Wrapping a printf-formatted (`%d`/`%s`/`%.2f`) answer in `<COUNT:N>`, `<YES>`, `[QTY:N]`, or any token the instruction's format clause did not call for.
++- Emitting `<YES>`/`<NO>` for a question that asked for a count or a bare identifier.
+ 
+ ## Dependencies
+ 
+ > If any of these dependencies change, this BP file may have become stale and must be re-derived.
+ 
+ - `runtime_prelude.py` - defines `submit_and_exit`, its `ws.answer` call, and the clean `SystemExit(0)` behavior after submission.
++- `/AGENTS.MD` — source of the merchant reply-styling token contract: yes/no → `<YES>`/`<NO>`, count → `<COUNT:N>` ("how the agent will know how to style the response"). The `## Answer format` precedence above is **derived from it**. `/AGENTS.MD` is a world-only file (tracked by `world_refresh`, deliberately not a per-unit manifest dependency); if its reply-styling rule changes — different tokens, removal, or a new answer type — this answer-format contract is stale and must be re-derived here.

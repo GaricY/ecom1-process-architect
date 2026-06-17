@@ -1,0 +1,80 @@
+--- bp_refs/v0003/content.md
++++ bp_refs/v0004/content.md
+@@ -8,7 +8,7 @@
+ 
+ - `/docs/security.md` - the cross-boundary and personal-information rule.
+ - `/bin/id` / `ws.id()` - actor type and roles.
+-- SQL `path` columns - canonical cite paths for rows that are actually safe to cite.
++- SQL `record_path` columns - canonical cite paths for rows that are actually safe to cite (every table exposes `record_path`; the old `path` column name no longer exists).
+ - Topic BPs - decide which policy docs and records were actually applied.
+ 
+ ## Actor and ownership branches
+@@ -20,7 +20,7 @@
+ - Employee actor on a requested employee-shaped action: cite policy docs plus the action target even on role denial or unsupported state. The target is the work item the employee was asked to handle.
+ - Guest actor: no customer-owned record can pass ownership. Treat identity-scoped record requests as cross-boundary unless the task is purely public catalogue/store discovery.
+ 
+-Identity-scoped record families include `baskets`, `payments`, `returns`, `customers`, and employee contact/profile details. Public records include catalogue products and stores.
++Identity-scoped record families include baskets, payments, returns, customers (SQL tables `shopping_baskets`, `payment_transactions`, `return_requests`, `customer_accounts`), and employee contact/profile details (`employee_accounts`). Public records include catalogue products (`product_variants`) and stores.
+ 
+ ## Topic policy docs
+ 
+@@ -43,17 +43,17 @@
+ 
+ Public records named or implicated by the request are citeable and often required in every actor branch:
+ 
+-- Store named by id/name or read by a gate (`basket.store_id`, manager-store match) -> cite the row's `stores.path`.
+-- Catalogue SKU/product named by id/name, read by a gate, or printed as an identified public record in the final answer -> cite the row's `products.path`. Pure availability answer sets may cite only available/passing products; that shaping does not remove refs needed for a separate identity/match claim in a non-pure availability answer, unless a stronger policy forbids citing the public record.
++- Store named by id/name or read by a gate (`basket.store_id`, manager-store match) -> cite the row's `stores.record_path`.
++- Catalogue SKU/product named by id/name, read by a gate, or printed as an identified public record in the final answer -> cite the row's `product_variants.record_path`. Pure availability answer sets may cite only available/passing products; that shaping does not remove refs needed for a separate identity/match claim in a non-pure availability answer, unless a stronger policy forbids citing the public record.
+ - `/proc/README.md` only when the request actually relies on the public manifest.
+ 
+-Never synthesize `/proc/...` paths from table names. Copy `path` from SQL or from a live `ws.read`.
++Never synthesize `/proc/...` paths from table names. Copy `record_path` from SQL or from a live `ws.read`.
+ 
+-## Identity-scoped SQL `path` column
++## Identity-scoped SQL `record_path` column
+ 
+-For identity-scoped rows, a SQL `path` value is a filename, not clearance to cite. A customer cross-boundary branch must drop foreign `baskets`, `payments`, `returns`, `customers`, and private employee/contact rows even if SQL returned their paths.
++For identity-scoped rows, a SQL `record_path` value is a filename, not clearance to cite. A customer cross-boundary branch must drop foreign basket/payment/return/customer rows (`shopping_baskets`, `payment_transactions`, `return_requests`, `customer_accounts`) and private employee/contact rows (`employee_accounts`) even if SQL returned their `record_path`.
+ 
+-For public rows, `path` is the canonical cite path. `products.path` resolves to `/proc/catalog/<sku>.json`, not `/proc/products/<sku>.json`.
++For public rows, `record_path` is the canonical cite path. `product_variants.record_path` resolves to `/proc/catalog/<sku>.json`, not `/proc/products/<sku>.json`.
+ 
+ ## What to include
+ 
+@@ -62,7 +62,7 @@
+ - Public records required by the request or by the applied gate.
+ - Matching policy-update/addendum docs returned by [policy_update_scan](policy_update_scan.md) when their content shaped the decision.
+ - For discovery tasks, every record the answer marks, one-to-one with the message.
+-- For non-pure availability answers that identify public catalogue products, include the `products.path` for every product the final answer identifies, even when that product failed a stock predicate. Do not cite products merely considered and rejected if the final answer does not identify them.
++- For non-pure availability answers that identify public catalogue products, include the `product_variants.record_path` for every product the final answer identifies, even when that product failed a stock predicate. Do not cite products merely considered and rejected if the final answer does not identify them.
+ - Candidate records on true clarification outcomes.
+ 
+ ## What not to include
+@@ -93,7 +93,7 @@
+ 
+ - Treating every customer-actor denial as cross-boundary. Own-record capability-gap denials keep the owned target in refs.
+ - Dropping public store/catalogue refs because the outcome was denied early.
+-- Citing a foreign identity-scoped record because the SQL `path` column returned it.
++- Citing a foreign identity-scoped record because the SQL `record_path` column returned it.
+ - Routing a refund refs decision through the 3DS topic doc because both use `/bin/payments`.
+ - Padding refs with decoy docs or unopened docs.
+ - Putting an answer record in the message but not in refs, or in refs but not in the message, on discovery tasks.
+@@ -106,10 +106,10 @@
+ 
+ - `/docs/security.md` - cross-boundary rule and personal-information disclosure boundary.
+ - `/bin/id` (`--help`) - actor output shape used for customer/employee/guest branching.
+-- SQL table `baskets` - customer ownership, store pointer, status, and canonical path for basket refs.
+-- SQL table `payments` - customer ownership, basket/store pointers, status, and canonical path for payment refs.
+-- SQL table `returns` - customer ownership, basket/payment pointers, status, and canonical path for return refs.
+-- SQL table `customers` - customer identity and contact fields that are private by default.
+-- SQL table `employees` - employee roster/contact fields and assigned-store scope.
+-- SQL table `stores` - public store path and location fields.
+-- SQL table `products` - public catalogue path and SKU fields.
++- SQL table `shopping_baskets` - customer ownership, store pointer, status, and canonical `record_path` for basket refs.
++- SQL table `payment_transactions` - customer ownership, basket/store pointers, status, and canonical `record_path` for payment refs.
++- SQL table `return_requests` - customer ownership, basket/payment pointers, status, and canonical `record_path` for return refs.
++- SQL table `customer_accounts` - customer identity and contact fields that are private by default.
++- SQL table `employee_accounts` - employee roster/contact fields and assigned-store scope.
++- SQL table `stores` - public store `record_path` and location fields.
++- SQL table `product_variants` - public catalogue `record_path` and SKU fields.

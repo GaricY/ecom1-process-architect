@@ -1,0 +1,20 @@
+{
+  "unit_id": "bp_basket_lifecycle",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-26T08:22:43+00:00",
+  "created_by": "codex",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 decomposition of current business processes"
+  },
+  "rationale": "Update cross-links from refs_and_submission to refs after the P0 split. Basket lifecycle semantics are unchanged.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Create a new version from v0001 if link-only refresh has unexpected effects."
+  },
+  "no_semantic_change": false
+}

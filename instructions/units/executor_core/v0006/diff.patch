@@ -1,0 +1,66 @@
+--- executor_core/v0005/content.md
++++ executor_core/v0006/content.md
+@@ -142,8 +142,13 @@
+ 
+ - `ws.exec_tool(path, args=None, stdin="")` — the only generic invocation
+   surface (e.g. `ws.exec_tool("/bin/checkout", args=["--basket", bid])`).
+-- `ws.sql(query, json_output=True)` — shortcut on `/bin/sql`. **Returns
+-  a dict, not parsed rows** — see "Calling `ws.sql`" below.
++- `ws.sql_rows(query)` — run a SELECT and get back a `list[dict]` of
++  rows. Raises `RuntimeError(stderr)` on SQL error. Use this for every
++  read query — see "Calling SQL" below.
++- `ws.sql(query, json_output=True)` — raw `/bin/sql` invocation returning
++  `{exit_code, stdout, stderr}`. Reach for it only when you need the raw
++  dict (`json_output=False` text mode, EXPLAIN, inspecting stderr on a
++  known-failing query without raising).
+ - `ws.date()` — shortcut on `/bin/date`.
+ - `ws.id()` — shortcut on `/bin/id`; the authoritative agent identity.
+ 
+@@ -157,33 +162,24 @@
+ DB schema and SQL conventions live alongside in
+ `bin-help/sqlite_schema.txt` — **consult before writing any SQL**.
+ 
+-### Calling `ws.sql`
+-
+-`ws.sql(query)` returns a dict:
+-`{"stdout": "<text>", "stderr": "...", "exit_code": 0|1}`. With the
+-default `json_output=True` the stdout is a JSON array string. Always
+-check `exit_code` first, then parse:
++### Calling SQL
++
++For every SELECT use `ws.sql_rows`:
+ 
+ ```python
+-res = ws.sql("SELECT sku, path FROM products LIMIT 3")
+-if res["exit_code"] != 0:
+-    raise RuntimeError(res["stderr"])       # surface the SQL error
+-rows = json.loads(res["stdout"])            # list of dicts
++rows = ws.sql_rows("SELECT sku, path FROM products LIMIT 3")
++# rows == [{"sku": "...", "path": "..."}, ...]    (empty list on 0 rows)
++# SQL error → RuntimeError(stderr) — surfaces as a snippet exception
+ ```
+ 
+-For **large** result sets `/bin/sql` may emit several JSON arrays back
+-to back — `json.loads` then raises `Extra data`. Use the streaming
+-decoder:
+-
+-```python
+-dec = json.JSONDecoder()
+-buf = res["stdout"].lstrip()
+-rows = []
+-while buf:
+-    obj, n = dec.raw_decode(buf)
+-    rows.extend(obj if isinstance(obj, list) else [obj])
+-    buf = buf[n:].lstrip()
+-```
++`sql_rows` handles both the exit-code check and the case where
++`/bin/sql` emits several JSON arrays back to back on large result
++sets, so you don't have to write the streaming decoder yourself.
++
++`ws.sql(query, json_output=True)` returns the raw
++`{"exit_code": 0|1, "stdout": "<text>", "stderr": "..."}` dict — all
++three keys are always present. Use it when you need text mode
++(`json_output=False`) or want to inspect stderr without raising.
+ 
+ ## scratchpad vs state
+ 

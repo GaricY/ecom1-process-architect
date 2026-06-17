@@ -1,0 +1,61 @@
+--- bp_policy_update_scan/v0001/content.md
++++ bp_policy_update_scan/v0002/content.md
+@@ -7,21 +7,28 @@
+ ## Inputs
+ 
+ - `/bin/date` - the trusted runtime operating day and timestamp source.
+-- The domain BP's base policy path, topic folder, workflow name, target record ids, actor id, store/city/family/product kind, reason code, and requested operating day if any.
++- Domain context supplied by the invoking BP:
++  - base policy path and, when applicable, a narrow topic folder;
++  - workflow/topic names and aliases;
++  - target record ids, actor id, store/city/family/product kind, reason code, and requested operating day if any;
++  - candidate-location constraints that keep the scan bounded for that domain.
+ 
+ ## Candidate locations
+ 
+-Scan bounded candidates under `/docs`:
++Scan only bounded candidates under `/docs`:
+ 
+-- The topic policy's own folder. Example: for `/docs/payments/3ds.md`, scan siblings under `/docs/payments/` and exclude the base file itself.
++- The topic policy's own folder when it is a narrow subfolder. Example: for `/docs/payments/3ds.md`, scan siblings under `/docs/payments/` and exclude the base file itself.
+ - Cross-workflow update folders named by the world baseline, commonly `/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, and `/docs/catalogue-addenda/`.
++- Additional candidate folders only when the invoking BP explicitly names them from the live workspace.
++
++If the base policy lives directly under `/docs` (for example `/docs/discounts.md`), do not scan the whole `/docs` root as a topic-sibling folder. Use the cross-workflow update folders and any narrower domain-specified folder instead.
+ 
+ Missing folders are empty, not errors.
+ 
+ ## Matching rules
+ 
+ 1. List candidate files before mutating.
+-2. Read candidates whose filename or first paragraph names the workflow, topic, record id, actor, store/city/family/product kind, reason code, or operating day.
++2. Read candidates whose filename or first paragraph names the workflow, topic, record id, actor, store/city/family/product kind, reason code, operating day, or another domain dimension supplied by the invoking BP.
+ 3. A candidate matches when its scope names the same case by at least one strong dimension and does not contradict a dimension the request/base record explicitly names.
+ 4. A date in the filename or `Operating day:` header is a scope dimension, not a TTL. Do not dismiss a workflow/record/kind/store match merely because the date label differs from `/bin/date`.
+ 5. Use `/bin/date` as a filter only when the request itself is day-scoped and the update's only relevant scope dimension is operating day, or when the update declares a live lockout/retry timestamp.
+@@ -32,12 +39,12 @@
+ Return or record:
+ 
+ - matched update paths;
+-- scope dimensions that matched;
+-- gate(s) overridden or added;
++- scope dimensions that matched and any explicit contradictions;
++- gate(s) overridden, delegated, blocked, or added;
+ - whether `/bin/date` was consulted and why;
+ - effective result: no match, override permits, override blocks now, or override changes a gate.
+ 
+-Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md).
++Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md). A candidate that was read but did not match or shape the decision does not belong in `refs`.
+ 
+ ## Outcomes
+ 
+@@ -47,7 +54,8 @@
+ 
+ - Treating a dated update as expired solely because its date label differs from `/bin/date`.
+ - Applying an addendum to gates it did not name.
+-- Scanning only the four cross-workflow folders and missing a topic-folder sibling update.
++- Scanning only the four cross-workflow folders when the invoking BP supplied a narrow topic folder such as `/docs/payments/`.
++- Scanning the whole `/docs` root because the base policy is `/docs/<file>.md`.
+ - Citing a candidate update that was read but did not match or shape the decision.
+ - Letting this helper authorize a mutation. It only returns update semantics to the domain BP.
+ 

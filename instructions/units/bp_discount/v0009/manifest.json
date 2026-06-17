@@ -1,0 +1,77 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-05-28T18:31:45+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxhmQLdvGzyXnHpTGmEbdpA53d2",
+    "baseline_version": "v0003",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-202604/0001-t01-vm2--world-refresh",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Schema rename. Updated the subtotal/line-eligibility SQL the BP issues (basket_lines.quantity x products.price_cents -> shopping_basket_items.requested_quantity x product_variants.price_cents; inventory.available_today -> store_inventory.available_today_quantity) and the store cite column stores.path -> stores.record_path. Added a schema note mapping the unchanged /docs/discounts.md and /docs/checkout.md conceptual fields to current SQL columns. All verbatim policy quotes (percent tiers, reason-code enum, retired phrases, campaign labels) and the manager-store-match refs rule were preserved; dependency table names renamed.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "d6c9e20a5e5c21276a48e020644562144cbd836cb6ea1a6a03c641bf72f95868",
+      "why": "Full gate set: percent tiers, reason-code enum, retired-phrase and campaign-label anti-patterns, the line-eligibility bridge into /docs/checkout.md, and the manager-store-match gate."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "9878a1bde6855567e4c371201870e337483c0f8697507a1f1c24ee1305599204",
+      "why": "Line-eligibility gate text (quantity <= available_today, missing inventory row = unsupported) the discount policy applies at gate 8."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Tool signature /bin/discount <basket_id> <percent> <reason_code> <issuer_id> and the 'no policy checks' disclaimer."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket ownership, store, basket_status, discount columns, and line shape used by the gate set."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_basket_items",
+      "sha256": "ca521eecd63814fb15b584e6bcc1e677c95388b5b535907a0cb2b831ef87fc69",
+      "why": "requested_quantity used for subtotal and checkoutability checks when the line projection is queried directly."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "price_cents and canonical catalogue record_path used for subtotal and evidence."
+    },
+    {
+      "kind": "sql_table",
+      "path": "store_inventory",
+      "sha256": "d183bb628f5e91971122c50c63308a0c5fcdd8e4d9c8f86e46f0b6ca2648e5bc",
+      "why": "available_today_quantity line-eligibility gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Store record_path and manager-store scope evidence."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employee_accounts",
+      "sha256": "1ad720b7a0ef980b146c75c49684e00d69793910500b54b203754c6c1569fa48",
+      "why": "Actor/store/role context (store_id) when employee records are consulted for the manager-store match."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_discount v0008 content and old sql_table dependencies (baskets, basket_lines, products, inventory, employees) if the rename mapping proves wrong."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,22 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0004",
+  "parent": "v0003",
+  "status": "active",
+  "created_at": "2026-05-28T14:54:53+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxhQEXmmzgzHXw6W4BtvQ2QAxek",
+    "baseline_version": "v0002",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-174450/0001-t01-vm2-LxhQEXmmzgzHXw6W4BtvQ2QAxek-process-architect-world-refresh-v0002",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "vault-diff added /docs/os-and-tooling-incidents-and-workarounds.md as a sixth Active Decision Policy in /docs/README.md. bp_index must route the new policy's trigger (runtime tool / OS mount / temp directory / generated index / local command reports a known incident with a documented workaround) to the new bp_os_tooling_incidents BP, and the validator requires the new render-path basename (os_tooling_incidents.md) to appear in bp_index content. Cross-cutting principle 3 is updated to note that the active OS/tooling incidents policy is the only place where an 'incident' label maps to a dedicated decision policy; the mutation gate grows one extra item that defers to bp_os_tooling_incidents when a workaround is required.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Restore bp_index v0003 if the executor misroutes the OS/tooling incident trigger or the routing table fails validator format."
+  },
+  "no_semantic_change": false
+}

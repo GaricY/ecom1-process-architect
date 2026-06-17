@@ -1,0 +1,20 @@
+{
+  "unit_id": "executor_core",
+  "version": "v0010",
+  "parent": "v0009",
+  "status": "active",
+  "created_at": "2026-05-26T08:22:43+00:00",
+  "created_by": "codex",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 decomposition of current business processes"
+  },
+  "rationale": "Update executor operating instructions to point at refs.md for citation safety and submission_terminal.md for the final submit_and_exit protocol after removing refs_and_submission from active registry routing.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Create a new version from v0009 if the new refs/submission split confuses initial process selection."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,9 @@
+TABLE families  PK(id)
+  id           TEXT  NOT NULL
+  category_id  TEXT  NOT NULL
+  kind_id      TEXT  NOT NULL
+  brand        TEXT  NOT NULL
+  series       TEXT  NOT NULL
+  model        TEXT  NOT NULL
+  name         TEXT  NOT NULL
+  properties   TEXT  NOT NULL

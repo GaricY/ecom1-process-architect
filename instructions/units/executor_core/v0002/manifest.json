@@ -1,0 +1,27 @@
+{
+  "unit_id": "executor_core",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-21T06:51:27+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t09",
+    "trial_id": "vm2-LxHWJLD2VdjKc2HcryWTrTshdPW",
+    "score": 0.6000000238418579,
+    "score_detail": [
+      "Answer should be \"1\", but at least it contains it"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-094726/0001-t09-vm2-LxHWJLD2VdjKc2HcryWTrTshdPW",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-094726/0001-t09-vm2-LxHWJLD2VdjKc2HcryWTrTshdPW-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "The Executor computed the correct count (1) but submitted message=\"<COUNT:1>\" when the instruction said `Answer in exactly format \"%d\" (no quotes)`. Grader returned partial credit (60%) with 'Answer should be \"1\", but at least it contains it' \u2014 a pure format miss. The old `## Answer format` section listed `<COUNT:7>` as a generic example for count tasks, which trained the Executor to wrap bare integers in a `<COUNT:N>` token regardless of what the instruction actually demanded. The rewrite makes the instruction's literal format clause authoritative: printf-style placeholders (`%d`, `%s`, `%.2f`) mean a bare value with no wrapping, and wrapping tokens (`<YES>`, `<COUNT:N>`, `[QTY:N]`) are only valid when the instruction itself shows that token shape. Adds an explicit pre-submission check and anti-patterns covering the exact failure mode.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Create a new version from v0001 content if the rewritten Answer format section is too restrictive (e.g. it makes the Executor drop required tokens on a future trial that does prescribe a `<COUNT:N>`-style literal)."
+  },
+  "no_semantic_change": false
+}

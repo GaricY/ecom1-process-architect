@@ -1,0 +1,7 @@
+TABLE payment_lines  PK(payment_id, line_no)
+  payment_id        TEXT     NOT NULL  → payments.id
+  line_no           INTEGER  NOT NULL
+  sku               TEXT     NOT NULL  → products.sku
+  quantity          INTEGER  NOT NULL
+  unit_price_cents  INTEGER  NOT NULL
+  INDEX payment_lines_sku_idx  (sku)

@@ -1,0 +1,6 @@
+TABLE basket_lines  PK(basket_id, line_no)
+  basket_id  TEXT     NOT NULL  → baskets.id
+  line_no    INTEGER  NOT NULL
+  sku        TEXT     NOT NULL  → products.sku
+  quantity   INTEGER  NOT NULL
+  INDEX basket_lines_sku_idx  (sku)

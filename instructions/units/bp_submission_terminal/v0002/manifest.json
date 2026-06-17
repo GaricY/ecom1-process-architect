@@ -1,0 +1,27 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-26T15:30:16+00:00",
+  "created_by": "codex",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/P0_analyze_all_review_fix.md",
+    "scope": "P0 full-run regression follow-up"
+  },
+  "rationale": "Restore universal blocked-outcome message hygiene so final messages do not reveal foreign identity-scoped data learned during investigation.",
+  "dependencies": [
+    {
+      "kind": "static",
+      "path": "static-instructions/runtime_prelude.py",
+      "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",
+      "why": "Defines submit_and_exit and the clean terminal behavior this BP describes."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0001 if terminal message hygiene becomes too restrictive for safe public identifiers."
+  },
+  "no_semantic_change": false
+}

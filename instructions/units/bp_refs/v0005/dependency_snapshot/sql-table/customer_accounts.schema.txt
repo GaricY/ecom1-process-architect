@@ -1,0 +1,10 @@
+TABLE customer_accounts  PK(customer_id)
+  customer_id            TEXT  NOT NULL
+  record_path            TEXT  NOT NULL
+  customer_display_name  TEXT  NOT NULL
+  customer_email         TEXT  NOT NULL
+  home_city              TEXT  NOT NULL
+  home_latitude          REAL  NOT NULL
+  home_longitude         REAL  NOT NULL
+  INDEX customer_accounts_city_idx   (home_city)
+  INDEX customer_accounts_email_idx  (customer_email)

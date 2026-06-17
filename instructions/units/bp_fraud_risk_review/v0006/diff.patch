@@ -1,0 +1,55 @@
+--- bp_fraud_risk_review/v0005/content.md
++++ bp_fraud_risk_review/v0006/content.md
+@@ -11,8 +11,9 @@
+ - `bin-help/sqlite_schema.txt` - full schema and SQL conventions.
+ - SQL tables: especially `payment_transactions`, `customer_accounts`, `stores`, `shopping_baskets`, `shopping_basket_items`, `payment_transaction_items`, `product_variants`, `store_inventory`, and `return_requests`.
+ - `/docs/payments/3ds.md` - legitimate 3DS state transitions for payment workflow-state invariants.
+-
+-**Schema note.** The schema was renamed; the payment risk columns this BP leans on are now `payment_transactions.payment_created_at` (event time), `observed_latitude` / `observed_longitude` (observed coordinates), `is_archived_basket_reference` (archive flag), `payment_status` (workflow state), `record_path` (cite path), and the unchanged `payment_method_fingerprint` / `device_fingerprint` / `three_ds_status` / `three_ds_attempts` / `three_ds_max_attempts`. Read the current column list from `bin-help/sqlite_schema.txt` before composing a query.
++- `/proc/payments/README.md`, `/proc/customers/README.md`, `/proc/stores/README.md` - source semantics for archived payments, payment observed coordinates/fingerprints, customer home-area coordinates, and store branch coordinates.
++
++**Schema note.** The schema was renamed; the payment risk columns this BP leans on are now `payment_transactions.payment_created_at` (event time), `observed_latitude` / `observed_longitude` (checkout-time risk-log coordinates, not customer address), `is_archived_basket_reference` (archive flag), `payment_status` (workflow state), `record_path` (cite path), and the unchanged opaque exact identifiers `payment_method_fingerprint` / `device_fingerprint` plus `three_ds_status` / `three_ds_attempts` / `three_ds_max_attempts`. Customer `home_latitude` / `home_longitude` are coarse home-area coordinates used by risk fixtures; store coordinates are branch coordinates for distance checks. Read the current column list from `bin-help/sqlite_schema.txt` before composing a query.
+ 
+ ## Process
+ 
+@@ -22,20 +23,20 @@
+ 4. Before choosing an answer, run the mandatory hard sweep and record each family as `zero`, `hard hit`, or `not applicable` because required columns are absent:
+    - cross-actor exact identifier collisions: shared `payment_method_fingerprint`, shared `device_fingerprint`, repeated baskets, identical timestamps, or other exact values across actors;
+    - workflow-state invariants: `paid` rows carrying failed/pending 3DS columns, exhausted attempts, or impossible state transitions under the topic doc;
+-   - record/table invariants: amount vs lines/products, archive flags, payment vs basket/customer/store joins, inventory/reserve arithmetic, return/payment/basket joins, duplicate payments;
++   - record/table invariants: amount vs lines/products, archive flags, payment vs basket/customer/store joins, inventory/reserve arithmetic, return/payment/basket joins, duplicate payments. Missing live basket files on archived payments are not hard mismatches by themselves; use the payment line snapshot / `payment_transaction_items`;
+    - impossible observed travel: sequential events by the same actor whose observed coordinates move impossibly far for the elapsed time;
+    - stationary single-actor multi-target burst: one actor with many events at many distinct claimed targets, stores, cities, or resources inside minutes while observed coordinates remain nearly stationary.
+ 5. For every hard-sweep family, the ledger must record the query shape, not only the result: scan scope, actor axis, time axis, coordinate/target axis, window definition, and max-metric used to validate zero results.
+ 6. Finding one hard-supported cluster is not enough to submit. Continue the mandatory hard sweep until every family above has a recorded result and trustworthy query shape.
+ 7. Classify candidate match sets before building the final cohort:
+    - hard-supported: exact identifier collision across actors, impossible observed travel, stationary single-actor multi-target burst, workflow-state invariant, or record/table invariant;
+-   - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store band, long busy timeline, or any smooth threshold band with no structural confirmation.
++   - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, or any smooth threshold band with no structural confirmation.
+ 8. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
+ 9. For location/target signals, keep the query shapes separate:
+    - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time;
+-   - do not compute impossible travel from store coordinates or other claimed target coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
++   - do not compute impossible travel from store, customer home-area, or other claimed target coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
+    - stationary single-actor burst is grouped by one actor/customer, not by one store and not by multiple customers. The window is a dense sub-window from each event, not `MAX(payment_created_at) - MIN(payment_created_at)` over the actor's whole history. Count events, distinct stores/targets/resources, and distinct cities when joined; confirm observed-coordinate spread inside the window is small; expand a hard hit to all in-window records for that actor without `LIMIT`.
+-10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores at ordinary cadence is remote shopping; stable observed plus many distinct stores, cities, targets, or resources within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store distance alone.
++10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores or distant customer home-area at ordinary cadence is remote shopping context; stable observed plus many distinct stores, cities, targets, or resources within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store/home distance alone.
+ 11. When a mandatory hard family returns zero, validate the negative. Record the top max-metric for that family, not only `zero`: for travel, the largest same-actor observed speed or observed jump in scope; for burst, the largest same-actor short-window distinct-target count and observed spread. If the max-metric contradicts the zero result, fix the query before trusting the ledger.
+ 12. For high-count fuzzy signals, regroup by `(actor_id, short_time_window)` before discarding as noise. A broad legitimate tail can hide a dense hard-supported burst, but the broad tail itself must not be cited unless it passes the hard gate.
+ 13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort.
+@@ -169,6 +170,8 @@
+ - Recording `zero` for a hard family without a max-metric from the same query shape.
+ - Searching only PMF/DFP/distance columns and skipping workflow-state columns.
+ - Submitting a threshold-only distance band with no discrete or structural confirmation.
++- Treating observed-vs-home distance as hard evidence by itself; home coordinates are coarse risk-fixture context.
++- Treating a missing live basket file on an archived payment as a hard inconsistency before checking the archive flag and payment line snapshot.
+ - Computing impossible travel from store coordinates or other claimed target coordinates instead of observed coordinates.
+ - Substituting a multi-customer same-store/co-location query for the stationary single-actor multi-target burst check.
+ - Treating `MAX(payment_created_at) - MIN(payment_created_at)` over an actor's whole history as a dense burst window.
+@@ -198,3 +201,6 @@
+ - SQL table `product_variants` - catalogue price joins for amount/line checks.
+ - SQL table `store_inventory` - reserve/availability arithmetic and store/SKU resource axis.
+ - SQL table `return_requests` - return/payment/basket/customer workflow joins.
++- `/proc/payments/README.md` - archived-payment semantics, observed-coordinate meaning, and opaque fingerprint semantics.
++- `/proc/customers/README.md` - coarse customer home-area coordinate semantics used by risk fixtures.
++- `/proc/stores/README.md` - store branch coordinate semantics for payment-risk/distance checks.

@@ -1,0 +1,75 @@
+--- executor_core/v0006/content.md
++++ executor_core/v0007/content.md
+@@ -142,13 +142,19 @@
+ 
+ - `ws.exec_tool(path, args=None, stdin="")` — the only generic invocation
+   surface (e.g. `ws.exec_tool("/bin/checkout", args=["--basket", bid])`).
+-- `ws.sql_rows(query)` — run a SELECT and get back a `list[dict]` of
+-  rows. Raises `RuntimeError(stderr)` on SQL error. Use this for every
+-  read query — see "Calling SQL" below.
++- `ws.sql_rows(query, limit=1000)` — **the primary way to read SQL.**
++  Returns `{"rows": list[dict], "row_count": int, "truncated": bool}`,
++  capped at `limit`. Raises `RuntimeError(stderr)` on SQL error. See
++  "Calling SQL" below.
+ - `ws.sql(query, json_output=True)` — raw `/bin/sql` invocation returning
+-  `{exit_code, stdout, stderr}`. Reach for it only when you need the raw
+-  dict (`json_output=False` text mode, EXPLAIN, inspecting stderr on a
+-  known-failing query without raising).
++  `{exit_code, stdout, stderr}`. Escape hatch — use it for non-SELECT
++  (`EXPLAIN`, `PRAGMA`), text mode (`json_output=False`), or when you
++  want to inspect stderr without raising. **Do not use for normal
++  SELECTs** — on large results the harness appends a plaintext footer
++  like `warning: result truncated at 100 rows` after the JSON array,
++  so a naive `json.loads(res["stdout"])` will fail with
++  `JSONDecodeError`. Use `ws.sql_rows` for SELECTs and let it handle
++  paging.
+ - `ws.date()` — shortcut on `/bin/date`.
+ - `ws.id()` — shortcut on `/bin/id`; the authoritative agent identity.
+ 
+@@ -167,19 +173,36 @@
+ For every SELECT use `ws.sql_rows`:
+ 
+ ```python
+-rows = ws.sql_rows("SELECT sku, path FROM products LIMIT 3")
+-# rows == [{"sku": "...", "path": "..."}, ...]    (empty list on 0 rows)
++res = ws.sql_rows("SELECT sku, path FROM products WHERE family_id = 7")
++# res == {"rows": [{"sku": "...", "path": "..."}, ...],
++#         "row_count": N, "truncated": False}
+ # SQL error → RuntimeError(stderr) — surfaces as a snippet exception
+ ```
+ 
+-`sql_rows` handles both the exit-code check and the case where
+-`/bin/sql` emits several JSON arrays back to back on large result
+-sets, so you don't have to write the streaming decoder yourself.
+-
+-`ws.sql(query, json_output=True)` returns the raw
+-`{"exit_code": 0|1, "stdout": "<text>", "stderr": "..."}` dict — all
+-three keys are always present. Use it when you need text mode
+-(`json_output=False`) or want to inspect stderr without raising.
++`row_count` is `len(res["rows"])`. `truncated=True` means the result
++hit the `limit` cap (default 1000) **and** at least one more row
++existed — you got the first `limit` rows. To page further, re-issue
++the query with explicit `LIMIT/OFFSET` and a stable `ORDER BY`:
++
++```python
++PAGE = 500
++rows, offset = [], 0
++while True:
++    res = ws.sql_rows(
++        f"SELECT * FROM payments ORDER BY id LIMIT {PAGE} OFFSET {offset}"
++    )
++    rows.extend(res["rows"])
++    if res["row_count"] < PAGE:
++        break
++    offset += PAGE
++```
++
++Bump `limit=` on a single call when you know the answer is bounded
++(e.g. `ws.sql_rows(q, limit=5000)`) — cheaper than rolling your own
++pager. The harness paginates under the hood; you only need explicit
++`LIMIT/OFFSET` when you want to walk past `limit`.
++
++`ws.sql(query)` is the raw escape hatch — see the `ws` surface section.
+ 
+ ## scratchpad vs state
+ 

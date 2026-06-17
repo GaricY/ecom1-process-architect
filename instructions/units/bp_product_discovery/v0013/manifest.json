@@ -1,0 +1,71 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0013",
+  "parent": "v0012",
+  "status": "active",
+  "created_at": "2026-05-28T18:31:45+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxhmQLdvGzyXnHpTGmEbdpA53d2",
+    "baseline_version": "v0003",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-202604/0001-t01-vm2--world-refresh",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Schema rename in bin-help/sqlite_schema.txt + sql.help.txt. This BP queries catalogue/inventory throughout; re-derived every renamed table/column it names: products->product_variants, product_properties->product_variant_properties, families->product_families, inventory->store_inventory, available_today->available_today_quantity, sku->product_sku, kind_id->product_kind_id, family_id->product_family_id, and the canonical cite column path->record_path. Availability SQL, claim-verification SQL, refs-shaping, anti-patterns and dependencies updated. The /proc/catalog/ on-disk folder, the /AGENTS.MD reply-shaping rule, and the <YES>/<NO>/<COUNT:N> token contract are unchanged and were preserved.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted date provider used when product count/update handling invokes policy_update_scan."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start (drives 'my' handling)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "Public product facts, properties JSON, and the canonical catalogue record_path."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variant_properties",
+      "sha256": "ea7da8c4f086eeabf0f263a9be56a6b30a9ef6dbeaf679f847741e2814aea4e4",
+      "why": "Per-SKU property rows (product_sku, property_key, property_value_*) used for claim verification."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_families",
+      "sha256": "f91adba41b6f6ca6cceae027026d468cd1c66c86fc2d9e6f83113f80c733636b",
+      "why": "Family/brand/model grouping used to identify products."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_kinds",
+      "sha256": "64d8ca45a0a4021f9503e4fec160b3d5881a049e84137d0f472f662f37c89121",
+      "why": "product_kind_id and product-kind scope for count questions."
+    },
+    {
+      "kind": "sql_table",
+      "path": "store_inventory",
+      "sha256": "d183bb628f5e91971122c50c63308a0c5fcdd8e4d9c8f86e46f0b6ca2648e5bc",
+      "why": "Store/SKU availability source: available_today_quantity keyed by (store_id, product_sku)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Public store ids, record_path cite paths, city nuance targets, and open status."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_product_discovery v0012 content and its old sql_table dependencies (products, product_properties, families, inventory) if the rename mapping proves wrong."
+  },
+  "no_semantic_change": false
+}

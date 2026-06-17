@@ -1,0 +1,50 @@
+--- executor_core/v0009/content.md
++++ executor_core/v0010/content.md
+@@ -19,10 +19,11 @@
+    trial.** Each per-process file is self-contained and structured as:
+    `When this process applies` / `Inputs` / `Process` / `Outcomes` /
+    `Refs to set in scratchpad` / `Anti-patterns` / `Dependencies`.
+-3. **`business_processes/refs_and_submission.md` is the authority for
+-   the `refs` list and the `submit_and_exit` terminal.** Other per-process
+-   files link to it instead of repeating its rules. Read it whenever you
+-   are about to submit a non-OK outcome or build a `refs` list.
++3. **`business_processes/refs.md` is the authority for the `refs` list,
++   and `business_processes/submission_terminal.md` is the authority for
++   the final `submit_and_exit` call.** Read `refs.md` whenever building
++   evidence refs; read `submission_terminal.md` immediately before the
++   final terminal call.
+ 4. **`business_processes/identity_and_auth.md` is the cross-cutting
+    identity gate.** Every action-shaped trial routes through it before
+    touching a `/proc/...` record.
+@@ -71,7 +72,7 @@
+ 1. `Read business_processes/index.md` — pick the per-process file(s)
+    for this trial.
+ 2. `Read` every per-process file the index points to (typically 1–3:
+-   `identity_and_auth`, `refs_and_submission`, and the topic BP).
++   `identity_and_auth`, `refs`, `submission_terminal`, and the topic BP).
+ 3. `Read bin-help/sqlite_schema.txt` whenever the task is data-shaped
+    (catalogue, inventory, basket, payment, customer). Skim the "SQL
+    conventions" header even on a task that "obviously" does not need
+@@ -232,9 +233,10 @@
+ 
+ ## refs / submission contract
+ 
+-The authoritative contract lives in
+-[`business_processes/refs_and_submission.md`](business_processes/refs_and_submission.md).
+-Brief summary:
++Citation safety lives in [`business_processes/refs.md`](business_processes/refs.md).
++The final terminal protocol lives in
++[`business_processes/submission_terminal.md`](business_processes/submission_terminal.md).
++Brief refs summary:
+ 
+ - `scratchpad["refs"]` is *grounding for the decision*, not "everything
+   I looked at".
+@@ -245,7 +247,7 @@
+ - Never cite a decoy doc — see
+   [`business_processes/background_decoys.md`](business_processes/background_decoys.md).
+ 
+-Read the full file before assembling any non-trivial `refs` list.
++Read `refs.md` before assembling any non-trivial `refs` list, then read `submission_terminal.md` before the final call.
+ 
+ ## Outcomes — never default to OK
+ 

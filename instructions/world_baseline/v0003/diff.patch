@@ -1,0 +1,19 @@
+--- v0002/snapshot/world_base/docs/README.md
++++ v0003/snapshot/world_base/docs/README.md
+@@ -5,6 +5,8 @@
+ Use the discount policy before applying or refusing basket discounts.
+ Use the payment policies before recovering payment workflow failures.
+ Use the returns policy before approving or finalizing customer refunds.
++Use the OS/tooling incidents policy before applying documented runtime-tool or
++mount workarounds.
+ Using today's catalogue reporting rule means checking for a current catalogue
+ counting or reporting update before answering catalogue product-count questions,
+ unless the request explicitly says to ignore reporting updates.
+@@ -32,6 +34,7 @@
+ | `/docs/discounts.md` | A request asks to apply, refuse, or size a basket discount | Authoritative for basket discount conditions |
+ | `/docs/payments/3ds.md` | A request asks to recover a simulated 3DS payment flow | Authoritative for 3DS recovery conditions |
+ | `/docs/returns.md` | A request asks to approve or finalize a customer return refund | Authoritative for refund workflow conditions |
++| `/docs/os-and-tooling-incidents-and-workarounds.md` | A runtime tool, OS mount, temporary directory, generated index, or local command reports a known incident with a documented workaround | Authoritative for who may use and cite incident workarounds |
+ 
+ The active decision policies are short on purpose. A long document with a more
+ dramatic title is not more authoritative than the dedicated policy for the

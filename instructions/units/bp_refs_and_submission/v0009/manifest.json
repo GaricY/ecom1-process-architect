@@ -1,0 +1,46 @@
+{
+  "unit_id": "bp_refs_and_submission",
+  "version": "v0009",
+  "parent": "v0007",
+  "status": "active",
+  "created_at": "2026-05-22T10:31:52+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t38",
+    "trial_id": "vm2-LxMELeSQ5ZoqFJypCS8XiAD9vX7",
+    "score": 0.5390077233314514,
+    "score_detail": [
+      "11 of 21 fraud payments recovered (EUR 1825.00 of EUR 3293.00); 0 correct payments marked as fraud incorrectly (EUR 0.00); record Jaccard 0.524, amount Jaccard 0.554, hybrid score 0.539."
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260522-131306/0002-t38-vm2-LxMELeSQ5ZoqFJypCS8XiAD9vX7",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260522-131306/0002-t38-vm2-LxMELeSQ5ZoqFJypCS8XiAD9vX7-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Executor failed a discovery / identify-all fraud task at 53.9% (11 of 21 fraud payments recovered, 0 false positives). The Executor correctly enumerated multiple signal families and reached the impossible-travel signal that does flag the cohort, but then narrowed the answer to one customer's 11-record burst and discarded smaller impossible-travel sub-clusters belonging to three other customers in the same archive window. The discard reasoning was explicit in the executor log: 'PMF overlap: set(), DFP overlap: set()' between the headline burst and the smaller sub-clusters, plus the headline burst had unique fingerprints not appearing anywhere else. v0007's rules 4-6 supplied the justification for the narrowing: rule 4 says a cohort 'shares at least one exact identifier', rule 6 says 'one hit' implies 'sharing one or more discrete identifiers (a fingerprint, a customer, a status-invariant violation)' and warns that a candidate set 'spanning many unrelated customers' is noise. Read literally, those rules tell the Executor to keep only the largest internally-coherent sub-cluster of a signal and to drop other sub-clusters that lack a shared fingerprint \u2014 which under-counts any multi-actor fraud campaign / quality cohort where several accounts independently run the same playbook. Also contributing: the Executor used LIMIT 20 on the impossible-travel query, capping visibility into sibling sub-clusters. Fix is surgical: (a) extend rule 4 to clarify 'discrete shared property' explicitly includes the structural condition the signal tests (being-paired-by-impossible-travel) and that disjoint sub-clusters all matching the same structural condition stay together as one cohort; (b) extend rule 5 with a 'cohort-wide application' paragraph: when one signal returns several disjoint sub-clusters in the brief's scope, every record in every sub-cluster goes in \u2014 drop a sub-cluster only when the brief's explicit scope excludes it (one specific store/day/actor); (c) rewrite rule 6 so 'one hit' is explicitly compatible with multiple actors running the same MO inside the brief's scope window, and the internal-coherence test becomes 'same structural signal in the same scope window' rather than 'shared fingerprint across every record'; (d) extend rule 7 (coverage check) to require recording sub-cluster counts per discrete signal and to require running the cohort query without LIMIT; (e) add two anti-patterns: ranking-sub-clusters-and-keeping-the-strongest, and using LIMIT on the discovery query; (f) reword the existing 'one hit reads as count' anti-pattern to also warn against reading it as a single-actor / single-fingerprint constraint. Pulls the rule away from the prior 'too narrow' failure mode without dropping any v0006/v0007 precision guardrails \u2014 the discrete-identifier-over-threshold rule still holds, and a noisy threshold sweep still does not become acceptable; what changes is that a discrete-identifier signal returning multiple disjoint sub-clusters now uses the union rather than the largest sub-cluster.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "7e2b613dd2619f6315b5f7c70fd346f7cbe83822b475f1bca890f7b25fbe427f",
+      "why": "Cross-boundary rule, 'no release of personal information across the boundaries' clause, and Identity Audit Phrases denial templates cited throughout the customer-actor / employee-actor branches; unchanged in this edit but still load-bearing."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "3bd139117a62033269296913a839f6b061bf291de8dad76be0dd26bd229baa1d",
+      "why": "Defines the legitimate three_ds_status transition table and the attempts < max_attempts invariant that the authentication / workflow-state-invariants signal family in the discovery section keys off; if the legitimate state set or recovery rule changes, the signal-families table and rule 3's worked example go stale."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Defines the shape of /bin/id output (user prefix cust_* / emp_* / guest, roles list) that the actor-type branching and the pre-submission checklist key off; unchanged in this edit."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0007 content if the new 'disjoint sub-clusters all stay in' rule causes the Executor to over-report cohorts on tasks where the brief did mean to scope to a single actor / cluster (e.g. the grader flags an answer that swept in unrelated sub-clusters from a signal that happened to fire on the noise too); the narrower revert is to drop the 'Cohort-wide application' paragraph from rule 5 and the rewritten rule 6 wording while keeping the rule-7 sub-cluster-count requirement and the no-LIMIT discipline."
+  },
+  "no_semantic_change": false
+}

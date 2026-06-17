@@ -1,0 +1,25 @@
+--- executor_core/v0002/content.md
++++ executor_core/v0004/content.md
+@@ -189,6 +189,24 @@
+ After `submit_and_exit` (or `ws.answer`) succeeds, the result includes
+ `answer_submitted=true`. **Do not call `execute_python` again** — the trial
+ is over and any further runtime action is wasted or unsafe.
++
++## Business-process classification
++
++Before the final `submit_and_exit(...)`, set:
++
++```python
++scratchpad["business_process"] = {
++    "primary": "<process-file>.md",
++    "reason": "<one short sentence>",
++}
++```
++
++`primary` is the filename of the narrowest business-process file that
++actually governed the decision, for example `checkout.md`, `discount.md`,
++`identity_and_auth.md`, `product_discovery.md`, `basket_lifecycle.md`, or
++`payments_3ds_recovery.md`.
+ 
+ ## Answer format
+ 

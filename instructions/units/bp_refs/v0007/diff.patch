@@ -1,0 +1,7 @@
+--- bp_refs/v0006/content.md
++++ bp_refs/v0007/content.md
+@@ -127,3 +127,4 @@
+ - SQL table `employee_accounts` - employee roster/contact fields and assigned-store scope.
+ - SQL table `stores` - public store `record_path` and location fields.
+ - SQL table `product_variants` - public catalogue `record_path` and SKU fields.
++- `/proc/README.md` - source-of-truth manifest for `/proc` record families and live path roots.

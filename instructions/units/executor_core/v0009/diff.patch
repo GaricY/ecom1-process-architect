@@ -1,0 +1,24 @@
+--- executor_core/v0008/content.md
++++ executor_core/v0009/content.md
+@@ -157,8 +157,20 @@
+   so a naive `json.loads(res["stdout"])` will fail with
+   `JSONDecodeError`. Use `ws.sql_rows` for SELECTs and let it handle
+   paging.
+-- `ws.date()` — shortcut on `/bin/date`.
++- `ws.date()` — shortcut on `/bin/date`. Already run for you at trial
++  start:
++
++  ```
++  $ /bin/date
++  {{TRIAL_DATE}}
++  ```
+ - `ws.id()` — shortcut on `/bin/id`; the authoritative agent identity.
++  Already run for you at trial start:
++
++  ```
++  $ /bin/id
++  {{TRIAL_IDENTITY}}
++  ```
+ 
+ Terminal:
+ 

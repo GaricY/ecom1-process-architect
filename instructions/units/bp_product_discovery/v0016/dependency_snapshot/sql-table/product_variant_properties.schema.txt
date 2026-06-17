@@ -1,0 +1,6 @@
+TABLE product_variant_properties  PK(product_sku, property_key)
+  product_sku            TEXT  NOT NULL
+  property_key           TEXT  NOT NULL
+  property_value_text    TEXT  NOT NULL
+  property_value_number  REAL
+  INDEX product_variant_properties_key_text_idx  (property_key, property_value_text)

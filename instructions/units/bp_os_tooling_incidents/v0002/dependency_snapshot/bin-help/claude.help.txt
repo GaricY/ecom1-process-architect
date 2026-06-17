@@ -1,0 +1,17 @@
+# /bin/claude --help
+# bin-help contract: v2
+# exit_code: 1
+
+## stdout
+
+
+## stderr
++----------------+
+|  Embrace AI   |
+|    /AI\        |
++----------------+
+
+account not authorized
+
+Read the docs to see whether you are eligible for the Embrace AI initiative.
+Get in touch with your store manager to confirm approved access, then follow through the onboarding process.

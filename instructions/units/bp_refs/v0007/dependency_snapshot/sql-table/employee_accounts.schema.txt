@@ -1,0 +1,9 @@
+TABLE employee_accounts  PK(employee_id)
+  employee_id            TEXT  NOT NULL
+  record_path            TEXT  NOT NULL
+  employee_display_name  TEXT  NOT NULL
+  employee_email         TEXT  NOT NULL
+  job_title              TEXT  NOT NULL
+  store_id               TEXT  NOT NULL  → stores.store_id
+  INDEX employee_accounts_email_idx  (employee_email)
+  INDEX employee_accounts_store_idx  (store_id)

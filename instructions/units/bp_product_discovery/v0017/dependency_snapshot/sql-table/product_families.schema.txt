@@ -1,0 +1,9 @@
+TABLE product_families  PK(product_family_id)
+  product_family_id    TEXT  NOT NULL
+  product_category_id  TEXT  NOT NULL
+  product_kind_id      TEXT  NOT NULL
+  brand                TEXT  NOT NULL
+  series               TEXT  NOT NULL
+  model                TEXT  NOT NULL
+  product_family_name  TEXT  NOT NULL
+  properties           TEXT  NOT NULL

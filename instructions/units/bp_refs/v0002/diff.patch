@@ -1,0 +1,20 @@
+--- bp_refs/v0001/content.md
++++ bp_refs/v0002/content.md
+@@ -81,7 +81,8 @@
+ 3. Run the public-record sweep for stores and catalogue records.
+ 4. Remove decoy docs and unused policy docs.
+ 5. For discovery answers, verify `set(message_records) == set(ref_records)`.
+-6. Deduplicate absolute refs.
++6. Run the terminal message hygiene check: a blocked-outcome message must not reveal foreign identity-scoped ids or contact/profile fields learned from records. Request-named target ids and public records are different from foreign owner ids.
++7. Deduplicate absolute refs.
+ 
+ ## Complete-set discovery note
+ 
+@@ -95,6 +96,7 @@
+ - Routing a refund refs decision through the 3DS topic doc because both use `/bin/payments`.
+ - Padding refs with decoy docs or unopened docs.
+ - Putting an answer record in the message but not in refs, or in refs but not in the message, on discovery tasks.
++- Submitting correct refs with a denial message that names a foreign owner id, customer contact field, profile detail, or coordinates; that is still a privacy failure.
+ 
+ ## Dependencies
+ 

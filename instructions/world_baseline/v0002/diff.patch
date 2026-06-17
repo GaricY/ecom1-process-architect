@@ -1,0 +1,57 @@
+--- v0001/snapshot/world_base/AGENTS.MD
++++ v0002/snapshot/world_base/AGENTS.MD
+@@ -11,14 +11,14 @@
+ - Employee profiles are in proc/employees
+ - Customer profiles are in proc/customers, baskets are in proc/baskets, payments are in proc/payments
+ - Tools are in `/bin`, they have `--help` arg to describe capabilities especially 
+-- Commerce policies are in `docs`, including checkout, discounts, payments, and security
++- Commerce policies are in `docs`, including checkout, discounts, payments, returns, and security
+ 
+ ## Important tools
+ 
+ - see sql tool that takes SQLite query as stdin. It operates with the state of the entire catalogue at the start of the session. Query `sqlite_schema` to see the schema, for example `/bin/sql 'select name, sql from sqlite_schema where sql is not null order by type, name;'`. Note that inventory lives only in SQL projections
+ - id tool returns identity of the user/customer/guest under which we are running current request.
+ - use discount tool to manage basket discounts
+-- use payments tool to manage payment workflow state
++- use payments tool to manage payment workflow state and supported refund approval/finalization
+ 
+ ## Important things
+ 
+--- v0001/snapshot/world_base/docs/README.md
++++ v0002/snapshot/world_base/docs/README.md
+@@ -4,6 +4,7 @@
+ Use the checkout process for basket checkout tasks.
+ Use the discount policy before applying or refusing basket discounts.
+ Use the payment policies before recovering payment workflow failures.
++Use the returns policy before approving or finalizing customer refunds.
+ Using today's catalogue reporting rule means checking for a current catalogue
+ counting or reporting update before answering catalogue product-count questions,
+ unless the request explicitly says to ignore reporting updates.
+@@ -30,6 +31,7 @@
+ | `/docs/checkout.md` | A request asks to check out a basket or decide whether checkout is supported | Authoritative for basket checkout inventory checks |
+ | `/docs/discounts.md` | A request asks to apply, refuse, or size a basket discount | Authoritative for basket discount conditions |
+ | `/docs/payments/3ds.md` | A request asks to recover a simulated 3DS payment flow | Authoritative for 3DS recovery conditions |
++| `/docs/returns.md` | A request asks to approve or finalize a customer return refund | Authoritative for refund workflow conditions |
+ 
+ The active decision policies are short on purpose. A long document with a more
+ dramatic title is not more authoritative than the dedicated policy for the
+--- v0001/snapshot/bin-help/sqlite_schema.txt
++++ v0002/snapshot/bin-help/sqlite_schema.txt
+@@ -6,6 +6,9 @@
+ Dialect: **SQLite**. No `ILIKE`, no `RETURNING`, no `::cast`, no `now()`.
+ `LIKE` is case-insensitive for ASCII; for explicit case-fold use
+ `LOWER(col) LIKE LOWER('…')`.
++`HAVING` requires `GROUP BY` (no MySQL/PG-style alias filter) — to
++filter on a computed expression, wrap as a subquery:
++`SELECT * FROM (SELECT …, x AS y FROM …) WHERE y > N`.
+ 
+ ## Foreign-key edges
+   basket_lines.basket_id      → baskets.id
+--- v0001/snapshot/bin-help/payments.help.txt
++++ v0002/snapshot/bin-help/payments.help.txt
+@@ -7,3 +7,5 @@
+ 
+ Subcommands:
+   recover-3ds <payment_id>   Start a fresh 3DS challenge for a 3DS payment.
++  approve-refund <return_id> Mark an approved return as waiting for refund finalization.
++  refund <return_id>         Finalize a refund for a return record.

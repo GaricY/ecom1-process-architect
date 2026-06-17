@@ -1,0 +1,48 @@
+--- bp_product_discovery/v0001/content.md
++++ bp_product_discovery/v0005/content.md
+@@ -39,6 +39,31 @@
+ - `/docs/README.md` if the answer depended on the catalogue reporting rule.
+ - Any matching dated update under `/docs/current-updates/` etc. that was applied.
+ 
++### Contributing-rows-only rule for aggregate / count / availability answers
++
++When the question is "how many of these products are available", "which of these are in stock", "do any of X meet criterion Y", or any similar aggregate over a candidate set, **cite only the rows that contribute to the answer** — i.e. the products that *both* match the descriptive criterion *and* have a real `inventory` row at the named store with `available_today` satisfying the threshold. Plus the store path, plus any policy / dated-update doc that shaped the answer.
++
++Candidates that were filtered out — wrong properties, no `inventory` row at this store (`available_today IS NULL`), or below the threshold — are **not part of the answer** and must not appear in refs. The grader treats the cite list as "what your answer rests on"; padding it with non-contributing candidates both bloats the audit trail and risks `answer contains invalid reference '/proc/catalog/<...>.json'` rejections.
++
++**Why this is the safe set, even for stale SQL rows.** The SQL `products` projection can outlive the on-disk catalogue file: a withdrawn / sunset SKU may still match a property filter (`products` JOIN `product_properties`) yet have no `/proc/catalog/<sku>.json` on disk and no `inventory` row anywhere. Citing such a `path` from SQL fails the trial with `answer contains invalid reference`. An `inventory` row at a live store is a strong existence proof for the canonical file — products that are stocked are not stale. Restricting refs to contributing rows therefore eliminates the stale-path failure mode without any per-row `ws.read` round-trip.
++
++Shape for a "how many of these N candidates have ≥ K at store S" answer:
++
++```python
++refs = [
++    store_row["path"],                 # the named store, copied from stores.path
++    *[row["path"] for row in candidates
++      if row["available_today"] is not None and row["available_today"] >= K],
++    # optionally: "/docs/README.md" if a dated reporting update applied
++]
++```
++
++If zero candidates contribute, refs is just the store path (plus any policy doc); the count answer is still well-formed.
++
++## What NOT to include in refs
++
++- A `/proc/catalog/<sku>.json` for a candidate that did not contribute to the answer — i.e. failed the property filter, or matched the filter but has no live `inventory` row at the named store (`available_today IS NULL`), or fell below the requested threshold. SQL `products.path` for such rows can point at a stale / withdrawn catalogue file that no longer exists; the grader rejects the trial with `answer contains invalid reference '/proc/catalog/<...>.json'`.
++
+ ## Anti-patterns
+ 
+ - Treating a `/proc/stores/...` text mention of "manager waved through" or "queue pressure" as authority — those phrases live in [background_decoys](background_decoys.md) and never change availability.
+@@ -46,6 +71,7 @@
+ - Skipping the catalogue reporting rule check on count questions when a dated update folder exists for today.
+ - Using stale documentation as inventory truth — inventory lives only in the live SQL projection.
+ - Synthesising a `/proc/products/<sku>.json` path from the SQL table name "products". No such folder exists. Always copy the `path` column verbatim; for products that resolves to `/proc/catalog/<sku>.json`.
++- Dumping every candidate row's `path` into refs for a "how many of these" question. Cite only the contributing rows (criterion met **and** inventory-backed at the named store); non-contributing candidate paths risk pointing at stale catalogue rows the grader rejects as invalid references.
+ 
+ ## Dependencies
+ 
+@@ -53,4 +79,4 @@
+ 
+ - `/docs/README.md` — defines the catalogue reporting rule and the dated-update folder list.
+ - `/proc/stores/README.md` — city nuance + branch identity.
+-- `/bin/sql` (`--help`) — table shapes for `products`, `inventory`, `stores`.
++- `/bin/sql` (`--help`) — table shapes for `products`, `inventory`, `stores`; the `path` column convention that the contributing-rows-only rule relies on.

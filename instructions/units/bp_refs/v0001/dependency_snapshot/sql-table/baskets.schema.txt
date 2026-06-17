@@ -1,0 +1,14 @@
+TABLE baskets  PK(id)
+  id                    TEXT     NOT NULL
+  path                  TEXT     NOT NULL
+  customer_id           TEXT     NOT NULL  → customers.id
+  store_id              TEXT     NOT NULL  → stores.id
+  status                TEXT     NOT NULL
+  created_at            TEXT     NOT NULL
+  discount_percent      INTEGER
+  discount_reason_code  TEXT
+  discount_issuer_id    TEXT
+  INDEX baskets_created_at_idx           (created_at)
+  INDEX baskets_customer_created_at_idx  (customer_id, created_at)
+  INDEX baskets_customer_idx             (customer_id)
+  INDEX baskets_store_idx                (store_id)

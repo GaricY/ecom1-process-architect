@@ -1,0 +1,27 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-05-26T19:40:43+00:00",
+  "created_by": "codex",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/P0_analyze_all_review_fix_v2_v3.md",
+    "scope": "blind-submit terminal protocol follow-up"
+  },
+  "rationale": "Add a concise terminal check that forbids blind submit: unresolved reads, lists, SQL, tool calls, or policy scans must be completed and reasoned over before the final submit snippet.",
+  "dependencies": [
+    {
+      "kind": "static",
+      "path": "static-instructions/runtime_prelude.py",
+      "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",
+      "why": "Defines submit_and_exit as the terminal helper that writes the answer via ws.answer and exits the snippet."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0002 if the terminal exploration rule blocks valid programmatic final reads."
+  },
+  "no_semantic_change": false
+}

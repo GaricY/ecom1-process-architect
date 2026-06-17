@@ -1,0 +1,11 @@
+--- v0003/vault/bin/README.md
++++ v0004/vault/bin/README.md
+@@ -11,7 +11,7 @@
+ Useful entry query:
+ 
+ ```sql
+-select sku, name, path from products limit 5;
++select product_sku, product_name, record_path from product_variants limit 5;
+ ```
+ 
+ Schema discovery:

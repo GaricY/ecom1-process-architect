@@ -1,0 +1,1 @@
+Read conflict.md and conflict-context.json. Walk each version-history/units/<unit_id>/<new_latest>/ for the units in conflict. Reconcile your previous draft (preserved in pa-output-draft-{n}/) against the new latest. Rewrite pa-output/pa-decision.json and pa-output/units/<unit_id>/content.md per conflict.md. End your turn when done.

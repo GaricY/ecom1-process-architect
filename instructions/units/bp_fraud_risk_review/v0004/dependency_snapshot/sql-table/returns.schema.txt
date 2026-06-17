@@ -1,0 +1,13 @@
+TABLE returns  PK(id)
+  id           TEXT  NOT NULL
+  path         TEXT  NOT NULL
+  basket_id    TEXT  NOT NULL  → baskets.id
+  customer_id  TEXT  NOT NULL  → customers.id
+  payment_id   TEXT  NOT NULL  → payments.id
+  status       TEXT  NOT NULL
+  reason_code  TEXT  NOT NULL
+  created_at   TEXT  NOT NULL
+  INDEX returns_basket_idx    (basket_id)
+  INDEX returns_customer_idx  (customer_id)
+  INDEX returns_payment_idx   (payment_id)
+  INDEX returns_status_idx    (status)

@@ -1,0 +1,16 @@
+--- bp_index/v0004/content.md
++++ bp_index/v0005/content.md
+@@ -40,12 +40,7 @@
+ - `OUTCOME_NONE_CLARIFICATION` - genuinely ambiguous between concrete candidate records; cite the candidates in refs when safe.
+ - `OUTCOME_ERR_INTERNAL` - the harness graded this; do not submit it yourself.
+ 
+-Answer-payload shapes inside `message`:
+-
+-- `<YES>` / `<NO>` for yes/no questions only when the instruction asks for that literal token.
+-- `<COUNT:N>` only when the instruction asks for that literal token.
+-- Bare `%d` / `%s` / `%.2f` values when the instruction gives printf-style format.
+-- Otherwise: plain prose or the exact literal format the instruction demands.
++The outcome codes above are distinct from the **answer-payload shape** inside `message` (the final answer token/format). That contract has a single home — see [submission_terminal](submission_terminal.md) § *Answer format*; this index does not restate it.
+ 
+ ## 4. Mutation gate
+ 

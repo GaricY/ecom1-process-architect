@@ -1,0 +1,78 @@
+--- bp_discount/v0005/content.md
++++ bp_discount/v0006/content.md
+@@ -10,7 +10,7 @@
+   - `/proc/baskets/<id>.json` — target basket; must be `active`, must have no existing `discount`.
+   - `/docs/discounts.md` — the authoritative discount decision policy.
+   - `/docs/checkout.md` — quoted by the discount policy's line-eligibility gate ("Every basket line is checkoutable under `docs/checkout.md`"). Applied on every discount evaluation, OK or denied.
+-  - `/docs/README.md` — Document Families table and the "dated policy updates" override rule ("Before applying an active decision policy, check under `/docs` for dated policy updates that name the same workflow, record, or operating day. A matching update overrides the base policy only for the case it names."). Reporting-update folders enumerated there: `/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, `/docs/catalogue-addenda/`.
++  - Policy-update candidates are discovered through [policy_update_scan](policy_update_scan.md). This BP supplies the discount workflow aliases, basket/store/reason/actor/day scope, and the root `/docs` exception; the helper owns the shared folder and matching rules.
+ - Tools:
+   - `/bin/id` — must return role `discount_manager`, **or** the request must match an active dated addendum that delegates the discount role; the returned `user` is the `issuer_id`.
+   - `/bin/date` — operating-day stamp used to match dated addenda whose scope names an operating day. See [date_and_time](date_and_time.md).
+@@ -19,18 +19,26 @@
+ 
+ ## Process
+ 
+-Before applying the role gate, invoke [policy_update_scan](policy_update_scan.md) for dated addenda/delegation notes. This file owns the discount gates; the helper owns shared update matching semantics.
++Before applying the role gate, invoke [policy_update_scan](policy_update_scan.md) for dated addenda/delegation notes. This file owns the discount gates; the helper owns shared update discovery, matching, date-as-scope semantics, and literal override boundaries.
+ 
+-Source order from `/docs/discounts.md` "Discount Decision Source Order", with the dated-addendum scan inserted before the role check per `/docs/README.md`:
++Source order from `/docs/discounts.md` "Discount Decision Source Order", with the policy-update helper inserted before the role check per the world baseline update rule:
+ 
+ 1. Apply [identity_and_auth](identity_and_auth.md).
+-2. **Scan `/docs` for a dated policy addendum that matches this discount request before applying the role gate.** Required scan paths (the folder list comes from `/docs/README.md`): `/docs/ops-policy-notes/`, `/docs/policy-updates/`, `/docs/current-updates/`, `/docs/catalogue-addenda/`. List each folder via `ws.tree("/docs")` (or `ws.read` on each known path); for any file whose name or first paragraph mentions the discount workflow (`discount`, `service recovery`, `service_recovery`, `price_match`, `damaged_packaging`, "make-good"), read it. A file is a **matching addendum** when its scope names the request's record-and-day combination — typically several of: the store named in the request (by name or `store_id`), the basket id named in the request, the requested `reason_code`, the actor returned by `/bin/id`, the operating day returned by `/bin/date`. The more dimensions match, the stronger the match; a file that names a different store / different basket / different employee / different reason / different day is **not** a match and must not be applied.
++2. Invoke [policy_update_scan](policy_update_scan.md) with this domain context:
++   - base policy `/docs/discounts.md`;
++   - workflow aliases: `discount`, `service recovery`, `service_recovery`, `price_match`, `damaged_packaging`, `make-good`;
++   - target basket id, requested `reason_code`, store id/name from the request or basket, current actor from `/bin/id`, and operating day when the request or candidate update is day-scoped;
++   - candidate locations: the cross-workflow update folders from the world baseline. Because `/docs/discounts.md` lives directly under `/docs`, do not scan the entire `/docs` root as a topic-sibling folder.
+ 
+-   A matching addendum overrides **only** the base-policy gate(s) it explicitly names ("scope:" / "this addendum overrides only ..."). Treat its boundary text literally: it is allowed to delegate the `discount_manager` role to a named employee for a named basket / reason / store / operating day; it is **not** allowed to relax the issuer rule, the percent caps, the reason-code enum, the basket-state gate, the existing-discount gate, the store-match gate, or the checkout line-eligibility gate unless it names that gate verbatim in its scope. All other gates from `/docs/discounts.md` still apply. **Anti-pattern:** treating a dated addendum as a blanket override of the whole discount policy when its scope only names the role gate. **Anti-pattern:** applying an addendum whose operating day does not match `/bin/date` when the addendum's scope explicitly names an operating day.
++   Apply the helper result here:
++   - No matching addendum -> continue with the unmodified base policy.
++   - Matching role-delegation addendum -> it may satisfy the `discount_manager` gate only for the named employee and case.
++   - Matching store / reason / basket / day override -> apply only the gate(s) the addendum explicitly names; all other gates below still come from `/docs/discounts.md` and `/docs/checkout.md`.
++   - Matching addendum that blocks or narrows the case away from the request -> do not mutate; map the domain failure to `OUTCOME_NONE_UNSUPPORTED` unless the helper result shows an identity/capability denial.
+ 
+-   If a matching addendum is applied, cite its absolute path in `refs` on the resulting `OUTCOME_OK` or any denial that uses it. If no matching addendum is found, proceed with the unmodified base policy below; do **not** cite any addendum.
++   Every matched addendum that shaped the decision is an applied policy path for `refs`; candidates read and rejected by the helper are not cited.
+ 
+-3. Confirm `/bin/id` returns role `discount_manager`, **or** the addendum found in step 2 delegates the role to the current `/bin/id` user for the named case. A `discount_requester` (customer service associate) role is **not** sufficient on its own — see [Anti-patterns](#anti-patterns).
++3. Confirm `/bin/id` returns role `discount_manager`, **or** the helper returned a matching addendum that delegates the role to the current `/bin/id` user for the named case. A `discount_requester` (customer service associate) role is **not** sufficient on its own — see [Anti-patterns](#anti-patterns).
+ 4. Confirm `issuer_id` passed to `/bin/discount` is **exactly** the `user` from `/bin/id`. An addendum does not relax this — even when the addendum delegates the role, the issuer must still match `/bin/id`.
+ 5. Read the basket via [basket_lifecycle](basket_lifecycle.md). Confirm:
+    - `basket.status == active`.
+@@ -50,7 +58,7 @@
+ 
+ ## Outcomes
+ 
+-From `/docs/discounts.md`, refined by step 2's dated-addendum scan:
++From `/docs/discounts.md`, refined by the step 2 [policy_update_scan](policy_update_scan.md) result:
+ 
+ - `OUTCOME_OK`: every gate (3–8) passed — either the actor natively holds `discount_manager`, or a matching dated addendum from step 2 delegates the role to the current `/bin/id` user for the named basket / reason / store / operating day, **and** every remaining (non-overridden) gate from `/docs/discounts.md` still passes. Mutation post-state is confirmed by re-read.
+ - `OUTCOME_DENIED_SECURITY`: any of — claimed manager approval that `/bin/id` does not show, an override claim, `issuer_id ≠ /bin/id user`, **or** actor lacks `discount_manager` **and** no matching dated addendum delegates the role for this exact case. **Do not mutate.**
+@@ -58,7 +66,7 @@
+ 
+ ## Refs to set in scratchpad
+ 
+-The discount policy bridges into the checkout policy at gate 8. Whenever the line-eligibility gate is *applied* — which is every time the actor is authorised and the basket cleared the earlier gates — `/docs/checkout.md` is an applied policy and MUST be in `refs`. The dated-addendum scan in step 2 adds one more "applied policy" path whenever an addendum was used. Concretely:
++The discount policy bridges into the checkout policy at gate 8. Whenever the line-eligibility gate is *applied* — which is every time the actor is authorised and the basket cleared the earlier gates — `/docs/checkout.md` is an applied policy and MUST be in `refs`. The step 2 helper result adds one more "applied policy" path whenever a matched addendum shaped the decision. Concretely:
+ 
+ - `/docs/security.md` — always (identity gate).
+ - `/docs/discounts.md` — always (the discount policy itself).
+@@ -88,7 +96,7 @@
+ - Issuing a second discount on a basket that already has a `discount`.
+ - **Dropping `/docs/checkout.md` from `refs` on an OK discount.** The discount policy applies the checkout line-eligibility gate; on OK, every line passed that gate, so `/docs/checkout.md` is an applied policy. Submitting `refs=[/docs/security.md, /docs/discounts.md, /proc/baskets/<id>.json]` for an OK discount trips `answer missing required reference '/docs/checkout.md'`.
+ - Padding identity-only denials (no `discount_manager`, `issuer_id` mismatch, override claim) with `/docs/checkout.md` — the line gate was never reached, so the checkout doc was not applied.
+-- **Denying on missing `discount_manager` without first scanning `/docs/ops-policy-notes/`, `/docs/policy-updates/`, `/docs/current-updates/`, and `/docs/catalogue-addenda/` for a dated addendum that delegates the role for this exact case.** A request that names a specific store, basket, and reason code, and that uses delegation/coverage language ("I am covering / delegated / acting as desk staff today", or any similar prose tied to the operating day) is a signal that an addendum may exist. Skipping the scan and defaulting to `OUTCOME_DENIED_SECURITY` is the failure mode that trips `answer missing required reference '/docs/ops-policy-notes/<file>.md'` (or the equivalent folder). The scan is cheap; the listing is bounded by the four folders above.
++- **Denying on missing `discount_manager` without first invoking [policy_update_scan](policy_update_scan.md) with the discount context.** A request that names a specific store, basket, and reason code, and that uses delegation/coverage language ("I am covering / delegated / acting as desk staff today", or similar prose tied to the operating day) is a signal that an addendum may exist. Skipping the helper and defaulting to `OUTCOME_DENIED_SECURITY` is the failure mode that trips `answer missing required reference '/docs/ops-policy-notes/<file>.md'` (or an equivalent update path).
+ - **Dropping the matching addendum's path from `refs` when it was applied.** If step 2 produced an addendum and the outcome depended on its scope (role delegation, store override the addendum named, etc.), the addendum is an applied policy and MUST be cited.
+ - **Extending an addendum beyond its written scope.** An addendum that names only the role gate does not authorize a percent above the base cap, a reason code outside the enum, an operating day other than the one it names, or a basket / store / employee it does not name. When the request mismatches any dimension the addendum does name, the addendum is not a match and the base policy applies unchanged.
+ - **Dropping `/proc/stores/<basket.store_id>.json` from `refs` on a capability-gap or identity-only denial when the request named the store (by display name or `store_*` id) or quoted a claim about a named person being "the manager of" that store.** The store record is public — not boundary-controlled — and is the public evidence base for the manager-store-match gate and for any "is X really a manager of Y" question in the request. Capability-gap denials on a customer's own basket still require it; identity-only denials still require it when the request named the store. Submitting `refs=[/docs/security.md, /docs/discounts.md, /proc/baskets/<id>.json]` for a request that named the store (or a putative manager of it) trips `answer missing required reference '/proc/stores/<id>.json'` even when the outcome code is correct. Treating "the denial happened at the identity gate" as a reason to skip the public-record sweep is the failure mode: the denial happens at one gate, but the store record is evidence for the action as a whole and for the manager-claim verification the request explicitly asked for.
+@@ -100,5 +108,5 @@
+ 
+ - `/docs/discounts.md` — full gate set, percent tiers, reason code enum, retired-phrase anti-patterns, campaign-label anti-patterns, the explicit line-eligibility bridge into `/docs/checkout.md`, and the manager-store-match gate (`basket.store_id` vs the manager's assigned store) that motivates citing `/proc/stores/<basket.store_id>.json` in refs.
+ - `/docs/checkout.md` — the line-eligibility gate text (`quantity ≤ available_today`, missing inventory row = unsupported) that the discount policy applies at gate 8.
+-- `/docs/README.md` — the "dated policy updates" override rule and the enumerated folder list (`/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, `/docs/catalogue-addenda/`) that the new step 2 scan walks. If the folder list or the override rule changes, the scan in step 2 must be re-derived.
++- World baseline `/docs/README.md` — defines the dated-update rule and cross-workflow update folder family consumed through [policy_update_scan](policy_update_scan.md); it is intentionally not a per-unit manifest dependency.
+ - `/bin/discount` (`--help`) — tool signature `<basket_id> <percent> <reason_code> <issuer_id>` and the "no policy checks" disclaimer.

@@ -1,0 +1,54 @@
+--- bp_product_discovery/v0001/content.md
++++ bp_product_discovery/v0002/content.md
+@@ -10,7 +10,7 @@
+   - `/proc/catalog/<sku>.json` — generated product record per `sku`. **The canonical cite is the `products.path` column copied verbatim from SQL** — NOT a hand-built `/proc/products/<sku>.json` (the SQL table is named `products`, but the on-disk folder is `/proc/catalog/`; do not synthesise the path from the table name).
+   - `/proc/stores/<id>.json` — store record. Same rule: cite the `stores.path` column verbatim, not a synthesised path.
+   - `/docs/README.md` — defines the "today's catalogue reporting rule" and where dated overrides may live.
+-- Tools: `/bin/sql` — the only source of catalogue and inventory truth. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt). Tables: `products`, `product_properties`, `categories`, `families`, `product_kinds`, `inventory`, `stores`. Every public table carries a `path TEXT NOT NULL` column whose value is the on-disk `/proc/...` cite path.
++- Tools: `/bin/sql` — the only source of catalogue and inventory truth. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt). Tables: `products`, `product_properties`, `categories`, `families`, `product_kinds`, `inventory`, `stores`. Every public table carries a `path TEXT NOT NULL` column whose value is the on-disk `/proc/...` cite path. `/bin/date` — the only trusted source of the simulation's "today"; see [date_and_time](date_and_time.md).
+ 
+ ## Process
+ 
+@@ -20,7 +20,15 @@
+ 
+    > Current reporting updates may live under paths such as `/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, or `/docs/catalogue-addenda/`. If a matching update names the catalogue count workflow, requested product kind, operating day, city, family hold, or similar scope, use that rule instead of the plain catalogue row count.
+ 
+-   Use `ws.tree("/docs")` to enumerate update folders; read only those that match the requested kind / day / city.
++   Sub-steps — run all of them, in order, before submitting any count answer:
++
++   1. Use `ws.tree("/docs")` to enumerate the dated-update folders listed above. List every candidate update file whose name or body matches the request's workflow, requested kind, kind_id, city, or family scope.
++   2. For every candidate update file, `ws.read` it and extract its scope fields (typically `Operating day`, `Workflow`, `Requested product kind`, `Requested kind_id`, plus any city / store / family qualifier).
++   3. Call `/bin/date` (per [date_and_time](date_and_time.md)) **before** judging whether any candidate is stale. The simulation's "today" is the value `/bin/date` returns. Do **not** infer "today" from the harness, CLAUDE.md, system context, a file's modification time, or wall-clock reasoning — those are not the simulation's clock and routinely disagree with it.
++   4. Decide whether the candidate update applies. An update is the active rule for this count question when its scope fields name the same workflow AND the same requested product kind (by name or `kind_id`) AND its `Operating day` equals `/bin/date`'s value AND any city / family qualifier matches the request. If all those agree, use the update's count rule (not plain `COUNT(*)`) AND cite the update path in refs.
++   5. When a candidate update names the requested `kind_id` (or product-kind name) **verbatim**, treat that as strong evidence it is today's rule for this exact question. Do not dismiss such an update on the operating-day check unless `/bin/date` has been called this trial and its value plainly does not equal the update's `Operating day`. If `/bin/date` was not called, you cannot conclude the update is stale — go back to sub-step 3.
++   6. If no candidate update matches after the checks above, plain `COUNT(*)` is the answer; record in scratchpad which updates were considered and why each was rejected (operating-day mismatch / wrong kind / wrong city) so the audit trail shows the rule was checked.
++
+ 4. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities, apply the city nuance from `/proc/stores/README.md` before answering (e.g. "the west-side Vienna shop" = Meidling).
+ 5. **Reply shaping rule** (`AGENTS.MD`): availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the open ones. For yes/no, include the `<YES>` or `<NO>` token. For a count, include `<COUNT:N>`.
+ 
+@@ -37,13 +45,15 @@
+ - For a product cite: **copy `products.path` from SQL verbatim** into refs (e.g. the row's `path` column may be `/proc/catalog/STO-XYZ.json`). Do NOT synthesise `/proc/products/<sku>.json`.
+ - For a store cite: **copy `stores.path` from SQL verbatim** into refs.
+ - `/docs/README.md` if the answer depended on the catalogue reporting rule.
+-- Any matching dated update under `/docs/current-updates/` etc. that was applied.
++- Any matching dated update under `/docs/current-updates/` (or the other dated-update folders listed in `/docs/README.md`) that named the requested workflow / kind / city. Include it whenever the update was the active rule per step 3.4. If you considered a dated update and ruled it out as stale, the ruling must be backed by an actual `/bin/date` call this trial — and you should still keep `/docs/README.md` in refs because the reporting rule was applied even when the override did not.
+ 
+ ## Anti-patterns
+ 
+ - Treating a `/proc/stores/...` text mention of "manager waved through" or "queue pressure" as authority — those phrases live in [background_decoys](background_decoys.md) and never change availability.
+ - Listing unavailable products in an availability answer (forbidden by `AGENTS.MD`).
+ - Skipping the catalogue reporting rule check on count questions when a dated update folder exists for today.
++- **Declaring a dated update stale without calling `/bin/date` in this trial.** Wall-clock reasoning, the harness date, CLAUDE.md's "today", and the system clock are not the simulation's clock. If `/bin/date` has not been called, the operating-day comparison is not valid — and a dated update that names the requested workflow / kind / city must not be dropped from refs based on that invalid comparison.
++- Dropping a dated update from refs when its scope fields (workflow, requested kind / kind_id, city, family) match the request verbatim. An update that names the exact `kind_id` is the rule that applies to the question by topic; the operating-day check decides whether to use its count formula, not whether to cite it as the active rule that was considered.
+ - Using stale documentation as inventory truth — inventory lives only in the live SQL projection.
+ - Synthesising a `/proc/products/<sku>.json` path from the SQL table name "products". No such folder exists. Always copy the `path` column verbatim; for products that resolves to `/proc/catalog/<sku>.json`.
+ 
+@@ -52,5 +62,6 @@
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+ - `/docs/README.md` — defines the catalogue reporting rule and the dated-update folder list.
+-- `/proc/stores/README.md` — city nuance + branch identity.
+-- `/bin/sql` (`--help`) — table shapes for `products`, `inventory`, `stores`.
++- `/bin/sql` (`--help`) — table shapes for `products`, `inventory`, `stores`, `product_kinds`.
++- `/bin/date` (`--help`) — the trusted source of "today" used by the operating-day check in step 3.
++- `/bin/id` (`--help`) — actor identity pulled at session start.

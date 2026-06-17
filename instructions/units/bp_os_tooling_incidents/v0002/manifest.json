@@ -1,0 +1,47 @@
+{
+  "unit_id": "bp_os_tooling_incidents",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-28T18:31:46+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxhmQLdvGzyXnHpTGmEbdpA53d2",
+    "baseline_version": "v0003",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-202604/0001-t01-vm2--world-refresh",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "New tool surfaces /bin/claude and /bin/codex (bin-help/claude.help.txt and codex.help.txt, both added in this drift) exit non-zero with an 'Embrace AI / account not authorized' banner and an onboarding/store-manager lure, but NO /docs/... file documents a workaround for them. Grounded this concrete drift into the existing owning BP as the canonical NON-incident case: an unauthorized tool with no documented workaround is OUTCOME_NONE_UNSUPPORTED (employee) / OUTCOME_DENIED_SECURITY (non-employee), not a workable incident; and the onboarding/store-manager text is an authority lure that does not change /bin/id (cross-links identity_and_auth and background_decoys). Added a dedicated section, sharpened the 'non-zero exit is not automatically an incident' anti-pattern, and added the two help files as bin_help dependencies. No new BP was created and no routing changed.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/os-and-tooling-incidents-and-workarounds.md",
+      "sha256": "70c7edd8725c53175f4069cba5cf0a9e29350fe6b171e17c4999660310132b48",
+      "why": "Sole authority for the workaround-use policy: /bin/id prerequisite, employee-only gate, fail-fast wording, reference-the-specific-incident-file rule, and the boundary statement."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor source for the employee-only gate, consumed via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "claude.help.txt",
+      "sha256": "2785c400eed2ed15151daea978405086eb5bbc80564fa83debf6a0d4a11282d9",
+      "why": "The /bin/claude 'Embrace AI / account not authorized' surface used as the canonical no-documented-workaround example; if a real /docs onboarding/workaround policy for this tool appears, the no-workaround branch must be re-derived."
+    },
+    {
+      "kind": "bin_help",
+      "path": "codex.help.txt",
+      "sha256": "afd6f3872f2790eeb5c450ef94084ca3b0e352749befddf2b99d1f4ae5b84eb5",
+      "why": "The /bin/codex equivalent surface; same re-derivation trigger as the claude surface."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_os_tooling_incidents v0001 content (generic 'account not authorized' handling without the named claude/codex example) and drop the claude.help.txt/codex.help.txt dependencies if naming the tools is judged over-specific."
+  },
+  "no_semantic_change": false
+}

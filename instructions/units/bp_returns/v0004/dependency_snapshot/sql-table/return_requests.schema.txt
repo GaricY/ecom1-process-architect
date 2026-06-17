@@ -1,0 +1,13 @@
+TABLE return_requests  PK(return_id)
+  return_id           TEXT  NOT NULL
+  record_path         TEXT  NOT NULL
+  basket_id           TEXT  NOT NULL  → shopping_baskets.basket_id
+  customer_id         TEXT  NOT NULL  → customer_accounts.customer_id
+  payment_id          TEXT  NOT NULL  → payment_transactions.payment_id
+  return_status       TEXT  NOT NULL
+  return_reason_code  TEXT  NOT NULL
+  return_created_at   TEXT  NOT NULL
+  INDEX return_requests_basket_idx    (basket_id)
+  INDEX return_requests_customer_idx  (customer_id)
+  INDEX return_requests_payment_idx   (payment_id)
+  INDEX return_requests_status_idx    (return_status)

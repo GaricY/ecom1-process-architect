@@ -1,0 +1,89 @@
+{
+  "units": [
+    {
+      "id": "executor_core",
+      "kind": "executor_prompt",
+      "render_to": "CLAUDE.md"
+    },
+    {
+      "id": "bp_index",
+      "kind": "business_process",
+      "render_to": "business_processes/index.md"
+    },
+    {
+      "id": "bp_identity_and_auth",
+      "kind": "business_process",
+      "render_to": "business_processes/identity_and_auth.md"
+    },
+    {
+      "id": "bp_privacy_and_disclosure",
+      "kind": "business_process",
+      "render_to": "business_processes/privacy_and_disclosure.md"
+    },
+    {
+      "id": "bp_refs",
+      "kind": "business_process",
+      "render_to": "business_processes/refs.md"
+    },
+    {
+      "id": "bp_submission_terminal",
+      "kind": "business_process",
+      "render_to": "business_processes/submission_terminal.md"
+    },
+    {
+      "id": "bp_fraud_risk_review",
+      "kind": "business_process",
+      "render_to": "business_processes/fraud_risk_review.md"
+    },
+    {
+      "id": "bp_policy_update_scan",
+      "kind": "business_process",
+      "render_to": "business_processes/policy_update_scan.md"
+    },
+    {
+      "id": "bp_product_discovery",
+      "kind": "business_process",
+      "render_to": "business_processes/product_discovery.md"
+    },
+    {
+      "id": "bp_basket_lifecycle",
+      "kind": "business_process",
+      "render_to": "business_processes/basket_lifecycle.md"
+    },
+    {
+      "id": "bp_checkout",
+      "kind": "business_process",
+      "render_to": "business_processes/checkout.md"
+    },
+    {
+      "id": "bp_discount",
+      "kind": "business_process",
+      "render_to": "business_processes/discount.md"
+    },
+    {
+      "id": "bp_payments_3ds_recovery",
+      "kind": "business_process",
+      "render_to": "business_processes/payments_3ds_recovery.md"
+    },
+    {
+      "id": "bp_returns",
+      "kind": "business_process",
+      "render_to": "business_processes/returns.md"
+    },
+    {
+      "id": "bp_date_and_time",
+      "kind": "business_process",
+      "render_to": "business_processes/date_and_time.md"
+    },
+    {
+      "id": "bp_background_decoys",
+      "kind": "business_process",
+      "render_to": "business_processes/background_decoys.md"
+    },
+    {
+      "id": "bp_os_tooling_incidents",
+      "kind": "business_process",
+      "render_to": "business_processes/os_tooling_incidents.md"
+    }
+  ]
+}

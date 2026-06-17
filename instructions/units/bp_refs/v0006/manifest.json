@@ -1,0 +1,81 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0006",
+  "parent": "v0005",
+  "status": "active",
+  "created_at": "2026-05-29T00:51:51+00:00",
+  "created_by": "human",
+  "mode": "failure_fix",
+  "trigger": {
+    "command": "hand-edit",
+    "run_id": "20260529-022227",
+    "task_ids": [
+      "t26"
+    ],
+    "score_detail": [
+      "answer missing required reference '/docs/checkout.md'"
+    ],
+    "analysis": ".tasks/task-027/README.md"
+  },
+  "rationale": "Clarifies the checkout.md tie-breaker for applied policy refs. bp_discount v0010 now treats checkout eligibility used during target resolution (for example selecting a checkoutable basket before a later discount gate denies) as an application of /docs/checkout.md. bp_refs v0005 still said to include checkout.md only when the topic BP evaluated its gate, which could be read too narrowly as only the line-eligibility gate. v0006 keeps the general applied-policy rule and clarifies that applying checkout rules includes both evaluating the line gate and using checkout eligibility to resolve the target record. This avoids conflict with topic BPs without adding a t26-specific ref rule.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "7e2b613dd2619f6315b5f7c70fd346f7cbe83822b475f1bca890f7b25fbe427f",
+      "why": "Authority for cross-boundary and personal-information citation boundaries."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape used for customer/employee/guest citation branches."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket ownership, store pointer, status, and canonical record_path for basket refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transactions",
+      "sha256": "19104e8b96a076bde97c0f841c2b9ac35f781199842368b2f8d866b2299848c1",
+      "why": "Payment ownership, basket/store pointers, status, and canonical record_path for payment refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_requests",
+      "sha256": "1f62b186328a837536425904e8789daaf26b56fcf44eb0b75b2762e4cc2f2e3c",
+      "why": "Return ownership, basket/payment pointers, status, and canonical record_path for return refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "Customer identity and contact fields that are private by default."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employee_accounts",
+      "sha256": "1ad720b7a0ef980b146c75c49684e00d69793910500b54b203754c6c1569fa48",
+      "why": "Employee roster/contact fields and assigned-store scope determine private vs operational refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Public store record_path and location fields are required public-record refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "Public catalogue record_path and SKU fields are required public-record refs."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0005 by creating a new version from v0005 content if blind reruns show over-citation of /docs/checkout.md where checkout rules were not actually used to resolve a target or evaluate a gate."
+  },
+  "no_semantic_change": false
+}

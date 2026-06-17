@@ -1,0 +1,30 @@
+--- bp_submission_terminal/v0002/content.md
++++ bp_submission_terminal/v0003/content.md
+@@ -28,8 +28,12 @@
+    - use generic policy wording such as "the authenticated customer does not own <target_id>" or "the target belongs to a different customer account";
+    - keep sensitive ids in `scratchpad["decision"]` for audit, not in `message` or unsafe `refs`.
+ 6. Re-read the task instruction's answer format immediately before composing `message`. If it asks for a bare `%d` or `%s`, do not wrap the value in `<COUNT:...>` or any other token.
+-7. Call `submit_and_exit(message=..., outcome=..., refs=refs)` exactly once, as the last line of the final snippet.
+-8. After the result reports `answer_submitted=true`, do not call `execute_python` again.
++7. Confirm the final snippet has no unresolved exploration:
++   - if a `ws.read`, `ws.list`, `ws.tree`, `ws.sql_rows`, `/bin/*`, or helper result could change `message`, `outcome`, or `refs`, it must have been gathered in an earlier snippet and reasoned over before this final call;
++   - reads or SQL in the final snippet are allowed only when their returned values are used immediately in code to build `message`/`refs` or to assert post-state before `OUTCOME_OK`;
++   - do not print candidate docs, policy text, ownership fields, or other still-decisive evidence and then submit in the same snippet.
++8. Call `submit_and_exit(message=..., outcome=..., refs=refs)` exactly once, as the last line of the final snippet.
++9. After the result reports `answer_submitted=true`, do not call `execute_python` again.
+ 
+ ## Outcomes
+ 
+@@ -46,10 +50,11 @@
+ ## Anti-patterns
+ 
+ - Calling `execute_python` again after `submit_and_exit` already succeeded.
++- Blind submit: performing exploratory reads, lists, SQL, tool calls, or policy scans in the same snippet as `submit_and_exit` when their result is only printed or left for later interpretation.
+ - Submitting `OUTCOME_OK` for a mutation without re-reading post-state.
+ - Letting this file decide whether a target record is safe to cite; that belongs to [refs](refs.md).
+ - Submitting a blocked outcome whose `message` reveals a foreign owner id, customer email, contact field, or coordinates learned during the investigation.
+-- Ending the assistant turn without `submit_and_exit` because one more exploratory read might help. Submit the best correct blocked outcome instead of producing no answer.
++- Ending the assistant turn without `submit_and_exit` after all required gates are resolved. If an exploratory read could still change the decision, run it before the terminal snippet; otherwise submit the best correct outcome.
+ 
+ ## Dependencies
+ 

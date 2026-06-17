@@ -1,0 +1,35 @@
+{
+  "unit_id": "bp_os_tooling_incidents",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-05-28T14:54:53+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxhQEXmmzgzHXw6W4BtvQ2QAxek",
+    "baseline_version": "v0002",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-174450/0001-t01-vm2-LxhQEXmmzgzHXw6W4BtvQ2QAxek-process-architect-world-refresh-v0002",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "/docs/README.md adds /docs/os-and-tooling-incidents-and-workarounds.md as a new dedicated Active Decision Policy with its own gate set: a /bin/id prerequisite, an employee-only gate, a fail-fast OUTCOME_DENIED_SECURITY on non-employee identity, a reference-the-specific-incident-file rule on the final answer, and an explicit boundary that the policy does not change domain policy / answer format / catalogue reporting rule / grounding. The new /bin/claude and /bin/codex --help surfaces are concrete in-dump examples of incident-shaped failure modes (account not authorized, points readers at the docs). No existing BP owns this workaround-use gate: identity_and_auth owns identity but not this employee-only workaround rule; background_decoys owns operational-background decoys, which is the opposite domain (active policy versus background context). The new BP is atomic and single-responsibility, links sibling BPs (identity_and_auth, refs, submission_terminal, the four mutation BPs, background_decoys) instead of restating shared logic, and is grounded entirely from current dump artifacts.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/os-and-tooling-incidents-and-workarounds.md",
+      "sha256": "70c7edd8725c53175f4069cba5cf0a9e29350fe6b171e17c4999660310132b48",
+      "why": "Sole authority for the workaround-use policy: /bin/id prerequisite, employee-only gate, fail-fast OUTCOME_DENIED_SECURITY wording, reference-the-specific-incident-file rule, and the boundary statement that domain policy/answer-format/catalogue-reporting-rule/grounding are unchanged. The BP quotes this doc verbatim for the gate text."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "/bin/id is the actor source named by the policy as the prerequisite check before any workaround. The employee-only gate consumes its output shape (user prefix + roles list) via identity_and_auth."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove bp_os_tooling_incidents and revert bp_index to v0003 if the new BP misroutes requests, duplicates identity/auth handling, or relaxes a domain gate by accident."
+  },
+  "no_semantic_change": false
+}

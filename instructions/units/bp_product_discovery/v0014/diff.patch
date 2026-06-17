@@ -1,0 +1,11 @@
+--- bp_product_discovery/v0013/content.md
++++ bp_product_discovery/v0014/content.md
+@@ -28,7 +28,7 @@
+ 
+    The operating day in an update filename/header is not a local TTL check in this BP. Let [policy_update_scan](policy_update_scan.md) decide when `/bin/date` is a filter versus a scope dimension, and record that decision in scratchpad.
+ 5. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities, apply the city nuance from `/proc/stores/README.md` before answering (e.g. "the west-side Vienna shop" = Meidling).
+-6. **Reply shaping rule** (`/AGENTS.MD`): pure availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the selected/available stores, not rejected candidates. For yes/no, include the `<YES>` or `<NO>` token. For a count, include `<COUNT:N>`.
++6. **Reply shaping rule** (`/AGENTS.MD`): pure availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the selected/available stores, not rejected candidates. For the `message` answer-format / token contract, see [submission_terminal](submission_terminal.md) § *Answer format* — that is the single home; this BP does not restate it.
+ 7. **Refs shaping rule for availability questions** (also from `/AGENTS.MD` "should not reference unavailable products"). First decide whether the answer is pure availability or non-pure availability with a separate catalogue identity/match claim:
+ 
+    - For store-scoped availability, always include the selected store's `stores.record_path` for the store whose inventory was queried. Do not include stores rejected by city nuance or closed/unavailable-store filtering.

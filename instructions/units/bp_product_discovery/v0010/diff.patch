@@ -1,0 +1,61 @@
+--- bp_product_discovery/v0009/content.md
++++ bp_product_discovery/v0010/content.md
+@@ -18,20 +18,22 @@
+ For catalogue count/reporting update semantics, invoke [policy_update_scan](policy_update_scan.md). This file owns catalogue/inventory SQL and reply shaping; the helper owns bounded update matching and date-scope interpretation.
+ 
+ 1. Call `/bin/id` (cheap, also drives "my" handling). Identity is informational here; discovery answers do not depend on actor.
+-2. For an availability question: `SELECT available_today FROM inventory WHERE store_id = ? AND sku = ?` (or the equivalent batch query for a list). `inventory` is keyed by `(store_id, sku)`; missing row means not stocked at that store. Treat both **no inventory row** (LEFT JOIN returns `NULL`) and `available_today = 0` as "not available today" — neither contributes to a positive availability answer.
+-3. For "how many products of kind X today?" or any catalogue **count** question: invoke [policy_update_scan](policy_update_scan.md) before answering with a plain `COUNT(*)`. Pass the helper the catalogue-count workflow, requested product kind/name/`kind_id`, city/store/family/day scope from the request, and any candidate update paths found under the bounded `/docs` update locations. Then apply the helper result here:
++2. For any store-scoped inventory/availability question, resolve the selected store row first and copy `stores.path` from SQL or the live record. If city nuance docs are needed to choose among multiple stores, use them to choose the one store, and keep rejected stores out of `refs`.
++3. For an availability question: `SELECT available_today FROM inventory WHERE store_id = ? AND sku = ?` (or the equivalent batch query for a list). `inventory` is keyed by `(store_id, sku)`; missing row means not stocked at that store. Treat both **no inventory row** (LEFT JOIN returns `NULL`) and `available_today = 0` as "not available today" — neither contributes to a positive availability answer.
++4. For "how many products of kind X today?" or any catalogue **count** question: invoke [policy_update_scan](policy_update_scan.md) before answering with a plain `COUNT(*)`. Pass the helper the catalogue-count workflow, requested product kind/name/`kind_id`, city/store/family/day scope from the request, and any candidate update paths found under the bounded `/docs` update locations. Then apply the helper result here:
+ 
+    - Matching update with a count/reporting rule -> use that rule instead of plain `COUNT(*)`, and cite the matched update path plus `/docs/README.md` because the reporting-update rule shaped the answer.
+    - Matching update that narrows scope away from the request -> do not apply it; record why in scratchpad.
+    - No matching update -> answer from plain SQL `COUNT(*)` over the requested catalogue scope.
+ 
+    The operating day in an update filename/header is not a local TTL check in this BP. Let [policy_update_scan](policy_update_scan.md) decide when `/bin/date` is a filter versus a scope dimension, and record that decision in scratchpad.
+-4. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities, apply the city nuance from `/proc/stores/README.md` before answering (e.g. "the west-side Vienna shop" = Meidling).
+-5. **Reply shaping rule** (`/AGENTS.MD`): availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the open ones. For yes/no, include the `<YES>` or `<NO>` token. For a count, include `<COUNT:N>`.
+-6. **Refs shaping rule for availability questions** (also from `/AGENTS.MD` "should not reference unavailable products"). The reply shaping rule from step 5 governs `refs` too, not only the answer message:
++5. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities, apply the city nuance from `/proc/stores/README.md` before answering (e.g. "the west-side Vienna shop" = Meidling).
++6. **Reply shaping rule** (`/AGENTS.MD`): availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the selected/available stores, not rejected candidates. For yes/no, include the `<YES>` or `<NO>` token. For a count, include `<COUNT:N>`.
++7. **Refs shaping rule for availability questions** (also from `/AGENTS.MD` "should not reference unavailable products"). The reply shaping rule from step 6 governs `refs` too, not only the answer message:
+ 
++   - For store-scoped availability, always include the selected store's `stores.path` for the store whose inventory was queried. Do not include stores rejected by city nuance or closed/unavailable-store filtering.
+    - For every product the question asked about, classify the row by the availability test the question imposes (`available_today >= K`, `available_today > 0`, "in stock today", etc.). Use the `available_today` column from the LEFT JOIN on `inventory` — a `NULL` value (no inventory row at that store) and a `0` value both fail the test.
+-   - **Only the products that pass the test get their `products.path` copied into `refs`.** Products you considered and disqualified — including the ones whose existence you confirmed via SQL — must not appear in `refs` even when you used them as evidence "that one doesn't qualify". The grader rejects an availability answer that cites an unavailable product with `answer contains invalid reference '/proc/catalog/...json'`.
++   - **Only the products that pass the test get their `products.path` copied into `refs`.** Products you considered and disqualified — including the ones whose existence you confirmed via SQL — must not appear in `refs` even when you used them as evidence "that one doesn't qualify". The selected store ref is different: it is public location evidence for the inventory query, not an unavailable product. The grader rejects an availability answer that cites an unavailable product with `answer contains invalid reference '/proc/catalog/...json'`.
+    - Keep the disqualified candidates in `scratchpad["decision"]` (sku, why it failed) so the audit trail is preserved. Scratchpad is unconstrained; `refs` is the policy-shaped surface.
+    - This rule applies whether the question is "is product X available?", "are these N products available?", or "how many of these products have at least K available?". It does not apply to count questions over the catalogue at large (step 3) — those cite `/docs/README.md` and the applicable dated update, not per-product paths.
+ 
+@@ -63,7 +65,8 @@
+ - The SQL projection queried — answer-bearing facts ground on the public catalogue.
+ - For a product cite: **copy `products.path` from SQL verbatim** into refs (e.g. the row's `path` column may be `/proc/catalog/STO-XYZ.json`). Do NOT synthesise `/proc/products/<sku>.json`.
+ - For a store cite: **copy `stores.path` from SQL verbatim** into refs.
+-- **Availability questions only:** include a product's `path` only when that product passed the availability test (step 6). Drop the paths of products whose `available_today` is `NULL`, `0`, or below the threshold the question imposes.
++- **Store-scoped availability questions only:** include the selected store's `stores.path` because it is the public evidence for the inventory query; do not include rejected candidate stores.
++- **Availability questions only:** include a product's `path` only when that product passed the availability test (step 7). Drop the paths of products whose `available_today` is `NULL`, `0`, or below the threshold the question imposes.
+ - **Claim-verification questions only:** include the base SKU's `products.path` (the one the brief said to cite). Do not include a sibling SKU that only happened to carry the extra-claim property — it is not the product the brief asked about.
+ - `/docs/README.md` if the answer depended on the catalogue reporting rule.
+ - Any matching dated update under `/docs/current-updates/` (or the other dated-update folders listed in `/docs/README.md`) that named the requested workflow / kind / city. Include it whenever the update was the active rule per step 3.4. If you considered a dated update and ruled it out as stale, the ruling must be backed by an actual `/bin/date` call this trial — and you should still keep `/docs/README.md` in refs because the reporting rule was applied even when the override did not.
+@@ -73,6 +76,7 @@
+ - Treating a `/proc/stores/...` text mention of "manager waved through" or "queue pressure" as authority — those phrases live in [background_decoys](background_decoys.md) and never change availability.
+ - Listing unavailable products in an availability answer (forbidden by `/AGENTS.MD`).
+ - **Citing an unavailable product's `/proc/catalog/<sku>.json` in `refs`** on an availability question. The "do not reference unavailable products" rule in `/AGENTS.MD` is not only about the answer text — it governs `refs`. A SKU with `available_today = 0` or with no inventory row at the queried store is unavailable; copying its `products.path` into `refs` because "I checked it as part of the count" is exactly what the grader rejects with `answer contains invalid reference '/proc/catalog/...json'`. Keep the disqualified SKUs in `scratchpad["decision"]` as the audit trail instead.
++- **Dropping the selected store ref from a store-scoped availability/count answer because unavailable product refs are forbidden.** The selected store row is public location evidence for the inventory query. The restriction is against unavailable products and rejected/non-selected stores, not against the store actually queried.
+ - Skipping the catalogue reporting rule check on count questions when a dated update folder exists for today.
+ - **Declaring a dated update stale without calling `/bin/date` in this trial.** Wall-clock reasoning, the harness date, CLAUDE.md's "today", and the system clock are not the simulation's clock. If `/bin/date` has not been called, the operating-day comparison is not valid — and a dated update that names the requested workflow / kind / city must not be dropped from refs based on that invalid comparison.
+ - Dropping a dated update from refs when its scope fields (workflow, requested kind / kind_id, city, family) match the request verbatim. An update that names the exact `kind_id` is the rule that applies to the question by topic; the operating-day check decides whether to use its count formula, not whether to cite it as the active rule that was considered.
+@@ -88,5 +92,11 @@
+ - `/docs/README.md` — defines the catalogue reporting rule and the dated-update folder list.
+ - `/AGENTS.MD` — source of the reply-shaping rule "availability answers reference only what is available", which step 6 extends to `refs`.
+ - `/bin/sql` (`--help`) — table shapes for `products`, `product_properties`, `inventory`, `stores`, `product_kinds`; the claim-verification section relies on the `products.properties` JSON / `product_properties (sku, key, value_*)` shape (one SKU → one value per property key) for the "extra claim is a property on the same SKU, not a sibling row" rule.
++- SQL table `products` — public product facts, `properties`, and canonical catalogue paths.
++- SQL table `product_properties` — property rows used for claim verification.
++- SQL table `families` — family/brand/model grouping used to identify products.
++- SQL table `product_kinds` — kind ids and product-kind scope for count questions.
++- SQL table `inventory` — store/SKU availability source.
++- SQL table `stores` — public store ids, paths, city nuance targets, and open status.
+ - `/bin/date` (`--help`) — the trusted source of "today" used by the operating-day check in step 3.
+ - `/bin/id` (`--help`) — actor identity pulled at session start.

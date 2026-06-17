@@ -1,0 +1,32 @@
+--- bp_basket_lifecycle/v0003/content.md
++++ bp_basket_lifecycle/v0004/content.md
+@@ -9,6 +9,7 @@
+ - Live workspace paths:
+   - `/proc/baskets/<id>.json` — the record being read.
+   - `/proc/baskets/README.md` — record shape and discount object semantics.
++  - `/proc/payments/README.md` — source for archived-payment semantics where older payments can outlive their basket file.
+ - Tools: `/bin/sql` — for batch lookups (`SELECT ... FROM shopping_baskets WHERE ...`) and reconciliation with `shopping_basket_items`. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt).
+ 
+ **Schema note.** The on-disk basket JSON keeps its short field names (`id`, `customer_id`, `store_id`, `status`, `created_at`, `lines[].sku`, `lines[].quantity`, and a `discount` object with `percent`/`reason_code`/`issuer_id`). The SQL projection renames them: table `shopping_baskets(basket_id, record_path, customer_id, store_id, basket_status, basket_created_at, discount_percent, discount_reason_code, discount_issuer_employee_id)` and lines table `shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)`. Use the JSON names when reading the file, the SQL names when querying.
+@@ -31,11 +32,12 @@
+    - `checked_out` → historical. Re-running `/bin/checkout` on it is forbidden. Eligible target for [payments_3ds_recovery](payments_3ds_recovery.md) and [returns](returns.md).
+ 4. For "the last basket" / "my latest basket" wording, sort by `created_at` desc (SQL `basket_created_at`) within the actor's own baskets (customer actor) or within the request-named scope (employee actor). `created_at` is generated from world time; compare against `/bin/date` if recency matters — see [date_and_time](date_and_time.md).
+ 5. For "does this basket have a discount?" — check whether the `discount` object is present (i.e. `discount_percent` is non-null in SQL). Presence blocks new discount issuance — see [discount](discount.md).
++6. Archived-payment context: `/proc/payments/README.md` says older payments may have `basket_archived: true`, with the basket file aged out into cold storage while the payment carries its own line snapshot. If a missing basket id came from a linked payment/return, check the payment archive flag before treating the missing file as an inconsistent basket.
+ 
+ ## Outcomes
+ 
+ - This BP does not produce a final outcome on its own. It is a building block. The sibling BP that invoked it produces the outcome.
+-- If the basket id named in the request does not exist at all, the sibling BP should submit `OUTCOME_NONE_UNSUPPORTED` (basket missing) or `OUTCOME_NONE_CLARIFICATION` (ambiguous which basket).
++- If the basket id named in the request does not exist at all, the sibling BP should submit `OUTCOME_NONE_UNSUPPORTED` (basket missing) or `OUTCOME_NONE_CLARIFICATION` (ambiguous which basket). Exception: when the id is linked from an archived payment, the payment snapshot may be the surviving order evidence rather than a broken basket record.
+ 
+ ## Refs to set in scratchpad
+ 
+@@ -54,6 +56,7 @@
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+ - `/proc/baskets/README.md` — record shape, status semantics, discount object semantics, "no availability flag" rule.
++- `/proc/payments/README.md` — archived-payment semantics: older payments can carry line snapshots after basket files age out.
+ - `/bin/sql` (`--help`) — `shopping_baskets` and `shopping_basket_items` table shapes used for batch lookups.
+ - SQL table `shopping_baskets` — basket id, status, store pointer, created-at, and discount columns read by this registry.
+ - SQL table `shopping_basket_items` — basket line shape (`line_number`, `product_sku`, `requested_quantity`) used in reconciliation.

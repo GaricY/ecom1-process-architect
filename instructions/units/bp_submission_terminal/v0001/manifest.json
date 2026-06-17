@@ -1,0 +1,27 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-05-26T08:22:43+00:00",
+  "created_by": "codex",
+  "mode": "initial_migration",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 decomposition of current business processes"
+  },
+  "rationale": "Create a small terminal-only BP extracted from bp_refs_and_submission. It owns submit_and_exit, post-state confirmation, outcome/format guardrails, and stop-after-submit behavior without carrying refs or fraud discovery rules.",
+  "dependencies": [
+    {
+      "kind": "static",
+      "path": "static-instructions/runtime_prelude.py",
+      "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",
+      "why": "Defines submit_and_exit and the clean terminal behavior this BP describes."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove the registry row and route final submission checks back through the previous refs/submission unit if terminal-only routing regresses."
+  },
+  "no_semantic_change": false
+}

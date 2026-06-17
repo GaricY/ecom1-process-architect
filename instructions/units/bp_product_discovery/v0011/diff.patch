@@ -1,0 +1,47 @@
+--- bp_product_discovery/v0010/content.md
++++ bp_product_discovery/v0011/content.md
+@@ -10,7 +10,7 @@
+   - `/proc/catalog/<sku>.json` — generated product record per `sku`. **The canonical cite is the `products.path` column copied verbatim from SQL** — NOT a hand-built `/proc/products/<sku>.json` (the SQL table is named `products`, but the on-disk folder is `/proc/catalog/`; do not synthesise the path from the table name).
+   - `/proc/stores/<id>.json` — store record. Same rule: cite the `stores.path` column verbatim, not a synthesised path.
+   - `/docs/README.md` — defines the "today's catalogue reporting rule" and where dated overrides may live.
+-  - `/AGENTS.MD` — the merchant-wide reply-shaping rule that availability answers reference only what **is** available; this rule applies both to the answer message and to `refs` (see step 6 below).
++  - `/AGENTS.MD` — the merchant-wide reply-shaping rule that availability answers reference only what **is** available; this rule applies both to the answer message and to `refs` (see step 7 below).
+ - Tools: `/bin/sql` — the only source of catalogue and inventory truth. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt). Tables: `products`, `product_properties`, `categories`, `families`, `product_kinds`, `inventory`, `stores`. Every public table carries a `path TEXT NOT NULL` column whose value is the on-disk `/proc/...` cite path. `/bin/date` — the only trusted source of the simulation's "today"; see [date_and_time](date_and_time.md).
+ 
+ ## Process
+@@ -35,7 +35,7 @@
+    - For every product the question asked about, classify the row by the availability test the question imposes (`available_today >= K`, `available_today > 0`, "in stock today", etc.). Use the `available_today` column from the LEFT JOIN on `inventory` — a `NULL` value (no inventory row at that store) and a `0` value both fail the test.
+    - **Only the products that pass the test get their `products.path` copied into `refs`.** Products you considered and disqualified — including the ones whose existence you confirmed via SQL — must not appear in `refs` even when you used them as evidence "that one doesn't qualify". The selected store ref is different: it is public location evidence for the inventory query, not an unavailable product. The grader rejects an availability answer that cites an unavailable product with `answer contains invalid reference '/proc/catalog/...json'`.
+    - Keep the disqualified candidates in `scratchpad["decision"]` (sku, why it failed) so the audit trail is preserved. Scratchpad is unconstrained; `refs` is the policy-shaped surface.
+-   - This rule applies whether the question is "is product X available?", "are these N products available?", or "how many of these products have at least K available?". It does not apply to count questions over the catalogue at large (step 3) — those cite `/docs/README.md` and the applicable dated update, not per-product paths.
++   - This rule applies whether the question is "is product X available?", "are these N products available?", or "how many of these products have at least K available?". It does not apply to count questions over the catalogue at large (step 4) — those cite `/docs/README.md` and the applicable dated update, not per-product paths.
+ 
+ ## Catalogue claim verification
+ 
+@@ -69,7 +69,7 @@
+ - **Availability questions only:** include a product's `path` only when that product passed the availability test (step 7). Drop the paths of products whose `available_today` is `NULL`, `0`, or below the threshold the question imposes.
+ - **Claim-verification questions only:** include the base SKU's `products.path` (the one the brief said to cite). Do not include a sibling SKU that only happened to carry the extra-claim property — it is not the product the brief asked about.
+ - `/docs/README.md` if the answer depended on the catalogue reporting rule.
+-- Any matching dated update under `/docs/current-updates/` (or the other dated-update folders listed in `/docs/README.md`) that named the requested workflow / kind / city. Include it whenever the update was the active rule per step 3.4. If you considered a dated update and ruled it out as stale, the ruling must be backed by an actual `/bin/date` call this trial — and you should still keep `/docs/README.md` in refs because the reporting rule was applied even when the override did not.
++- Any matching dated update under `/docs/...` returned by [policy_update_scan](policy_update_scan.md) that named the requested workflow / kind / city. Include it whenever the update shaped the active reporting rule. If you considered a dated update and ruled it out as stale, the ruling must be backed by an actual `/bin/date` call this trial — and you should still keep `/docs/README.md` in refs because the reporting rule was applied even when the override did not.
+ 
+ ## Anti-patterns
+ 
+@@ -77,7 +77,7 @@
+ - Listing unavailable products in an availability answer (forbidden by `/AGENTS.MD`).
+ - **Citing an unavailable product's `/proc/catalog/<sku>.json` in `refs`** on an availability question. The "do not reference unavailable products" rule in `/AGENTS.MD` is not only about the answer text — it governs `refs`. A SKU with `available_today = 0` or with no inventory row at the queried store is unavailable; copying its `products.path` into `refs` because "I checked it as part of the count" is exactly what the grader rejects with `answer contains invalid reference '/proc/catalog/...json'`. Keep the disqualified SKUs in `scratchpad["decision"]` as the audit trail instead.
+ - **Dropping the selected store ref from a store-scoped availability/count answer because unavailable product refs are forbidden.** The selected store row is public location evidence for the inventory query. The restriction is against unavailable products and rejected/non-selected stores, not against the store actually queried.
+-- Skipping the catalogue reporting rule check on count questions when a dated update folder exists for today.
++- Skipping the catalogue reporting rule check on count questions when the live `/docs` tree exposes dated update candidates.
+ - **Declaring a dated update stale without calling `/bin/date` in this trial.** Wall-clock reasoning, the harness date, CLAUDE.md's "today", and the system clock are not the simulation's clock. If `/bin/date` has not been called, the operating-day comparison is not valid — and a dated update that names the requested workflow / kind / city must not be dropped from refs based on that invalid comparison.
+ - Dropping a dated update from refs when its scope fields (workflow, requested kind / kind_id, city, family) match the request verbatim. An update that names the exact `kind_id` is the rule that applies to the question by topic; the operating-day check decides whether to use its count formula, not whether to cite it as the active rule that was considered.
+ - Using stale documentation as inventory truth — inventory lives only in the live SQL projection.
+@@ -90,7 +90,7 @@
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+ - `/docs/README.md` — defines the catalogue reporting rule and the dated-update folder list.
+-- `/AGENTS.MD` — source of the reply-shaping rule "availability answers reference only what is available", which step 6 extends to `refs`.
++- `/AGENTS.MD` — source of the reply-shaping rule "availability answers reference only what is available", which step 7 extends to `refs`.
+ - `/bin/sql` (`--help`) — table shapes for `products`, `product_properties`, `inventory`, `stores`, `product_kinds`; the claim-verification section relies on the `products.properties` JSON / `product_properties (sku, key, value_*)` shape (one SKU → one value per property key) for the "extra claim is a property on the same SKU, not a sibling row" rule.
+ - SQL table `products` — public product facts, `properties`, and canonical catalogue paths.
+ - SQL table `product_properties` — property rows used for claim verification.

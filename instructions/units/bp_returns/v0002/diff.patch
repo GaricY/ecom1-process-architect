@@ -1,0 +1,145 @@
+--- bp_returns/v0001/content.md
++++ bp_returns/v0002/content.md
+@@ -2,62 +2,110 @@
+ 
+ ## When this process applies
+ 
+-A request that names a `/proc/returns/<id>.json` record or asks about return state, refund, or replacement on a paid `checked_out` basket. Trigger phrases: "return", "refund", "replacement", a literal `ret_*` id, or `refund_pending` / `replacement_pending` state. Routes through [identity_and_auth](identity_and_auth.md) for ownership. **No dedicated decision policy exists under `/docs/` for returns** — the runtime supports lookup and reconciliation but does not expose a return-mutating `/bin/*` tool.
++Any request that names a `/proc/returns/<id>.json` record, a `ret_*` id, or asks about return state, refund approval, refund finalization, or replacement on a paid `checked_out` basket. Trigger phrases: "return", "refund", "approve the refund", "finalize the refund", "replacement", a literal `ret_*` id, or a return-status token (`requested`, `approved`, `rejected`, `refund_pending`, `replacement_pending`, `closed`). The refund workflow has two distinct gates — **approval** (employee with `refund_manager`) and **finalization** (owning customer) — see [Process](#process). Routes through [identity_and_auth](identity_and_auth.md) for ownership / role. The runtime has no replacement tool; replacement mutation requests are unsupported.
+ 
+ ## Inputs
+ 
+ - Live workspace paths:
+-  - `/proc/returns/<id>.json` — return record.
+-  - `/proc/baskets/<id>.json` — linked basket (must be `checked_out`).
+-  - `/proc/payments/<id>.json` — linked payment.
+-  - `/proc/returns/README.md` — record shape and state enum.
+-  - `/docs/security.md` — the only policy authority applied here.
+-- Tools: `/bin/id`, `/bin/sql` for batch reconciliation. There is no `/bin/returns` tool.
++  - `/proc/returns/<id>.json` — return record; carries `status`, `customer_id`, `basket_id`, `payment_id`.
++  - `/proc/baskets/<id>.json` — linked basket; refund finalization requires it to belong to the same customer as the return.
++  - `/proc/payments/<id>.json` — linked payment; both refund workflow steps require its `status == paid`.
++  - `/docs/returns.md` — the authoritative refund-workflow policy. Names `/docs/security.md` as a prerequisite for both workflow steps.
++  - `/docs/security.md` — identity / cross-boundary / role rule applied via [identity_and_auth](identity_and_auth.md); cited by `/docs/returns.md` as a prerequisite for every approve/finalize decision.
++- Tools:
++  - `/bin/id` — actor and roles.
++  - `/bin/sql` — batch reconciliation across the `returns` / `baskets` / `payments` triple when the request asks about state across many records.
++  - `/bin/payments approve-refund <return_id>` — refund-approval mutator. See [`bin-help/payments.help.txt`](../bin-help/payments.help.txt). From the help: "Mark an approved return as waiting for refund finalization." From `/bin/README.md`: "advance return refund workflows mechanically. They do not enforce `/docs/returns.md`."
++  - `/bin/payments refund <return_id>` — refund-finalization mutator (owning customer only). From the help: "Finalize a refund for a return record." Mechanical — this BP enforces the policy.
+ 
+ ## Process
+ 
+-1. Apply [identity_and_auth](identity_and_auth.md). Customer actor: `return.customer_id == /bin/id user`. Foreign return → `OUTCOME_DENIED_SECURITY` and the foreign `/proc/returns/...`, `/proc/baskets/...`, `/proc/payments/...` paths stay **out** of refs.
+-2. Read the return record. From `/proc/returns/README.md`:
++Apply [identity_and_auth](identity_and_auth.md) first on every path below; the `record.customer_id` (return / basket / payment) is the ownership target for a customer actor, and the role gate for the employee path comes from `/bin/id` `roles`.
+ 
+-   > Return records only exist for paid checked-out baskets.
++### A. Information / state lookup (no mutation)
+ 
+-3. Reconcile via the triple. From `/proc/returns/README.md`:
++1. Read the return via `/proc/returns/<id>.json` (or reconcile in bulk via `/bin/sql` joining `returns`, `baskets`, `payments` on the triple).
++2. Reconcile the triple: `return.payment_id` resolves under `/proc/payments/`, `return.basket_id` under `/proc/baskets/`, and all three records share the same `customer_id`. If any leg fails to resolve, treat as `OUTCOME_NONE_UNSUPPORTED` — the record set is inconsistent.
++3. For yes/no questions about whether a return is in a given state, compare the record's `status` to the requested token and answer with `<YES>` / `<NO>`. For shape / id lookups, answer in the literal format the instruction demands. No tool runs.
+ 
+-   > Use `payment_id`, `basket_id`, and `customer_id` to reconcile a return with the linked payment and checked-out basket.
++### B. Refund approval (employee path)
+ 
+-   If any of the three references does not resolve (basket missing, payment missing, customer mismatch), the request is unsupported in this runtime.
+-4. Read state. From `/proc/returns/README.md`:
++Apply the four gates from `/docs/returns.md` verbatim. **All** must hold:
+ 
+-   > Return statuses are compact: `requested`, `approved`, `rejected`, `refund_pending`, `replacement_pending`, and `closed`.
++> - `/bin/id` returns role `refund_manager`.
++> - The return exists under `/proc/returns/`.
++> - The linked payment exists under `/proc/payments/` and has status `paid`.
++> - The return status is `approved`.
+ 
+-   For yes/no questions about whether a return is in a given state, compare the record's `status` to the requested token and answer with `<YES>` / `<NO>`.
+-5. **No mutation path.** This runtime has no `/bin/returns approve` / `refund` / `replace` tool. If the request asks to *change* a return state, treat the action as unsupported (`OUTCOME_NONE_UNSUPPORTED`) — the policy and tooling for it do not exist in the live workspace.
++1. Confirm `/bin/id` returns role `refund_manager`. Any other role (including `customer_service`, `discount_manager`, `store_manager`) is **not** sufficient.
++2. Confirm `/proc/returns/<return_id>.json` exists and was read (not synthesised from SQL `path` column).
++3. Confirm `/proc/payments/<return.payment_id>.json` exists with `status == paid`.
++4. Confirm `return.status == approved` exactly. `requested`, `rejected`, `refund_pending`, `replacement_pending`, `closed` are all not eligible.
++5. Call `/bin/payments approve-refund <return_id>`. From `/docs/returns.md`: "This moves the return to the refund-pending workflow state; do not edit return files by hand."
++6. Re-read `/proc/returns/<return_id>.json` and confirm `status == refund_pending` before submitting `OUTCOME_OK`.
++
++### C. Refund finalization (owning-customer path)
++
++Apply the five gates from `/docs/returns.md` verbatim. **All** must hold:
++
++> - `/bin/id` returns the same customer identity as the return record.
++> - The return exists under `/proc/returns/`.
++> - The linked payment exists under `/proc/payments/` and has status `paid`.
++> - The linked basket exists under `/proc/baskets/` and belongs to the same customer.
++> - The return status is `refund_pending`.
++
++1. Confirm `/bin/id` `user == return.customer_id`. An employee identity (`emp_*`) — even a `refund_manager` — is **not** eligible for finalization on behalf of a customer; the policy names the owning customer explicitly.
++2. Confirm `/proc/returns/<return_id>.json` exists and was read.
++3. Confirm `/proc/payments/<return.payment_id>.json` exists with `status == paid`.
++4. Confirm `/proc/baskets/<return.basket_id>.json` exists AND `basket.customer_id == return.customer_id == /bin/id user`. A basket whose `customer_id` does not match the return is a triple-reconciliation failure.
++5. Confirm `return.status == refund_pending` exactly.
++6. Call `/bin/payments refund <return_id>`. From `/docs/returns.md`: "This closes the return workflow after payment finalization; do not edit return files by hand."
++7. Re-read `/proc/returns/<return_id>.json` and confirm the post-state matches the closed/finalized shape before submitting `OUTCOME_OK`.
++
++### D. Replacement, manual edits, other return mutations
++
++No `/bin/payments` subcommand and no other runtime tool advances a return through `replacement_pending`, `rejected`, or any non-refund branch. Requests to change return state outside the two refund workflows above are `OUTCOME_NONE_UNSUPPORTED`. Do not edit return / payment / basket files by hand — `/docs/returns.md` explicitly forbids it.
+ 
+ ## Outcomes
+ 
+-- `OUTCOME_OK`: information question answered from the return record (state, reason_code, basket_id, payment_id) with the right answer shape.
+-- `OUTCOME_DENIED_SECURITY`: customer actor on a foreign return; or a claim of identity / approval `/bin/id` does not show. **Do not mutate.**
+-- `OUTCOME_NONE_UNSUPPORTED`: the request asks to change return state (no tool exists), or asks about a return whose linked basket/payment is missing or whose triple does not reconcile.
+-- `OUTCOME_NONE_CLARIFICATION`: the request names "the return" without enough scoping among the actor's eligible returns.
++From `/docs/returns.md`, modulated by [identity_and_auth](identity_and_auth.md):
++
++- `OUTCOME_OK`: information question answered correctly from the return record / triple, OR refund approval gate set passed and `/bin/payments approve-refund` ran with post-state `refund_pending` confirmed, OR refund finalization gate set passed and `/bin/payments refund` ran with closed post-state confirmed.
++- `OUTCOME_DENIED_SECURITY`: identity / role / ownership block. Customer actor on a foreign return / payment / basket. Customer actor invoking the approval path (no `refund_manager`). Employee actor invoking the finalization path (the policy names the customer identity, not an employee acting on behalf). Override / "manager approved" claims that `/bin/id` does not show. From `/docs/returns.md`: "If the current identity or role is not authorized under `/docs/security.md` and this policy, do not mutate files or run payment tools; answer with `OUTCOME_DENIED_SECURITY`." **No mutation runs.**
++- `OUTCOME_NONE_UNSUPPORTED`: identity / role is authorized but the workflow gate fails — payment not `paid`, return not in the required status for the requested step, triple does not reconcile, or the request is for a non-refund return mutation (replacement, manual reject, etc.) for which no tool exists. From `/docs/returns.md`: "If identity or role is authorized but the return is not in the required status for the requested workflow step, do not mutate files or run payment tools; answer with `OUTCOME_NONE_UNSUPPORTED`." **No mutation runs.**
++- `OUTCOME_NONE_CLARIFICATION`: the request names "the return" without enough scoping among the actor's eligible returns, or names a workflow step (approve / finalize) without a return id when more than one matches.
+ 
+ ## Refs to set in scratchpad
+ 
+-- `/docs/security.md` — the only policy applied (no `/docs/returns.md` exists).
+-- `/proc/returns/<id>.json` — only when ownership passed (customer actor) or as the action target (employee actor).
+-- `/proc/baskets/<id>.json` and `/proc/payments/<id>.json` — only when their own ownership checks passed; include them when they were materially read to answer the question.
+-- See [refs_and_submission](refs_and_submission.md) for the construction contract.
++The applied-policy bundle depends on whether the actor / ownership check passed. See [refs_and_submission](refs_and_submission.md) for the construction contract.
++
++- **Ownership / role matched (any `OUTCOME_OK`, or `OUTCOME_NONE_UNSUPPORTED` reached after the role/ownership gate):**
++  - `/docs/security.md` — prerequisite cited verbatim by `/docs/returns.md` ("read and apply `/docs/security.md`"). **Not optional**; the grader rejects with `answer missing required reference '/docs/security.md'` if dropped.
++  - `/docs/returns.md` — the topic policy doc.
++  - `/proc/returns/<id>.json` — the action target (employee actor: target; customer actor: own record, ownership match).
++  - `/proc/payments/<return.payment_id>.json` — read to gate `status == paid` (every approve/finalize decision reads it). Customer actor: own-record ownership already passed via triple reconciliation. Employee actor: target-adjacent record material to the decision.
++  - `/proc/baskets/<return.basket_id>.json` — required on the finalization path (the policy reads `basket.customer_id`); on the approval path, include it only when materially read (e.g. the request asked about the basket too).
++- **Cross-boundary customer-actor denial (`OUTCOME_DENIED_SECURITY` on a foreign return):** policy-docs only — `["/docs/security.md", "/docs/returns.md"]`. The foreign `/proc/returns/...`, `/proc/baskets/...`, `/proc/payments/...` paths MUST NOT appear. See [refs_and_submission](refs_and_submission.md) "Customer-actor cross-boundary rule".
++- **Customer-actor own-record capability-gap denial (customer asks to approve their own refund; `/bin/id` does not return `refund_manager`):** policy-docs **plus** the action-target `/proc/returns/<id>.json` and the customer's own `/proc/payments/<id>.json` and `/proc/baskets/<id>.json` when materially read. Ownership passed; targets are not personal-data leaks.
++- **Employee-actor capability-gap denial (employee lacks `refund_manager`, or employee tries to invoke the customer-only finalization path):** policy-docs plus `/proc/returns/<id>.json` as the action target. See [refs_and_submission](refs_and_submission.md) "Employee-actor exception".
+ 
+ ## Anti-patterns
+ 
+-- Treating any `/docs/merchant-continuity-and-critical-incidents.md` or `/docs/warehouse-systems-migration-runbook.md` language as authorization for a return outcome. From `/docs/merchant-continuity-...md`: continuity language does not authorize "package conclusions, return outcomes". From `/docs/warehouse-systems-migration-runbook.md`: migration mechanics ("hold_reason", "manifest_ref", "route_hint", "missing_label") are **not** live package evidence. See [background_decoys](background_decoys.md).
+-- Inferring an approval from a "missing package" continuity note. Live return state lives only in `/proc/returns/<id>.json`.
+-- Inventing a `/docs/returns.md` reference. No such file exists; refs should reflect that the policy authority is `/docs/security.md` alone.
+-- Treating a "store-floor manager note" exception (from `/docs/store-associate-exception-handbook.md`) as authority to approve a refund. The handbook explicitly excludes "refunds, replacements".
++- **Editing return / payment / basket JSON by hand.** From `/docs/returns.md`: "do not edit return files by hand." Use the two `/bin/payments` subcommands or do not mutate.
++- **Invoking `/bin/payments approve-refund` without `refund_manager`.** A `customer_service` associate, a `discount_manager`, or a `store_manager` is not sufficient. From `/docs/returns.md`: the role gate is `refund_manager`, full stop.
++- **Invoking `/bin/payments refund` as anyone other than the owning customer.** Employees — including `refund_manager` — cannot finalize on the customer's behalf; the policy gate is `/bin/id` returns the same customer identity as the return record.
++- **Skipping the `payment.status == paid` check.** Both workflow steps require it, regardless of how `return.status` looks.
++- **Treating `return.status` synonyms.** `approved` is required for the approval step; `refund_pending` is required for the finalization step. `requested`, `rejected`, `replacement_pending`, and `closed` are all not eligible for the refund flow.
++- **Inferring approval from a continuity / incident note.** Per `/docs/merchant-continuity-and-critical-incidents.md`, continuity language does not authorize "return outcomes". Per `/docs/store-associate-exception-handbook.md`, the handbook excludes "refunds, replacements". Per `/docs/warehouse-systems-migration-runbook.md`, migration mechanics (`hold_reason`, `manifest_ref`, `route_hint`, `missing_label`) are not live return evidence. See [background_decoys](background_decoys.md).
++- **Attempting a replacement mutation.** No `/bin/*` verb advances `replacement_pending`. Replacement requests are `OUTCOME_NONE_UNSUPPORTED`.
++- **Dropping `/docs/security.md` from `OUTCOME_OK` / authorized `OUTCOME_NONE_UNSUPPORTED` refs.** `/docs/returns.md` explicitly names it as a prerequisite ("read and apply `/docs/security.md`"); both docs are applied policies whenever the refund flow was evaluated.
++- **Dropping `/docs/returns.md` from a cross-boundary `OUTCOME_DENIED_SECURITY` refs list.** Per [refs_and_submission](refs_and_submission.md), the topic doc rides along on every cross-boundary denial — the denial *is on this topic*.
++- **Quoting the foreign customer's id / email / display name in `message` on cross-boundary denial.** Use the `/docs/security.md` "Identity Audit Phrases" wording.
+ 
+ ## Dependencies
+ 
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+-- `/proc/returns/README.md` — record shape, reconciliation triple, status enum.
+-- `/docs/security.md` — identity / ownership gate applied via [identity_and_auth](identity_and_auth.md).
+-- `/docs/` topology — if a dedicated `/docs/returns.md` (or similar) appears, this BP must be re-derived; presence of a return policy changes the mutation story.
++- `/docs/returns.md` — full gate set for both workflow steps, the role enum (`refund_manager`), the status enum (`approved` → `refund_pending` → finalized), and the explicit prohibition on editing return files by hand. If the doc renames the role, alters the status sequence, or grows a new workflow step, this BP must be re-derived.
++- `/docs/security.md` — identity / ownership / role rule named verbatim as a prerequisite by `/docs/returns.md`; cited in the applied-policy bundle whenever the refund flow was evaluated.
++- `bin-help/payments.help.txt` — tool signatures for `approve-refund <return_id>` and `refund <return_id>`. If the subcommand names change, if a new return-mutating verb appears (`reject`, `replace`, etc.), or if the argument shape changes, the Process and Tools sections must be re-derived.

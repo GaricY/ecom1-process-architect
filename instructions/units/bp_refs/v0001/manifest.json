@@ -1,0 +1,75 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-05-26T08:22:43+00:00",
+  "created_by": "codex",
+  "mode": "initial_migration",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 decomposition of current business processes"
+  },
+  "rationale": "Extract citation safety from bp_refs_and_submission into a focused refs BP. It keeps actor/ownership citation branching, public-record sweep, topic-doc routing, and discovery answer/ref parity while delegating terminal submission and fraud search to separate units.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "7e2b613dd2619f6315b5f7c70fd346f7cbe83822b475f1bca890f7b25fbe427f",
+      "why": "Authority for cross-boundary and personal-information citation boundaries."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor shape used by customer/employee/guest citation branches."
+    },
+    {
+      "kind": "sql_table",
+      "path": "baskets",
+      "sha256": "c7f07d113f1f5471141e1f08292351fb50ef3608937d5b98beef5e16d7e85f3a",
+      "why": "Basket ownership, status, store pointer, and canonical path shape refs decisions."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payments",
+      "sha256": "e06ac27df6422da3b05b1382dbfb3328056fbdc05ab72e530d6022beb8353ffe",
+      "why": "Payment ownership, basket/store pointers, status, and canonical path shape refs decisions."
+    },
+    {
+      "kind": "sql_table",
+      "path": "returns",
+      "sha256": "b12b0ffeaab70b7fe8dbbacc7220a8b9b72325b6169c2ecab267f7a760c66727",
+      "why": "Return ownership, basket/payment pointers, status, and canonical path shape refs decisions."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customers",
+      "sha256": "8f1bed9862f4c5a37af2cf4f8c606be6f3c9a24e0a8e2bdc77c456dbc6fde4e6",
+      "why": "Customer profile/contact fields determine private citation boundaries."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employees",
+      "sha256": "1fb49f3d2eb9084b31c29162dcbb9537ffe5e44e0347bdabd4326d5b34567310",
+      "why": "Employee roster/contact/store fields determine employee private vs operational refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "45efffb5be6363a2fe3de223dac3ec051d165f4eb79de6a1391e49729bfc9411",
+      "why": "Public store path and location fields are required public-record refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "products",
+      "sha256": "b7957cdcbccdbc55859becf43d1c0e33da11e2630f7c4c9055f3cbbe184e50d7",
+      "why": "Public catalogue path and SKU fields are required public-record refs."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove this unit from registry and restore bp_refs_and_submission if split citation routing drops required refs or over-cites private records."
+  },
+  "no_semantic_change": false
+}

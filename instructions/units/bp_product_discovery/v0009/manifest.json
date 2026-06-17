@@ -1,0 +1,39 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-05-26T08:28:15+00:00",
+  "created_by": "codex",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 policy_update_scan extraction"
+  },
+  "rationale": "Add the shared policy_update_scan handoff and replace product_discovery local catalogue-count dated-update substeps with helper delegation, avoiding contradictory operating-day semantics while preserving catalogue/inventory logic.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "sha256": "a66a4727ffea2a183221f61b8ad593b209d827bb3c28fb1e260ebf2731f7c6cc",
+      "why": "Defines catalogue/inventory table shapes and SQL interface used by this BP."
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted date provider still needed when product count/update handling invokes policy_update_scan."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0008 if the delegated catalogue-count update rule misses required dated reporting updates."
+  },
+  "no_semantic_change": false
+}

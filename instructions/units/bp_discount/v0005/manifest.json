@@ -1,0 +1,39 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-05-26T08:22:43+00:00",
+  "created_by": "codex",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 decomposition of current business processes"
+  },
+  "rationale": "Add an explicit policy_update_scan handoff for discount addenda while keeping discount-specific role, issuer, subtotal, reason, store, checkout-line, and refs rules local to this BP.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "d6c9e20a5e5c21276a48e020644562144cbd836cb6ea1a6a03c641bf72f95868",
+      "why": "Full discount gate set, percent tiers, reason-code enum, store-match gate, and anti-patterns."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "9878a1bde6855567e4c371201870e337483c0f8697507a1f1c24ee1305599204",
+      "why": "Line-eligibility gate applied by the discount policy."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Tool signature and no-policy-checks disclaimer."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0004 if delegating addendum matching to policy_update_scan causes missed discount addenda."
+  },
+  "no_semantic_change": false
+}

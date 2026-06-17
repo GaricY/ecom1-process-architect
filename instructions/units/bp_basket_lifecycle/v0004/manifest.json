@@ -1,0 +1,46 @@
+{
+  "unit_id": "bp_basket_lifecycle",
+  "version": "v0004",
+  "parent": "v0003",
+  "status": "active",
+  "created_at": "2026-05-29T11:30:59+00:00",
+  "created_by": "codex",
+  "mode": "world_refresh",
+  "trigger": {
+    "command": "hand-edit",
+    "task_id": "task-026",
+    "analysis": ".tasks/task-026/readmes_review_gpt.md",
+    "note": "proc README coverage push"
+  },
+  "rationale": "Add a short archived-payment exception: missing basket files linked from archived payments are not automatically inconsistent because the payment snapshot may survive.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/proc/baskets/README.md",
+      "sha256": "b83b2fd9666e16415f3ae1ba3040f0c4711a8ad642f0a2f31cae210cdc28428a",
+      "why": "Record shape, status semantics, discount object semantics, and the 'no availability flag' rule."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket id, basket_status, store pointer, basket_created_at, and discount columns read by this registry."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_basket_items",
+      "sha256": "ca521eecd63814fb15b584e6bcc1e677c95388b5b535907a0cb2b831ef87fc69",
+      "why": "Basket line shape (line_number, product_sku, requested_quantity) used in reconciliation."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/payments/README.md",
+      "sha256": "278fc0d64459f7aa0a282f75a78ea451c5a5317ad2033f615bf66854ecc80cfc",
+      "why": "Archived-payment semantics: older payments can carry line snapshots after basket files age out."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0003 if archived-payment wording causes live basket lookups to skip ordinary missing-basket unsupported outcomes."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,36 @@
+--- bp_privacy_and_disclosure/v0001/content.md
++++ bp_privacy_and_disclosure/v0002/content.md
+@@ -8,7 +8,7 @@
+ 
+ - `/docs/security.md` - no release of personal information across customer boundaries.
+ - `/bin/id` / `ws.id()` - actor identity and roles.
+-- SQL tables with contact fields: `customers`, `employees`.
++- SQL tables with contact fields: `customer_accounts` (`customer_email`, `home_city`, `home_latitude`, `home_longitude`, `customer_display_name`), `employee_accounts` (`employee_email`, `job_title`). The on-disk JSON records still use the short field names (`email`, `display_name`, `home_lat`, `home_lon`, `title`); the renamed identifiers above are the SQL projection columns.
+ 
+ ## Process
+ 
+@@ -39,14 +39,14 @@
+ 
+ - Always include `/docs/security.md` when denying disclosure.
+ - Include the actor's own customer record only when ownership passed and the data is necessary.
+-- Do not include customer or employee contact records merely because SQL returned their `path`.
++- Do not include customer or employee contact records merely because SQL returned their `record_path`.
+ - Delegate final citation safety to [refs](refs.md).
+ 
+ ## Anti-patterns
+ 
+ - Treating a manager/store claim in the request as permission to reveal an employee email.
+ - Quoting a foreign customer id, email, display name, or coordinates in a denial message.
+-- Citing `customers.path` or `employees.path` because it appeared in SQL output.
++- Citing `customer_accounts.record_path` or `employee_accounts.record_path` because it appeared in SQL output.
+ - Confusing public store records with private employee contact records.
+ 
+ ## Dependencies
+@@ -55,5 +55,5 @@
+ 
+ - `/docs/security.md` - personal-information and cross-boundary disclosure rule.
+ - `/bin/id` (`--help`) - actor output shape for ownership/disclosure branching.
+-- SQL table `customers` - customer contact/profile fields.
+-- SQL table `employees` - employee roster, assigned store, and contact fields.
++- SQL table `customer_accounts` - customer contact/profile fields (`customer_email`, `home_city`, `home_latitude`, `home_longitude`).
++- SQL table `employee_accounts` - employee roster, assigned store, and contact fields (`employee_email`, `job_title`, `store_id`).

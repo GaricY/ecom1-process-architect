@@ -1,0 +1,191 @@
+--- bp_fraud_risk_review/v0003/content.md
++++ bp_fraud_risk_review/v0004/content.md
+@@ -9,35 +9,121 @@
+ ## Inputs
+ 
+ - `bin-help/sqlite_schema.txt` - full schema and SQL conventions.
+-- SQL tables: especially `payments`, `customers`, `stores`, `baskets`, `payment_lines`, and `products`.
++- SQL tables: especially `payments`, `customers`, `stores`, `baskets`, `basket_lines`, `payment_lines`, `products`, `inventory`, and `returns`.
+ - `/docs/payments/3ds.md` - legitimate 3DS state transitions for payment workflow-state invariants.
+ 
+ ## Process
+ 
+ 1. Define the task scope first: archived payments only, one store, one day, one customer, one campaign, or whatever the brief names. Record the scope predicate and universe size in scratchpad.
+-2. Read the full column list for the in-scope table from `bin-help/sqlite_schema.txt`. Do not search only columns whose names sound like "fraud".
+-3. Before choosing an answer, run the mandatory hard sweep and record each family as `zero`, `hard hit`, or `not applicable` because required columns are absent:
++2. The analysis scope is the user's predicate, not a suspect found mid-analysis. If the brief says archived payments, every mandatory hard family scans all archived payments. A customer, date, store, device, or identifier surfaced by one family is a candidate cluster only; it must not narrow the remaining hard-family scans.
++3. Read the full column list for the in-scope table from `bin-help/sqlite_schema.txt`. Do not search only columns whose names sound like "fraud". Identify the actor, event time, observed location, claimed target, exact identifier, resource, and workflow-state columns that exist.
++4. Before choosing an answer, run the mandatory hard sweep and record each family as `zero`, `hard hit`, or `not applicable` because required columns are absent:
+    - cross-actor exact identifier collisions: shared `payment_method_fingerprint`, shared `device_fingerprint`, repeated baskets, identical timestamps, or other exact values across actors;
+    - workflow-state invariants: `paid` rows carrying failed/pending 3DS columns, exhausted attempts, or impossible state transitions under the topic doc;
+-   - record/table invariants: amount vs lines/products, archive flags, payment vs basket/customer/store joins, duplicate payments;
+-   - impossible observed travel: sequential payments by the same actor whose observed coordinates move impossibly far for the elapsed time;
+-   - stationary single-actor multi-store burst: one actor with many payments at many distinct stores or cities inside minutes while observed coordinates remain nearly stationary.
+-4. Finding one hard-supported cluster is not enough to submit. Continue the mandatory hard sweep until every family above has a recorded result.
+-5. Classify candidate match sets before building the final cohort:
+-   - hard-supported: exact identifier collision across actors, impossible observed travel, stationary single-actor multi-store burst, workflow-state invariant, or record/table invariant;
++   - record/table invariants: amount vs lines/products, archive flags, payment vs basket/customer/store joins, inventory/reserve arithmetic, return/payment/basket joins, duplicate payments;
++   - impossible observed travel: sequential events by the same actor whose observed coordinates move impossibly far for the elapsed time;
++   - stationary single-actor multi-target burst: one actor with many events at many distinct claimed targets, stores, cities, or resources inside minutes while observed coordinates remain nearly stationary.
++5. For every hard-sweep family, the ledger must record the query shape, not only the result: scan scope, actor axis, time axis, coordinate/target axis, window definition, and max-metric used to validate zero results.
++6. Finding one hard-supported cluster is not enough to submit. Continue the mandatory hard sweep until every family above has a recorded result and trustworthy query shape.
++7. Classify candidate match sets before building the final cohort:
++   - hard-supported: exact identifier collision across actors, impossible observed travel, stationary single-actor multi-target burst, workflow-state invariant, or record/table invariant;
+    - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store band, long busy timeline, or any smooth threshold band with no structural confirmation.
+-6. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
+-7. For location signals, keep the query shapes separate:
+-   - impossible observed travel is a same-actor sequential check ordered by time;
+-   - stationary single-actor burst is grouped by one actor/customer, not by one store and not by multiple customers. The window is minutes; count distinct `store_id` and, when joined, distinct `stores.city`; confirm `observed_lat` / `observed_lon` variance inside the window is small; expand a hard hit to all in-window payments for that actor without `LIMIT`;
+-   - observed-to-store distance is support only, because stable observed coordinates near the customer home while stores are distant can be ordinary remote shopping.
+-8. Stable observed coordinates are not automatically soft. Stable observed plus distant stores at ordinary cadence is remote shopping; stable observed plus many distinct stores or cities within minutes is a hard tempo anomaly. The discriminator is short-window store rotation, not observed-to-store distance alone.
+-9. For high-count fuzzy signals, regroup by `(actor_id, short_time_window)` before discarding as noise. A broad legitimate tail can hide a dense hard-supported burst, but the broad tail itself must not be cited unless it passes the hard gate.
+-10. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort.
+-11. After the hard gate, the final cohort is the union of every hard-supported cluster in the task scope. Different hard families may identify different sub-clusters of the same risk answer. Do not submit only the first, largest, or cleanest hard cluster while another hard family has nonzero matches.
+-12. Interpret "one hit" / "one incident" as one evidence-connected campaign, not one pure date window. Time span is a sanity check after hard membership is established; different date or different MO is not enough to exclude a hard-supported cluster unless the brief explicitly narrows the scope.
+-13. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, or temporal proximity.
+-14. Run the final cohort query without `LIMIT` or with a bound far above the plausible cohort size and confirm it did not truncate.
++8. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
++9. For location/target signals, keep the query shapes separate:
++   - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time;
++   - do not compute impossible travel from store coordinates or other claimed target coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
++   - stationary single-actor burst is grouped by one actor/customer, not by one store and not by multiple customers. The window is a dense sub-window from each event, not `MAX(created_at) - MIN(created_at)` over the actor's whole history. Count events, distinct stores/targets/resources, and distinct cities when joined; confirm observed-coordinate spread inside the window is small; expand a hard hit to all in-window records for that actor without `LIMIT`.
++10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores at ordinary cadence is remote shopping; stable observed plus many distinct stores, cities, targets, or resources within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store distance alone.
++11. When a mandatory hard family returns zero, validate the negative. Record the top max-metric for that family, not only `zero`: for travel, the largest same-actor observed speed or observed jump in scope; for burst, the largest same-actor short-window distinct-target count and observed spread. If the max-metric contradicts the zero result, fix the query before trusting the ledger.
++12. For high-count fuzzy signals, regroup by `(actor_id, short_time_window)` before discarding as noise. A broad legitimate tail can hide a dense hard-supported burst, but the broad tail itself must not be cited unless it passes the hard gate.
++13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort.
++14. After the hard gate, the final cohort is the union of every hard-supported cluster in the task scope. Different hard families may identify different sub-clusters of the same risk answer. Do not submit only the first, largest, or cleanest hard cluster while another hard family has nonzero matches.
++15. Interpret "one hit" / "one incident" as one evidence-connected campaign, not one pure date window. Time span is a sanity check after hard membership is established; different date or different MO is not enough to exclude a hard-supported cluster unless the brief explicitly narrows the scope.
++16. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, or temporal proximity.
++17. Run the final cohort query without `LIMIT` or with a bound far above the plausible cohort size and confirm it did not truncate.
++
++## Risk Investigation Tricks
++
++Use these as query-shape references, not as fixed thresholds or a payment-only cookbook. Adapt table and column names to the current schema, and keep the user's scope predicate intact.
++
++### Observed Travel Shape
++
++Use this shape for physical movement. It compares observed event coordinates for the same actor over time. It does not use store or other claimed target coordinates.
++
++```sql
++with seq as (
++  select p.*,
++         lag(path) over(partition by customer_id order by created_at, id) as prev_path,
++         lag(created_at) over(partition by customer_id order by created_at, id) as prev_ts,
++         lag(observed_lat) over(partition by customer_id order by created_at, id) as prev_lat,
++         lag(observed_lon) over(partition by customer_id order by created_at, id) as prev_lon
++  from payments p
++  where basket_archived = 1
++),
++jumps as (
++  select customer_id, prev_path, path, prev_ts, created_at,
++         (julianday(created_at) - julianday(prev_ts)) * 24 * 60 as minutes,
++         abs(observed_lat - prev_lat) + abs(observed_lon - prev_lon) as observed_l1
++  from seq
++  where prev_path is not null
++)
++select *
++from jumps
++where minutes between 0 and 15
++  and observed_l1 > 2.0
++order by customer_id, created_at;
++```
++
++If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
++
++### Stationary Single-Actor Burst Shape
++
++Use a rolling/self-join sub-window. Do not aggregate over the actor's whole history and call `MAX(created_at) - MIN(created_at)` the burst window.
++
++```sql
++with pairs as (
++  select a.customer_id,
++         a.created_at as start_ts,
++         b.path,
++         b.created_at,
++         b.store_id,
++         abs(a.observed_lat - b.observed_lat) + abs(a.observed_lon - b.observed_lon) as observed_l1
++  from payments a
++  join payments b
++    on a.customer_id = b.customer_id
++   and b.created_at >= a.created_at
++   and (julianday(b.created_at) - julianday(a.created_at)) * 24 * 60 between 0 and 5
++  where a.basket_archived = 1
++    and b.basket_archived = 1
++),
++windows as (
++  select customer_id, start_ts,
++         count(*) as payment_count,
++         count(distinct store_id) as distinct_stores,
++         max(observed_l1) as observed_spread_l1
++  from pairs
++  group by customer_id, start_ts
++)
++select *
++from windows
++where distinct_stores >= 4
++  and observed_spread_l1 < 0.05
++order by distinct_stores desc, payment_count desc, start_ts;
++```
++
++If this shape returns a hard hit, expand the final cluster to all in-window records for that actor. If it returns zero, record the top short-window `distinct_stores`, `payment_count`, and `observed_spread_l1` from the same sliding-window shape.
++
++### General Risk Primitives
++
++For new risk angles such as delivery, reservation, refund, inventory, or non-3DS payment flows, first map the schema into these axes:
++
++- actor axis: customer, device, payment method, staff/runtime actor, delivery actor, or reservation owner;
++- claimed target axis: store, delivery stop, pickup point, inventory store, basket store, or other named destination/resource owner;
++- event time axis: payment time, basket time, return time, delivery time, reservation time, or workflow transition time;
++- resource axis: SKU, basket, payment, return, inventory row, delivery item, or reserved stock;
++- invariant axis: amount/lines, basket/customer/store joins, inventory/reserve arithmetic, return/payment/basket joins, and workflow state under the relevant `/docs/...` policy.
++
++Then apply the same hard primitives: impossible observed movement for one actor, too many claimed targets/resources in a short sub-window for one actor, exact identifier collision across actors, ledger reconciliation across tables, and policy/workflow-state invariant. Tables such as `inventory`, `basket_lines`, and `returns` are current examples for resource/invariant checks; future delivery tables should be added to dependencies only when the BP explicitly references them.
+ 
+ ## Coverage check before refs/submission
+ 
+@@ -46,9 +132,11 @@
+ - scope predicate and universe size;
+ - full column list considered;
+ - mandatory hard-sweep ledger with each family marked `zero`, `hard hit`, or `not applicable`;
+-- match counts per signal and per coordinate axis where applicable;
++- for each mandatory hard family: scan scope, actor axis, time axis, coordinate/target axis, window definition, and max-metric;
++- match counts per signal and per coordinate/target axis where applicable;
+ - hard-supported vs soft-only classification for each match set;
+-- missing-MO guard: if only one location hard family has hits, re-run the other location family specifically before submit;
++- missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
++- validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
+ - hard-hit union check: if multiple hard families have hits, every hard-supported cluster is represented in the final refs;
+ - exclusion reason for any hard hit left out; "different date" or "different MO" is not enough unless the user brief explicitly narrowed the scope;
+ - per-record evidence map for the final cohort;
+@@ -74,14 +162,18 @@
+ 
+ ## Anti-patterns
+ 
++- Narrowing the remaining hard-family scans to a customer, date, store, or device found by an earlier family when the user brief did not narrow scope.
+ - Submitting after the first hard cluster without completing the mandatory hard sweep.
++- Recording `zero` for a hard family without a max-metric from the same query shape.
+ - Searching only PMF/DFP/distance columns and skipping workflow-state columns.
+ - Submitting a threshold-only distance band with no discrete or structural confirmation.
+-- Substituting a multi-customer same-store/co-location query for the stationary single-actor multi-store burst check.
++- Computing impossible travel from store coordinates or other claimed target coordinates instead of observed coordinates.
++- Substituting a multi-customer same-store/co-location query for the stationary single-actor multi-target burst check.
++- Treating `MAX(created_at) - MIN(created_at)` over an actor's whole history as a dense burst window.
+ - Treating a new device, high amount, or one actor's long busy timeline as fraud without a hard signal.
+-- Treating stable observed-home plus distant store as fraud without impossible movement or dense single-actor multi-store burst evidence.
+-- Treating stable observed coordinates as soft when one actor rotates through many distinct stores or cities inside minutes.
+-- Sweeping only observed coordinates when a store coordinate axis exists.
++- Treating stable observed-home plus distant store as fraud without impossible observed movement or dense single-actor multi-target burst evidence.
++- Treating stable observed coordinates as soft when one actor rotates through many distinct stores, targets, or resources inside minutes.
++- Sweeping only observed coordinates when a claimed target coordinate axis exists.
+ - Unioning a soft-only cluster into a true incident because it is nearby in time, amount, customer family, or narrative similarity.
+ - Dropping a nonzero hard-supported cluster because another hard cluster is cleaner, larger, earlier, or uses a different MO.
+ - Dropping smaller hard-supported sub-clusters of the same incident.
+@@ -99,5 +191,8 @@
+ - SQL table `customers` - customer identity and home-coordinate context for distinguishing remote shopping from observed-location fraud.
+ - SQL table `stores` - joined store location axis for geo anomaly checks.
+ - SQL table `baskets` - basket/customer/store joins and archive context.
++- SQL table `basket_lines` - basket resource lines for quantity/resource reconciliation.
+ - SQL table `payment_lines` - line-level reconciliation for amount anomalies.
+ - SQL table `products` - catalogue price joins for amount/line checks.
++- SQL table `inventory` - reserve/availability arithmetic and store/SKU resource axis.
++- SQL table `returns` - return/payment/basket/customer workflow joins.

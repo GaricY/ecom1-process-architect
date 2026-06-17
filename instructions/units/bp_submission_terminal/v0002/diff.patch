@@ -1,0 +1,28 @@
+--- bp_submission_terminal/v0001/content.md
++++ bp_submission_terminal/v0002/content.md
+@@ -22,9 +22,14 @@
+    - every record named in a discovery answer is also in `refs`.
+ 3. For `OUTCOME_OK` mutation tasks, re-read the mutated `/proc/...` record after the tool call and confirm the post-state matches the requested action. No post-state re-read means do not submit `OUTCOME_OK`.
+ 4. For blocked outcomes, confirm no mutating tool has run. If a mutator already ran, a blocked outcome is no longer a valid terminal state.
+-5. Re-read the task instruction's answer format immediately before composing `message`. If it asks for a bare `%d` or `%s`, do not wrap the value in `<COUNT:...>` or any other token.
+-6. Call `submit_and_exit(message=..., outcome=..., refs=refs)` exactly once, as the last line of the final snippet.
+-7. After the result reports `answer_submitted=true`, do not call `execute_python` again.
++5. For blocked outcomes (`OUTCOME_DENIED_SECURITY`, `OUTCOME_NONE_UNSUPPORTED`, `OUTCOME_NONE_CLARIFICATION`), run a final message privacy check before submit:
++   - if the actor is a customer and an ownership check failed, the message may name the request target id (`basket_*`, `pay_*`, `ret_*`) when the user supplied it, but must not reveal the foreign owner or profile fields;
++   - do not repeat foreign `customer_id`, customer email, display name, home/contact fields, employee contact fields, or coordinates learned from SQL or records;
++   - use generic policy wording such as "the authenticated customer does not own <target_id>" or "the target belongs to a different customer account";
++   - keep sensitive ids in `scratchpad["decision"]` for audit, not in `message` or unsafe `refs`.
++6. Re-read the task instruction's answer format immediately before composing `message`. If it asks for a bare `%d` or `%s`, do not wrap the value in `<COUNT:...>` or any other token.
++7. Call `submit_and_exit(message=..., outcome=..., refs=refs)` exactly once, as the last line of the final snippet.
++8. After the result reports `answer_submitted=true`, do not call `execute_python` again.
+ 
+ ## Outcomes
+ 
+@@ -43,6 +48,7 @@
+ - Calling `execute_python` again after `submit_and_exit` already succeeded.
+ - Submitting `OUTCOME_OK` for a mutation without re-reading post-state.
+ - Letting this file decide whether a target record is safe to cite; that belongs to [refs](refs.md).
++- Submitting a blocked outcome whose `message` reveals a foreign owner id, customer email, contact field, or coordinates learned during the investigation.
+ - Ending the assistant turn without `submit_and_exit` because one more exploratory read might help. Submit the best correct blocked outcome instead of producing no answer.
+ 
+ ## Dependencies

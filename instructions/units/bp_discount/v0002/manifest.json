@@ -1,0 +1,46 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-21T09:41:05+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t26",
+    "trial_id": "vm2-LxHtGgjvgLJYRfXqaZyTHkX7Jgq",
+    "score": 0.0,
+    "score_detail": [
+      "answer missing required reference '/docs/checkout.md'"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-123446/0002-t26-vm2-LxHtGgjvgLJYRfXqaZyTHkX7Jgq",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-123446/0002-t26-vm2-LxHtGgjvgLJYRfXqaZyTHkX7Jgq-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "On an OK discount the trial failed with 'answer missing required reference /docs/checkout.md'. The Executor followed the previous bp_discount rule 'Do not include /docs/checkout.md unless the denial is specifically about line eligibility' and submitted refs without /docs/checkout.md. That rule is wrong: the discount policy explicitly bridges into the checkout policy at gate 7 ('Every basket line is checkoutable under docs/checkout.md'). On OK, every basket line passed the checkoutability gate, so /docs/checkout.md is an applied policy and must be cited. The new version requires /docs/checkout.md in refs whenever the line-eligibility gate is applied (OK, and any NONE_UNSUPPORTED that reached gate 7) and keeps it out of identity-only denials that never touch the line gate. The added anti-pattern names the exact failure shape so a future Executor recognises it.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "d6c9e20a5e5c21276a48e020644562144cbd836cb6ea1a6a03c641bf72f95868",
+      "why": "Contains the gate list including the explicit bridge 'Every basket line is checkoutable under docs/checkout.md', plus the percent tiers, reason-code enum, and retired-phrase/campaign-label anti-patterns this BP quotes."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "9878a1bde6855567e4c371201870e337483c0f8697507a1f1c24ee1305599204",
+      "why": "Defines the line-eligibility gate (quantity <= available_today, missing inventory row = unsupported) that the discount policy applies at gate 7. The new refs rule cites this doc as an applied policy on OK discounts; if its gate text changes, this BP's quoted requirement may become stale."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Provides the /bin/discount signature <basket_id> <percent> <reason_code> <issuer_id> and the 'Applies the requested basket discount without policy checks. Read /docs/discounts.md before use.' disclaimer that motivates the BP-side gate enforcement."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0001 content if the new refs rule turns out to over-include /docs/checkout.md (e.g. graders begin rejecting OK discounts that cite it) \u2014 the v0001 text excluded /docs/checkout.md by default."
+  },
+  "no_semantic_change": false
+}

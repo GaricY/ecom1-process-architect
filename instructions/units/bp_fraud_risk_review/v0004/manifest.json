@@ -1,0 +1,87 @@
+{
+  "unit_id": "bp_fraud_risk_review",
+  "version": "v0004",
+  "parent": "v0003",
+  "status": "active",
+  "created_at": "2026-05-26T13:33:55+00:00",
+  "created_by": "codex",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/P0_analyze_fraud_risk_review_fix_v3.md",
+    "scope": "P0 fraud_risk_review query-contract and Tricks fix"
+  },
+  "rationale": "Keep the v0003 hard gate, mandatory sweep, and union contract, while pinning query correctness with scope immutability, observed-travel and sliding-burst contracts, validated-zero ledger fields, and compact reusable risk investigation Tricks.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "3bd139117a62033269296913a839f6b061bf291de8dad76be0dd26bd229baa1d",
+      "why": "Defines payment workflow-state invariants used in fraud/risk checks."
+    },
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "sha256": "a66a4727ffea2a183221f61b8ad593b209d827bb3c28fb1e260ebf2731f7c6cc",
+      "why": "SQL interface and schema-discovery contract for risk queries."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payments",
+      "sha256": "e06ac27df6422da3b05b1382dbfb3328056fbdc05ab72e530d6022beb8353ffe",
+      "why": "Primary risk table, fingerprints, timestamps, status, observed coordinates, and 3DS columns."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customers",
+      "sha256": "8f1bed9862f4c5a37af2cf4f8c606be6f3c9a24e0a8e2bdc77c456dbc6fde4e6",
+      "why": "Customer identity and home-coordinate context for distinguishing remote shopping from observed-location fraud."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "45efffb5be6363a2fe3de223dac3ec051d165f4eb79de6a1391e49729bfc9411",
+      "why": "Store location axis used for geo/time anomaly checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "baskets",
+      "sha256": "c7f07d113f1f5471141e1f08292351fb50ef3608937d5b98beef5e16d7e85f3a",
+      "why": "Basket/customer/store joins and archive context used in risk checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "basket_lines",
+      "sha256": "04e01ed0d746f6bf2055115f90f263082454638fd59b3609ae2422b9cff82624",
+      "why": "Basket resource lines for quantity/resource reconciliation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_lines",
+      "sha256": "94b71af12cf2ceab92b296da3a12c4233d56e05c57551879e2a6e96c8d4e138d",
+      "why": "Line-level amount reconciliation for payment anomaly checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "products",
+      "sha256": "b7957cdcbccdbc55859becf43d1c0e33da11e2630f7c4c9055f3cbbe184e50d7",
+      "why": "Catalogue price joins for amount/line checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "inventory",
+      "sha256": "cf2f013cb0d2f49d4b44b477410c453abd9481d5b779af9cf8ee548a3ce8d4fc",
+      "why": "Reserve/availability arithmetic and store/SKU resource axis for broader risk checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "returns",
+      "sha256": "b12b0ffeaab70b7fe8dbbacc7220a8b9b72325b6169c2ecab267f7a760c66727",
+      "why": "Return/payment/basket/customer workflow joins for broader risk checks."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire v0004 and fall back to v0003 if the canonical query shapes or broader Tricks cause overfitting, excessive prompt weight, or false-positive unions."
+  },
+  "no_semantic_change": false
+}

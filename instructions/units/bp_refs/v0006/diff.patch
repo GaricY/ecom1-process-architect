@@ -1,0 +1,11 @@
+--- bp_refs/v0005/content.md
++++ bp_refs/v0006/content.md
+@@ -48,7 +48,7 @@
+ 
+ - A 3DS recovery request may say "checkout"; a `pay_*` id or 3DS wording makes `/docs/payments/3ds.md` the topic doc.
+ - `/bin/payments recover-3ds` is governed by `/docs/payments/3ds.md`; `/bin/payments approve-refund` and `/bin/payments refund` are governed by `/docs/returns.md`.
+-- `/docs/checkout.md` can still be an applied prerequisite for a 3DS or discount decision; include it only when that topic BP actually evaluated its gate.
++- `/docs/checkout.md` can still be an applied prerequisite for a 3DS or discount decision; include it when that topic BP actually applied checkout rules. Applying checkout rules includes both evaluating the line-eligibility gate and using checkout eligibility to resolve the target record before another gate decides.
+ 
+ ## Public-record sweep
+ 

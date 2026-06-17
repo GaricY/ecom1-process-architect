@@ -1,0 +1,17 @@
+--- bp_privacy_and_disclosure/v0002/content.md
++++ bp_privacy_and_disclosure/v0003/content.md
+@@ -8,7 +8,7 @@
+ 
+ - `/docs/security.md` - no release of personal information across customer boundaries.
+ - `/bin/id` / `ws.id()` - actor identity and roles.
+-- SQL tables with contact fields: `customer_accounts` (`customer_email`, `home_city`, `home_latitude`, `home_longitude`, `customer_display_name`), `employee_accounts` (`employee_email`, `job_title`). The on-disk JSON records still use the short field names (`email`, `display_name`, `home_lat`, `home_lon`, `title`); the renamed identifiers above are the SQL projection columns.
++- SQL tables with contact fields: `customer_accounts` (`customer_email`, `home_city`, `home_latitude`, `home_longitude`, `customer_display_name`), `employee_accounts` (`employee_email`, `job_title`). The on-disk JSON records still use the short field names (`email`, `display_name`, `home_lat`, `home_lon`, `title`); the renamed identifiers above are the SQL projection columns. `/proc/customers/README.md` notes that `home_lat` / `home_lon` are coarse generated home-area coordinates used by payment-risk fixtures; treat them as private profile/risk context, not exact address.
+ 
+ ## Process
+ 
+@@ -56,4 +56,5 @@
+ - `/docs/security.md` - personal-information and cross-boundary disclosure rule.
+ - `/bin/id` (`--help`) - actor output shape for ownership/disclosure branching.
+ - SQL table `customer_accounts` - customer contact/profile fields (`customer_email`, `home_city`, `home_latitude`, `home_longitude`).
++- `/proc/customers/README.md` - customer email and coarse home-area coordinate semantics.
+ - SQL table `employee_accounts` - employee roster, assigned store, and contact fields (`employee_email`, `job_title`, `store_id`).

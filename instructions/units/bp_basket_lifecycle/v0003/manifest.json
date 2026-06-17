@@ -1,0 +1,41 @@
+{
+  "unit_id": "bp_basket_lifecycle",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-05-28T18:31:46+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxhmQLdvGzyXnHpTGmEbdpA53d2",
+    "baseline_version": "v0003",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-202604/0001-t01-vm2--world-refresh",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Schema rename. The SQL projection this registry reads changed: baskets->shopping_baskets, basket_lines->shopping_basket_items (line_no/sku/quantity->line_number/product_sku/requested_quantity), discount_issuer_id->discount_issuer_employee_id, and inventory->store_inventory in the re-check anti-pattern. Added a schema note distinguishing the unchanged on-disk basket JSON field names (id, status, created_at, lines[].sku/quantity, discount.issuer_id) from the renamed SQL columns, and added sql_table dependencies (previously none) so future basket/line shape changes trigger review.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/proc/baskets/README.md",
+      "sha256": "b83b2fd9666e16415f3ae1ba3040f0c4711a8ad642f0a2f31cae210cdc28428a",
+      "why": "Record shape, status semantics, discount object semantics, and the 'no availability flag' rule."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket id, basket_status, store pointer, basket_created_at, and discount columns read by this registry."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_basket_items",
+      "sha256": "ca521eecd63814fb15b584e6bcc1e677c95388b5b535907a0cb2b831ef87fc69",
+      "why": "Basket line shape (line_number, product_sku, requested_quantity) used in reconciliation."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_basket_lifecycle v0002 content and drop the added sql_table dependencies if the rename mapping proves wrong."
+  },
+  "no_semantic_change": false
+}

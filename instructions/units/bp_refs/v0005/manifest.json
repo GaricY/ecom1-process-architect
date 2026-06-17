@@ -1,0 +1,86 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-05-28T19:48:25+00:00",
+  "created_by": "human",
+  "mode": "failure_fix",
+  "trigger": {
+    "command": "hand-edit",
+    "task_id": "t52",
+    "trial_id": "vm2-LxhwvbsLLJWza1XjiuDYj1yioHu",
+    "score": 0.0,
+    "score_detail": [
+      "answer missing required reference '/uploads/receipt_ocr_hWZ2FSto.txt'"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260528-214615/0001-t52-vm2-LxhwvbsLLJWza1XjiuDYj1yioHu",
+    "co_failure_task_ids": [
+      "t53"
+    ],
+    "queue_priority": "human_authored",
+    "analysis": ".tasks/task-024/analysis.md + .tasks/task-024/bp_refs_review.md"
+  },
+  "rationale": "Failure-driven fix for run 20260528-214615 (t52 + t53, both 0%). The only score_detail was \"answer missing required reference '/uploads/receipt_ocr_*.txt'\": the agent read the OCR receipt as the sole source of the old prices/SKUs/quantities but never cited it. bp_refs had no category for request-named input artifacts \u2014 its closed-world model enumerated only /proc record families and /docs policies, and /uploads sits outside all of them. Adds a 'Grounding principle' section (path-agnostic: bind to the artifact's role, not the /uploads folder name, since a future run may call it /incoming etc.), a 'What to include' bullet, an Inputs line, an input-artifact checklist step (renumbering 4-7 -> 5-8), and an anti-pattern. Also restores the original live-vs-mirror rationale to the vault exclusion (compressed to 'Local vault/... paths.' during the bp_refs_and_submission -> bp_refs decomposition, commit 56d6dd6) so /uploads is unambiguously citeable. Actor/ownership branches, public-record sweep, discovery set-equality, topic-doc routing, and the dependency contract are unchanged. Analysis: .tasks/task-024/analysis.md + bp_refs_review.md.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "7e2b613dd2619f6315b5f7c70fd346f7cbe83822b475f1bca890f7b25fbe427f",
+      "why": "Authority for cross-boundary and personal-information citation boundaries."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape used for customer/employee/guest citation branches."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket ownership, store pointer, status, and canonical record_path for basket refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transactions",
+      "sha256": "19104e8b96a076bde97c0f841c2b9ac35f781199842368b2f8d866b2299848c1",
+      "why": "Payment ownership, basket/store pointers, status, and canonical record_path for payment refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_requests",
+      "sha256": "1f62b186328a837536425904e8789daaf26b56fcf44eb0b75b2762e4cc2f2e3c",
+      "why": "Return ownership, basket/payment pointers, status, and canonical record_path for return refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "Customer identity and contact fields that are private by default."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employee_accounts",
+      "sha256": "1ad720b7a0ef980b146c75c49684e00d69793910500b54b203754c6c1569fa48",
+      "why": "Employee roster/contact fields and assigned-store scope determine private vs operational refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Public store record_path and location fields are required public-record refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "Public catalogue record_path and SKU fields are required public-record refs."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0004 by creating a new version from v0004 content if the input-artifact rule causes over-citing (e.g. agents citing every file in an input folder) that regresses precision-capped scoring. Narrow rollback: drop only the 'Request-named input artifacts' What-to-include bullet + grounding-principle class 1, keeping the vault-exclusion rewording."
+  },
+  "no_semantic_change": false
+}

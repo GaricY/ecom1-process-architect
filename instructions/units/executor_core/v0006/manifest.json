@@ -1,0 +1,19 @@
+{
+  "unit_id": "executor_core",
+  "version": "v0006",
+  "parent": "v0005",
+  "status": "active",
+  "created_at": "2026-05-23T00:00:05+00:00",
+  "created_by": "human-ws-sql-rows",
+  "mode": "manual_update",
+  "trigger": {
+    "command": "manual_publish",
+    "rationale": "introduce ws.sql_rows in workspace.py + matching docs"
+  },
+  "rationale": "Document the new ws.sql_rows helper as the primary SELECT path. Demote ws.sql to the raw/escape-hatch role and assert that all three keys (exit_code, stdout, stderr) are now always present in its return dict (workspace.py: always_print_fields_with_no_presence=True). Drop the redundant two-example SQL section that bred the 'forgot exit_code check in copied streaming decoder' foot-gun.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "To restore prior text run: uv run python -m orchestrator.bp_admin rollback executor_core --from v0005 --empty-deps"
+  },
+  "no_semantic_change": false
+}

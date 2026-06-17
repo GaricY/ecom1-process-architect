@@ -1,0 +1,25 @@
+--- bp_identity_and_auth/v0002/content.md
++++ bp_identity_and_auth/v0003/content.md
+@@ -23,7 +23,7 @@
+    - **Ownership mismatch** → cross-boundary denial → `OUTCOME_DENIED_SECURITY`. Do not mutate; do not cite the target.
+    - **Ownership match but the action requires a role the customer does not hold** (e.g. customer asks to discount their own basket but lacks `discount_manager`; customer asks to adjust stock on their own related record; customer asks to process a staff-side return) → still `OUTCOME_DENIED_SECURITY`, but this is a **capability-gap denial on an owned record**, not a cross-boundary denial. The target is the customer's own record and remains safe to cite.
+ 5. For an employee actor, the request is the authority over which target record is acted on. The basket/payment/return named in the request is the **action target**. Capability comes from `/bin/id` roles, not from the request text.
+-6. Across all actor types: no release of personal information across customer boundaries. A foreign customer id, email, or address must not appear in `message` or `refs`. See [refs_and_submission](refs_and_submission.md) for the refs construction rules.
++6. Across all actor types: no release of personal information across customer boundaries. A foreign customer id, email, address, home coordinates, or employee contact detail must not appear in `message` or `refs`. See [privacy_and_disclosure](privacy_and_disclosure.md) for disclosure and [refs](refs.md) for citation construction.
+ 
+ ## Outcomes
+ 
+@@ -41,7 +41,7 @@
+ - **Employee actor, capability-gap denial** (missing role on the action target): policy docs plus the target `/proc/<family>/<id>.json`. The action target stays in refs even on denial.
+ - **Always include** `/docs/security.md` for any identity-driven decision.
+ 
+-See [refs_and_submission](refs_and_submission.md) for the full contract, the topic-doc routing table, and the pre-`submit_and_exit` checklist.
++See [privacy_and_disclosure](privacy_and_disclosure.md) for contact-data disclosure and [refs](refs.md) for the full citation contract.
+ 
+ ## Anti-patterns
+ 
+@@ -63,3 +63,4 @@
+ 
+ - `/docs/security.md` — sole authority for identity, ownership, cross-boundary rule, capability-vs-boundary distinction, legacy phrase glossary.
+ - `/bin/id` (`--help`) — defines the tool's output shape (`user`, `roles`) used by this BP to branch on actor type.
++- [privacy_and_disclosure](privacy_and_disclosure.md) owns contact-data release rules; this BP owns identity, ownership, and capability gates.

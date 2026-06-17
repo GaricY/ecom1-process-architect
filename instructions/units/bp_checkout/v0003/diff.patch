@@ -1,0 +1,43 @@
+--- bp_checkout/v0002/content.md
++++ bp_checkout/v0003/content.md
+@@ -18,21 +18,21 @@
+ 
+ Source order from `/docs/checkout.md` "Checkout Source Order":
+ 
+-1. Apply [identity_and_auth](identity_and_auth.md). Customer actor: `basket.customer_id == /bin/id user`. Employee actor: capability comes from `/bin/id` roles + the request.
++1. Apply [identity_and_auth](identity_and_auth.md). Customer actor: `basket.customer_id == /bin/id user`. Employee actor: capability comes from `/bin/id` roles + the request. If a customer ownership check fails, stop with `OUTCOME_DENIED_SECURITY`; the denial message may name the requested basket id but must not name the foreign owner `customer_id`.
+ 2. Read the target basket via [basket_lifecycle](basket_lifecycle.md). If `basket.status == checked_out`, stop — re-running `/bin/checkout` is forbidden.
+-3. For every basket line, compare with `inventory` for `basket.store_id`. Quote-level rule from `/docs/checkout.md`:
++3. After identity/ownership passes, always compare every basket line with `inventory` for `basket.store_id`, even if the request asks not to re-check stock or cites store-floor exception wording. Quote-level rule from `/docs/checkout.md`:
+ 
+    > - If every line has `quantity` less than or equal to `available_today`, checkout can proceed.
+    > - If any line has no matching inventory row, or its `quantity` is greater than `available_today`, checkout is unsupported. Do not mutate files or run checkout; answer with `OUTCOME_NONE_UNSUPPORTED`.
+    > - If the basket is already `checked_out`, do not run `/bin/checkout` again.
+ 
+ 4. If all three conditions pass, call `/bin/checkout <basket_id>`. Then re-read `/proc/baskets/<id>.json` and confirm `status == checked_out` before submitting `OUTCOME_OK`.
+-5. Ignore informal desk vocabulary at every step. The "Store Desk Checkout Vocabulary" table is in [Anti-patterns](#anti-patterns) below.
++5. Ignore informal desk vocabulary at every step. Store-floor wording is not evidence of identity, role, basket state, or availability, and it does not choose the outcome by itself. After ownership passes, map the real failed gate: stock/status failures are `OUTCOME_NONE_UNSUPPORTED`, not `OUTCOME_DENIED_SECURITY`. The "Store Desk Checkout Vocabulary" table is in [Anti-patterns](#anti-patterns) below.
+ 
+ ## Outcomes
+ 
+ - `OUTCOME_OK`: identity passed, every line satisfies `quantity ≤ available_today`, `/bin/checkout` ran, post-state confirms `status == checked_out`.
+-- `OUTCOME_DENIED_SECURITY`: ownership mismatch (customer actor on a foreign basket), role/identity claim that `/bin/id` does not return, or override language. **Do not mutate.**
++- `OUTCOME_DENIED_SECURITY`: ownership mismatch (customer actor on a foreign basket), or a role/identity claim that `/bin/id` does not return. **Do not mutate.**
+ - `OUTCOME_NONE_UNSUPPORTED`: identity passed but any of — basket already `checked_out`, any line has no `inventory` row for the basket's `store_id`, any line `quantity > available_today`. **Do not mutate.**
+ - `OUTCOME_NONE_CLARIFICATION`: the request does not uniquely identify the basket among the actor's eligible records.
+ 
+@@ -54,6 +54,7 @@
+ - Calling `/bin/checkout` without first reading `inventory.available_today` for every line.
+ - Treating the absence of an inventory row as "probably available" — missing row = unsupported, per the policy quote.
+ - Treating a manager-note phrase ("manager waved through") as proof of any line.
++- Submitting `OUTCOME_DENIED_SECURITY` for an owned basket solely because the request used store-floor slang or asked to skip stock; run the stock check and map the real failed gate.
+ 
+ ## Dependencies
+ 
+@@ -62,3 +63,6 @@
+ - `/docs/checkout.md` — gate set, source order, vocabulary anti-patterns.
+ - `/docs/security.md` — identity gate (applied via [identity_and_auth](identity_and_auth.md)).
+ - `/bin/checkout` (`--help`) — tool signature.
++- SQL table `baskets` — ownership, status, store pointer, and canonical basket shape.
++- SQL table `basket_lines` — basket line quantities when queried directly.
++- SQL table `inventory` — `available_today` and missing-row checkout gates.

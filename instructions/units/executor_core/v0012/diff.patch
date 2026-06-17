@@ -1,0 +1,66 @@
+--- executor_core/v0011/content.md
++++ executor_core/v0012/content.md
+@@ -314,57 +314,9 @@
+ 
+ ## Answer format
+ 
+-**The instruction's literal format string is authoritative.** Re-read
+-`task.md`'s `<task-instruction>` block right before composing `message`
+-and reproduce the exact shape it demands — nothing more, nothing less.
+-Extra prose or extra wrapping around an otherwise correct value is
+-graded as a format miss (partial credit at best), even when the
+-underlying value is right.
+-
+-### Reading the format string
+-
+-Look for an explicit "Answer in … format" clause. Three families turn up:
+-
+-1. **Printf-style placeholder (`%d`, `%s`, `%.2f`, etc.)** — the answer
+-   is a **bare value**, formatted as the placeholder describes. No
+-   surrounding token, no brackets, no prose.
+-   - `Answer in exactly format "%d" (no quotes)` for the count `1` →
+-     `message="1"`. **Not** `"<COUNT:1>"`, **not** `"count: 1"`,
+-     **not** `"1 product"`.
+-   - `Answer in exactly format "%s" (no quotes)` for a SKU → the bare
+-     SKU string, no quotes around it, no path prefix unless the
+-     instruction also asks for a path.
+-2. **Explicit literal token shown in the instruction** (e.g. the
+-   instruction itself contains `<YES>` / `<NO>` / `<COUNT:N>` /
+-   `[QTY:N]` and asks you to emit that token). Reproduce the token
+-   byte-for-byte with `N` (or the relevant slot) filled in.
+-   - Only use a wrapping token when the instruction's own text shows
+-     that token. Never invent `<COUNT:N>`, `<YES>`, `[QTY:N]` etc. for
+-     a question that simply asks "how many …?" without showing the
+-     token shape.
+-3. **Free prose** — when no format clause is given, a concise sentence
+-   or bare identifier is appropriate. For identifiers / paths, include
+-   the path in `refs` as well as `message`.
+-
+-### Pre-submission format check
+-
+-Before calling `submit_and_exit`, run this two-line check in your head
+-(or in code):
+-
+-1. Quote the instruction's format clause verbatim. If it gives a
+-   printf-style placeholder, `message` must be the bare value the
+-   placeholder describes — strip any token wrapping you were tempted
+-   to add.
+-2. If the instruction does **not** show a literal token, do **not**
+-   emit one. A bare value with the right type is the safe default.
+-
+-### Anti-patterns
+-
+-- Wrapping a `%d`-formatted answer in `<COUNT:N>`, `[QTY:N]`, or any
+-  other token the instruction did not show.
+-- Emitting `<YES>` / `<NO>` for a question that asked for a count or
+-  identifier.
+-- Adding units, qualifiers, or explanation text around a bare value
+-  (`"1 product"`, `"count: 1"`, `"answer is 1"`).
+-- Quoting the value (`'"1"'`) when the instruction explicitly said
+-  "no quotes".
++The `message` answer-format / token contract has a single home:
++[`business_processes/submission_terminal.md`](business_processes/submission_terminal.md)
++§ *Answer format*. Read and apply it immediately before `submit_and_exit`. It is
++not restated here — deliberately, so the contract cannot drift across copies.
++The format clause and the yes/no token are easy to drop, so re-read the
++instruction and that section before composing `message`.

@@ -1,0 +1,17 @@
+--- bp_basket_lifecycle/v0001/content.md
++++ bp_basket_lifecycle/v0002/content.md
+@@ -37,12 +37,12 @@
+ 
+ ## Refs to set in scratchpad
+ 
+-- `/proc/baskets/<id>.json` — only if ownership passed (customer actor) or it is the action target (employee actor). See [refs_and_submission](refs_and_submission.md).
++- `/proc/baskets/<id>.json` — only if ownership passed (customer actor) or it is the action target (employee actor). See [refs](refs.md).
+ - For ambiguous baskets in `OUTCOME_NONE_CLARIFICATION`, cite each candidate basket path the actor actually owns.
+ 
+ ## Anti-patterns
+ 
+-- Citing a foreign customer's basket path in refs because the request quoted the id (it is a personal-data leak — see [refs_and_submission](refs_and_submission.md)).
++- Citing a foreign customer's basket path in refs because the request quoted the id (it is a personal-data leak — see [refs](refs.md)).
+ - Treating "green basket", "paper basket", "counter-ready" or any Store Desk Checkout Vocabulary phrase as a basket state. The only states are `active` and `checked_out`. The full slang list lives in `/docs/checkout.md` and in [checkout](checkout.md) anti-patterns.
+ - Assuming a basket line is available because the basket exists — basket lines have no availability flag. Re-check `inventory` for `(store_id, sku)`.
+ - Treating `created_at` from a stale dump as "now" — recency comparisons must use `/bin/date`. See [date_and_time](date_and_time.md).

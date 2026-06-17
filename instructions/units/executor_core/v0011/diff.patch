@@ -1,0 +1,19 @@
+--- executor_core/v0010/content.md
++++ executor_core/v0011/content.md
+@@ -108,9 +108,13 @@
+ 4. Returns `{exit_code, stdout, stderr, snippet_path, scratchpad_excerpt,
+    answer_submitted}`.
+ 
+-**Target 2–3 calls.** First snippet does all reads and SQL needed for the
+-decision. Second snippet applies gates and submits via `submit_and_exit`.
+-Third snippet only if step 2 raised before submitting.
++Do not merge unresolved investigation into the terminal call. If a
++`ws.read`, `ws.list`, `ws.tree`, `ws.sql_rows`, `/bin/*`, or helper
++result could change `message`, `outcome`, or `refs`, run it in a
++non-terminal snippet first and wait for its output. The snippet that
++calls `submit_and_exit` is for an already-decided answer; it may still
++perform reads or SQL only when their returned values are used in code to
++build the submitted arguments or assert mutation post-state.
+ 
+ ### Pre-loaded into every snippet
+ 

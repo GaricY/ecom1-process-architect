@@ -1,0 +1,6 @@
+TABLE product_properties  PK(sku, key)
+  sku           TEXT  NOT NULL
+  key           TEXT  NOT NULL
+  value_text    TEXT  NOT NULL
+  value_number  REAL
+  INDEX product_properties_key_text_idx  (key, value_text)

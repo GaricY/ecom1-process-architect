@@ -1,0 +1,75 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0012",
+  "parent": "v0011",
+  "status": "active",
+  "created_at": "2026-05-26T22:06:11+00:00",
+  "created_by": "codex",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/P0_analyze_all_review_v4_fix.md",
+    "scope": "non-pure availability refs boundary fix"
+  },
+  "rationale": "Separate pure availability refs from non-pure availability identity/match claims so identified public products remain cited even when their stock predicate fails, while unavailable products merely considered in pure availability answers stay out of refs.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "sha256": "a66a4727ffea2a183221f61b8ad593b209d827bb3c28fb1e260ebf2731f7c6cc",
+      "why": "Defines catalogue/inventory table shapes and SQL interface used by this BP."
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted date provider used when product count/update handling invokes policy_update_scan."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start."
+    },
+    {
+      "kind": "sql_table",
+      "path": "products",
+      "sha256": "b7957cdcbccdbc55859becf43d1c0e33da11e2630f7c4c9055f3cbbe184e50d7",
+      "why": "Public product facts, properties, and canonical catalogue paths."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_properties",
+      "sha256": "ed66eb45101acf55da372b5f3dbbc93806ae9c43ed51763c003da90fc0b37ca8",
+      "why": "Property rows used for claim verification."
+    },
+    {
+      "kind": "sql_table",
+      "path": "families",
+      "sha256": "e2f82b4c19f8d15d3ae4dcb069d6e86fd352c7580a92d55213f3b4558e0b8c86",
+      "why": "Family/brand/model grouping used to identify products."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_kinds",
+      "sha256": "fec325cd975d51157bc2f0dd279d654ac8436bed116dd7479dc74be87fe03fb2",
+      "why": "Kind ids and product-kind scope for count questions."
+    },
+    {
+      "kind": "sql_table",
+      "path": "inventory",
+      "sha256": "cf2f013cb0d2f49d4b44b477410c453abd9481d5b779af9cf8ee548a3ce8d4fc",
+      "why": "Store/SKU availability source."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "45efffb5be6363a2fe3de223dac3ec051d165f4eb79de6a1391e49729bfc9411",
+      "why": "Public store ids, paths, city nuance targets, and open status."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0011 if pure availability tasks start citing unavailable products that are not identified in the final answer."
+  },
+  "no_semantic_change": false
+}

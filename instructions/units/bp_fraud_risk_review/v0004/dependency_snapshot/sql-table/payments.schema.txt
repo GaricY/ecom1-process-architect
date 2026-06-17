@@ -1,0 +1,26 @@
+TABLE payments  PK(id)
+  id                          TEXT     NOT NULL
+  path                        TEXT     NOT NULL
+  basket_id                   TEXT     NOT NULL
+  basket_archived             INTEGER  NOT NULL
+  customer_id                 TEXT     NOT NULL  → customers.id
+  store_id                    TEXT     NOT NULL  → stores.id
+  amount_cents                INTEGER  NOT NULL
+  currency                    TEXT     NOT NULL
+  status                      TEXT     NOT NULL
+  created_at                  TEXT     NOT NULL
+  payment_method_fingerprint  TEXT     NOT NULL
+  device_fingerprint          TEXT     NOT NULL
+  observed_lat                REAL     NOT NULL
+  observed_lon                REAL     NOT NULL
+  three_ds_status             TEXT
+  three_ds_failure_reason     TEXT
+  three_ds_attempts           INTEGER
+  three_ds_max_attempts       INTEGER
+  INDEX payments_basket_idx              (basket_id)
+  INDEX payments_created_at_idx          (created_at)
+  INDEX payments_customer_idx            (customer_id)
+  INDEX payments_device_fingerprint_idx  (device_fingerprint)
+  INDEX payments_method_fingerprint_idx  (payment_method_fingerprint)
+  INDEX payments_status_idx              (status)
+  INDEX payments_store_idx               (store_id)

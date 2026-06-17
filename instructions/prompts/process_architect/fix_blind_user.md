@@ -1,0 +1,1 @@
+Read CLAUDE.md and failure-fix-task.md. Walk .logs/executor_actions.md to understand what went wrong. Pick the unit(s) to edit from selected-instructions/. Write pa-output/pa-decision.json and pa-output/units/<unit_id>/content.md for each changed unit. End your turn when done.

@@ -1,0 +1,20 @@
+--- v0001/snapshot/bin-help/payments.help.txt
++++ v0002/snapshot/bin-help/payments.help.txt
+@@ -7,3 +7,5 @@
+ 
+ Subcommands:
+   recover-3ds <payment_id>   Start a fresh 3DS challenge for a 3DS payment.
++  approve-refund <return_id> Mark an approved return as waiting for refund finalization.
++  refund <return_id>         Finalize a refund for a return record.
+--- v0001/snapshot/bin-help/sqlite_schema.txt
++++ v0002/snapshot/bin-help/sqlite_schema.txt
+@@ -6,6 +6,9 @@
+ Dialect: **SQLite**. No `ILIKE`, no `RETURNING`, no `::cast`, no `now()`.
+ `LIKE` is case-insensitive for ASCII; for explicit case-fold use
+ `LOWER(col) LIKE LOWER('…')`.
++`HAVING` requires `GROUP BY` (no MySQL/PG-style alias filter) — to
++filter on a computed expression, wrap as a subquery:
++`SELECT * FROM (SELECT …, x AS y FROM …) WHERE y > N`.
+ 
+ ## Foreign-key edges
+   basket_lines.basket_id      → baskets.id

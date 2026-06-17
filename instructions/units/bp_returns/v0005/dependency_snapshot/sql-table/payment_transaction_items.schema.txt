@@ -1,0 +1,7 @@
+TABLE payment_transaction_items  PK(payment_id, line_number)
+  payment_id             TEXT     NOT NULL  → payment_transactions.payment_id
+  line_number            INTEGER  NOT NULL
+  product_sku            TEXT     NOT NULL  → product_variants.product_sku
+  purchased_quantity     INTEGER  NOT NULL
+  item_unit_price_cents  INTEGER  NOT NULL
+  INDEX payment_transaction_items_sku_idx  (product_sku)

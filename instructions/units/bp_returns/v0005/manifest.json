@@ -1,0 +1,76 @@
+{
+  "unit_id": "bp_returns",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-05-29T11:30:59+00:00",
+  "created_by": "codex",
+  "mode": "world_refresh",
+  "trigger": {
+    "command": "hand-edit",
+    "task_id": "task-026",
+    "analysis": ".tasks/task-026/readmes_review_gpt.md",
+    "note": "proc README coverage push"
+  },
+  "rationale": "Add archived-payment handling for returns: missing basket files can be normal cold storage for information lookup, while refund finalization still requires the live linked basket gate. Also attach proc return/payment README dependencies and keep mechanical tool wording tied to payments help.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/returns.md",
+      "sha256": "dde4289fce561e43dbb85cac5cc87415c3f042d72ce043748d71032fa57e1bab",
+      "why": "Full gate set for both refund workflow steps, the refund_manager role, the status sequence, and the no-hand-edit prohibition."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "7e2b613dd2619f6315b5f7c70fd346f7cbe83822b475f1bca890f7b25fbe427f",
+      "why": "Identity/ownership/role rule named verbatim as a prerequisite by /docs/returns.md; cited in the applied-policy bundle whenever the refund flow was evaluated."
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "be72833684356ee5588de72f46752a358606569e3480e2cc86647173f5b645b7",
+      "why": "Tool signatures for approve-refund <return_id> and refund <return_id>."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_requests",
+      "sha256": "1f62b186328a837536425904e8789daaf26b56fcf44eb0b75b2762e4cc2f2e3c",
+      "why": "Return id, return_status, reason code, and basket/payment/customer foreign keys used for bulk triple reconciliation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transactions",
+      "sha256": "19104e8b96a076bde97c0f841c2b9ac35f781199842368b2f8d866b2299848c1",
+      "why": "payment_status (paid gate) and basket/customer links read during reconciliation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket ownership (customer_id) used by the finalization triple check."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transaction_items",
+      "sha256": "fd85ad998f44b4477ac3e3e64ec766dde9e24e25cec62400cac44178d5f795bc",
+      "why": "Surviving line snapshot for archived payments during information/reconciliation tasks."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/returns/README.md",
+      "sha256": "dd87ed87f590ff6d6804c3c7e6340d1c44052f81ec4b4b4cab3d21f52be334ea",
+      "why": "Return status vocabulary and reconciliation keys."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/payments/README.md",
+      "sha256": "278fc0d64459f7aa0a282f75a78ea451c5a5317ad2033f615bf66854ecc80cfc",
+      "why": "Archived-payment semantics: basket_archived, cold-storage baskets, and payment line snapshots."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0004 if archived-payment handling causes refund finalization to be allowed without a live linked basket or otherwise weakens /docs/returns.md gates."
+  },
+  "no_semantic_change": false
+}

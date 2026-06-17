@@ -1,0 +1,33 @@
+--- bp_payments_3ds_recovery/v0005/content.md
++++ bp_payments_3ds_recovery/v0006/content.md
+@@ -34,9 +34,11 @@
+ 
+ ## Process
+ 
++After identity matches and before mutation, invoke [policy_update_scan](policy_update_scan.md) for topic-folder siblings and cross-workflow dated updates. This file owns 3DS recovery gates; the helper owns update matching semantics.
++
+ From `/docs/payments/3ds.md`, all conditions must hold:
+ 
+-1. Apply [identity_and_auth](identity_and_auth.md). Customer actor: payment `customer_id == /bin/id user`. Foreign payment → `OUTCOME_DENIED_SECURITY`; the foreign `/proc/payments/...` and `/proc/baskets/...` paths stay **out** of refs (see [refs_and_submission](refs_and_submission.md)).
++1. Apply [identity_and_auth](identity_and_auth.md). Customer actor: payment `customer_id == /bin/id user`. Foreign payment → `OUTCOME_DENIED_SECURITY`; the foreign `/proc/payments/...` and `/proc/baskets/...` paths stay **out** of refs (see [refs](refs.md)).
+ 2. Confirm the basket exists under `/proc/baskets/` and `status == checked_out`. From `/docs/payments/3ds.md`:
+ 
+    > The basket exists under `/proc/baskets/` and has status `checked_out`.
+@@ -101,7 +103,7 @@
+   - `/docs/payments/3ds.md`
+   - Every matching update path from the policy-update sweep (step 6). Both location classes are required when they match: topic-folder siblings such as `/docs/payments/<date-stamped-sibling>.md`, AND any matches under `/docs/policy-updates/`, `/docs/current-updates/`, `/docs/ops-policy-notes/`, `/docs/catalogue-addenda/`. **Not optional**; the grader rejects with `answer missing required reference '/docs/payments/<file>.md'` (or sibling folder) when an update matched the payment / basket / workflow and was dropped from refs. Copy each path verbatim from `ws.list` or from the file you read; do not synthesise.
+   - `/proc/payments/<id>.json` and `/proc/baskets/<id>.json` — own-record ownership passed (customer actor) or action target (employee actor).
+-- **Cross-boundary customer-actor denial (OUTCOME_DENIED_SECURITY):** the recovery was never evaluated — only `/docs/security.md` was applied to block the action, and the topic doc names what was being attempted. Refs are policy-docs only: `["/docs/security.md", "/docs/payments/3ds.md"]`. The foreign payment/basket paths must NOT appear. `/docs/checkout.md` does NOT belong here either — checkout policy was not applied because identity blocked the flow before eligibility was checked. Dated policy updates also do NOT belong here — the sweep is downstream of identity. See [refs_and_submission](refs_and_submission.md) — "checkout" wording with a `pay_*` id routes to `/docs/payments/3ds.md`, not `/docs/checkout.md`.
++- **Cross-boundary customer-actor denial (OUTCOME_DENIED_SECURITY):** the recovery was never evaluated — only `/docs/security.md` was applied to block the action, and the topic doc names what was being attempted. Refs are policy-docs only: `["/docs/security.md", "/docs/payments/3ds.md"]`. The foreign payment/basket paths must NOT appear. `/docs/checkout.md` does NOT belong here either — checkout policy was not applied because identity blocked the flow before eligibility was checked. Dated policy updates also do NOT belong here — the sweep is downstream of identity. See [refs](refs.md) — "checkout" wording with a `pay_*` id routes to `/docs/payments/3ds.md`, not `/docs/checkout.md`.
+ 
+ ## Anti-patterns
+ 
+@@ -128,7 +130,7 @@
+ Refs anti-patterns:
+ 
+ - **Dropping `/docs/checkout.md` from `OUTCOME_OK` / `OUTCOME_NONE_UNSUPPORTED` refs because "we didn't run `/bin/checkout`".** Reading and applying the policy doc is what gates the decision; `/docs/payments/3ds.md` explicitly defers to it. The grader rejects with `answer missing required reference '/docs/checkout.md'`.
+-- Citing a foreign payment / basket in `refs` because the request quoted the `pay_*` / `bsk_*` id. The SQL `path` column is a lure — see [refs_and_submission](refs_and_submission.md) "SQL `path` column is a lure".
++- Citing a foreign payment / basket in `refs` because the request quoted the `pay_*` / `bsk_*` id. The SQL `path` column is a lure — see [refs](refs.md) "SQL `path` column is a lure".
+ - Routing a 3DS / payment-recovery denial to `/docs/checkout.md` as the *topic* doc because the request used the word "checkout". The presence of `3DS` or a `pay_*` id is the tie-breaker — the topic doc is `/docs/payments/3ds.md`. (For ownership-matched outcomes, `/docs/checkout.md` rides along as a prerequisite, not as the topic doc.)
+ - Adding `/docs/checkout.md` to a cross-boundary `OUTCOME_DENIED_SECURITY` refs list — checkout policy was not actually applied because identity blocked the flow first.
+ - Adding a dated policy update to a cross-boundary `OUTCOME_DENIED_SECURITY` refs list — the sweep happens downstream of identity and was not actually performed.

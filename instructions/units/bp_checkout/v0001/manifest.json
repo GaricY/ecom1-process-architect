@@ -1,0 +1,19 @@
+{
+  "unit_id": "bp_checkout",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-05-21T00:00:00+00:00",
+  "created_by": "task-008-migration",
+  "mode": "initial_migration",
+  "trigger": {
+    "source": ".tasks/task-008/staging/checkout.md",
+    "generated_by": ".tasks/task-008/bp-generation-prompt.md",
+    "skeleton": ".tasks/task-007/vault/business-process-map.md"
+  },
+  "rationale": "Initial migration of business process from the task-007 process map split. Dependencies left empty so the version always matches; future PA refresh/failure_fix versions will populate the dependency contract incrementally.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Manual: retire this version or create a rollback version via bp_admin."
+  }
+}

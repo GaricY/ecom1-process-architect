@@ -1,0 +1,11 @@
+# /bin/payments --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: payments <subcommand> [args]
+
+Subcommands:
+  recover-3ds <payment_id>   Start a fresh 3DS challenge for a 3DS payment.
+  approve-refund <return_id> Mark an approved return as waiting for refund finalization.
+  refund <return_id>         Finalize a refund for a return record.

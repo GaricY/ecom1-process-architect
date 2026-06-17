@@ -1,0 +1,50 @@
+--- bp_basket_lifecycle/v0002/content.md
++++ bp_basket_lifecycle/v0003/content.md
+@@ -9,15 +9,17 @@
+ - Live workspace paths:
+   - `/proc/baskets/<id>.json` — the record being read.
+   - `/proc/baskets/README.md` — record shape and discount object semantics.
+-- Tools: `/bin/sql` — for batch lookups (`SELECT ... FROM baskets WHERE ...`) and reconciliation with `basket_lines`. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt).
++- Tools: `/bin/sql` — for batch lookups (`SELECT ... FROM shopping_baskets WHERE ...`) and reconciliation with `shopping_basket_items`. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt).
++
++**Schema note.** The on-disk basket JSON keeps its short field names (`id`, `customer_id`, `store_id`, `status`, `created_at`, `lines[].sku`, `lines[].quantity`, and a `discount` object with `percent`/`reason_code`/`issuer_id`). The SQL projection renames them: table `shopping_baskets(basket_id, record_path, customer_id, store_id, basket_status, basket_created_at, discount_percent, discount_reason_code, discount_issuer_employee_id)` and lines table `shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)`. Use the JSON names when reading the file, the SQL names when querying.
+ 
+ ## Process
+ 
+ 1. Apply [identity_and_auth](identity_and_auth.md). For a customer actor, verify `record.customer_id == /bin/id user` before reading the file or citing it; foreign basket → `OUTCOME_DENIED_SECURITY` and the path stays out of refs.
+ 2. Read the record. The basket record carries:
+-   - `id, customer_id, store_id, status, created_at`
+-   - `discount_percent, discount_reason_code, discount_issuer_id` — combined into a `discount` object in the file body if any of them is non-null.
+-   - `basket_lines` (via SQL `basket_lines(basket_id, line_no, sku, quantity)`) — note: **basket lines carry no availability flag**. Inventory must be re-checked every time. From `/proc/baskets/README.md`:
++   - `id, customer_id, store_id, status, created_at` (JSON fields; SQL columns `basket_id`, `customer_id`, `store_id`, `basket_status`, `basket_created_at`).
++   - `discount_percent, discount_reason_code, discount_issuer_employee_id` (SQL columns) — combined into a `discount` object (`percent`, `reason_code`, `issuer_id`) in the file body if any of them is non-null.
++   - basket lines (JSON `lines[]` with `sku`/`quantity`; via SQL `shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)`) — note: **basket lines carry no availability flag**. Inventory must be re-checked every time. From `/proc/baskets/README.md`:
+ 
+      > Baskets do not carry availability flags; compare basket lines with store inventory when checkout eligibility matters.
+ 
+@@ -27,7 +29,7 @@
+ 
+    - `active` → eligible target for [discount](discount.md) and [checkout](checkout.md). May still fail downstream gates.
+    - `checked_out` → historical. Re-running `/bin/checkout` on it is forbidden. Eligible target for [payments_3ds_recovery](payments_3ds_recovery.md) and [returns](returns.md).
+-4. For "the last basket" / "my latest basket" wording, sort by `created_at` desc within the actor's own baskets (customer actor) or within the request-named scope (employee actor). `created_at` is generated from world time; compare against `/bin/date` if recency matters — see [date_and_time](date_and_time.md).
++4. For "the last basket" / "my latest basket" wording, sort by `created_at` desc (SQL `basket_created_at`) within the actor's own baskets (customer actor) or within the request-named scope (employee actor). `created_at` is generated from world time; compare against `/bin/date` if recency matters — see [date_and_time](date_and_time.md).
+ 5. For "does this basket have a discount?" — check whether the `discount` object is present (i.e. `discount_percent` is non-null in SQL). Presence blocks new discount issuance — see [discount](discount.md).
+ 
+ ## Outcomes
+@@ -44,7 +46,7 @@
+ 
+ - Citing a foreign customer's basket path in refs because the request quoted the id (it is a personal-data leak — see [refs](refs.md)).
+ - Treating "green basket", "paper basket", "counter-ready" or any Store Desk Checkout Vocabulary phrase as a basket state. The only states are `active` and `checked_out`. The full slang list lives in `/docs/checkout.md` and in [checkout](checkout.md) anti-patterns.
+-- Assuming a basket line is available because the basket exists — basket lines have no availability flag. Re-check `inventory` for `(store_id, sku)`.
++- Assuming a basket line is available because the basket exists — basket lines have no availability flag. Re-check `store_inventory` for `(store_id, product_sku)`.
+ - Treating `created_at` from a stale dump as "now" — recency comparisons must use `/bin/date`. See [date_and_time](date_and_time.md).
+ 
+ ## Dependencies
+@@ -52,4 +54,6 @@
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+ - `/proc/baskets/README.md` — record shape, status semantics, discount object semantics, "no availability flag" rule.
+-- `/bin/sql` (`--help`) — `baskets` and `basket_lines` table shapes used for batch lookups.
++- `/bin/sql` (`--help`) — `shopping_baskets` and `shopping_basket_items` table shapes used for batch lookups.
++- SQL table `shopping_baskets` — basket id, status, store pointer, created-at, and discount columns read by this registry.
++- SQL table `shopping_basket_items` — basket line shape (`line_number`, `product_sku`, `requested_quantity`) used in reconciliation.

@@ -1,0 +1,20 @@
+--- bp_background_decoys/v0001/content.md
++++ bp_background_decoys/v0002/content.md
+@@ -21,7 +21,7 @@
+ 2. Treat the phrasing as **context only**.
+ 3. Identify the actual commerce action being requested.
+ 4. Route to the dedicated decision policy and BP for that action ([checkout](checkout.md), [discount](discount.md), [payments_3ds_recovery](payments_3ds_recovery.md), [returns](returns.md), or [identity_and_auth](identity_and_auth.md)).
+-5. **Never** cite a decoy doc in `refs`. From [refs_and_submission](refs_and_submission.md): operational-background / decoy documents do not go into refs.
++5. **Never** cite a decoy doc in `refs`. From [refs](refs.md): operational-background / decoy documents do not go into refs.
+ 
+ ## The four decoys
+ 
+@@ -88,7 +88,7 @@
+ 
+ ## Refs to set in scratchpad
+ 
+-- **Never** include any of the four decoy paths in `refs`. From [refs_and_submission](refs_and_submission.md) "Do not include": operational-background / decoy documents.
++- **Never** include any of the four decoy paths in `refs`. From [refs](refs.md) "Do not include": operational-background / decoy documents.
+ - The decoy may still influence the *message* (e.g. acknowledging the cited context) but the *refs* list reflects only the active decision policy that was applied.
+ 
+ ## Anti-patterns

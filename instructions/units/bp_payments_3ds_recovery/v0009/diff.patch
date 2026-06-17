@@ -1,0 +1,7 @@
+--- bp_payments_3ds_recovery/v0008/content.md
++++ bp_payments_3ds_recovery/v0009/content.md
+@@ -131,3 +131,4 @@
+ - `/docs/security.md` — identity / cross-boundary rule named alongside `/docs/checkout.md` in the 3DS prerequisite line; both the cross-boundary `OUTCOME_DENIED_SECURITY` refs branch and the ownership-matched applied-policy bundle cite it.
+ - World baseline `/docs/README.md` — defines the dated-update rule and cross-workflow update folder family consumed through [policy_update_scan](policy_update_scan.md); it is intentionally not a per-unit manifest dependency.
+ - `bin-help/payments.help.txt` — tool signature; this BP authorises `recover-3ds` only and explicitly excludes the `approve-refund` / `refund` subcommands. If the help text renames or removes `recover-3ds`, or grows a new 3DS verb, the Tools and Anti-patterns sections must be re-derived.
++- `/proc/payments/README.md` — payment record status/3DS field semantics and archived-payment context.

@@ -1,0 +1,37 @@
+--- bp_product_discovery/v0014/content.md
++++ bp_product_discovery/v0015/content.md
+@@ -9,6 +9,7 @@
+ - Live workspace paths:
+   - `/proc/catalog/<sku>.json` — generated product record per `sku`. **The canonical cite is the `product_variants.record_path` column copied verbatim from SQL** — NOT a hand-built `/proc/products/<sku>.json` (the SQL table is named `product_variants`, but the on-disk folder is `/proc/catalog/`; do not synthesise the path from the table name).
+   - `/proc/stores/<id>.json` — store record. Same rule: cite the `stores.record_path` column verbatim, not a synthesised path.
++  - `/proc/stores/README.md` — source for natural-language branch nuance in cities with multiple stores; read it live before choosing between branches.
+   - `/docs/README.md` — defines the "today's catalogue reporting rule" and where dated overrides may live.
+   - `/AGENTS.MD` — the merchant-wide reply-shaping rule that pure availability answers reference only what **is** available; step 7 separates that rule from non-pure catalogue identity/match claims.
+ - Tools: `/bin/sql` — the only source of catalogue and inventory truth. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt). Tables: `product_variants`, `product_variant_properties`, `product_categories`, `product_families`, `product_kinds`, `store_inventory`, `stores`. Every public table carries a `record_path TEXT NOT NULL` column whose value is the on-disk `/proc/...` cite path. `/bin/date` — the only trusted source of the simulation's "today"; see [date_and_time](date_and_time.md).
+@@ -18,7 +19,7 @@
+ For catalogue count/reporting update semantics, invoke [policy_update_scan](policy_update_scan.md). This file owns catalogue/inventory SQL and reply shaping; the helper owns bounded update matching and date-scope interpretation.
+ 
+ 1. Call `/bin/id` (cheap, also drives "my" handling). Identity is informational here; discovery answers do not depend on actor.
+-2. For any store-scoped inventory/availability question, resolve the selected store row first and copy `stores.record_path` from SQL or the live record. If city nuance docs are needed to choose among multiple stores, use them to choose the one store, and keep rejected stores out of `refs`.
++2. For any store-scoped inventory/availability question, resolve the selected store row first and copy `stores.record_path` from SQL or the live record. If the city has multiple branches or the request uses branch wording such as west-side, north, station-side, old-town, downtown, or central, read `/proc/stores/README.md` and use that live nuance before choosing the one store; keep rejected stores out of `refs`.
+ 3. For an availability question: `SELECT available_today_quantity FROM store_inventory WHERE store_id = ? AND product_sku = ?` (or the equivalent batch query for a list). `store_inventory` is keyed by `(store_id, product_sku)`; missing row means not stocked at that store. Treat both **no inventory row** (LEFT JOIN returns `NULL`) and `available_today_quantity = 0` as "not available today" — neither contributes to a positive availability answer.
+ 4. For "how many products of kind X today?" or any catalogue **count** question: invoke [policy_update_scan](policy_update_scan.md) before answering with a plain `COUNT(*)`. Pass the helper the catalogue-count workflow, requested product kind/name/`product_kind_id`, city/store/family/day scope from the request, and any candidate update paths found under the bounded `/docs` update locations. Then apply the helper result here:
+ 
+@@ -27,7 +28,7 @@
+    - No matching update -> answer from plain SQL `COUNT(*)` over the requested catalogue scope.
+ 
+    The operating day in an update filename/header is not a local TTL check in this BP. Let [policy_update_scan](policy_update_scan.md) decide when `/bin/date` is a filter versus a scope dimension, and record that decision in scratchpad.
+-5. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities, apply the city nuance from `/proc/stores/README.md` before answering (e.g. "the west-side Vienna shop" = Meidling).
++5. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities or local branch nicknames, read `/proc/stores/README.md` before answering; do not infer the prose nuance from SQL store rows alone.
+ 6. **Reply shaping rule** (`/AGENTS.MD`): pure availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the selected/available stores, not rejected candidates. For the `message` answer-format / token contract, see [submission_terminal](submission_terminal.md) § *Answer format* — that is the single home; this BP does not restate it.
+ 7. **Refs shaping rule for availability questions** (also from `/AGENTS.MD` "should not reference unavailable products"). First decide whether the answer is pure availability or non-pure availability with a separate catalogue identity/match claim:
+ 
+@@ -100,6 +101,7 @@
+ - SQL table `product_families` — family/brand/model grouping used to identify products.
+ - SQL table `product_kinds` — `product_kind_id` and product-kind scope for count questions.
+ - SQL table `store_inventory` — store/SKU availability source (`available_today_quantity`, keyed by `(store_id, product_sku)`).
+-- SQL table `stores` — public store ids, `record_path`, city nuance targets, and open status.
++- SQL table `stores` — public store ids, `record_path`, city fields, and open status.
++- `/proc/stores/README.md` — source for natural-language branch nuance used to choose between multiple stores in one city; if it changes, re-derive this BP's multi-store branch-nickname instruction from the live file.
+ - `/bin/date` (`--help`) — the trusted source of "today" used by the operating-day check in step 3.
+ - `/bin/id` (`--help`) — actor identity pulled at session start.

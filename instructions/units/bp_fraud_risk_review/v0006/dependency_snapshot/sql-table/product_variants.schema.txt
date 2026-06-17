@@ -1,0 +1,15 @@
+TABLE product_variants  PK(product_sku)
+  product_sku          TEXT     NOT NULL
+  record_path          TEXT     NOT NULL
+  product_category_id  TEXT     NOT NULL
+  product_kind_id      TEXT     NOT NULL
+  product_family_id    TEXT     NOT NULL
+  brand                TEXT     NOT NULL
+  series               TEXT     NOT NULL
+  model                TEXT     NOT NULL
+  product_name         TEXT     NOT NULL
+  price_cents          INTEGER  NOT NULL
+  price_currency       TEXT     NOT NULL
+  properties           TEXT     NOT NULL
+  INDEX product_variants_brand_idx  (brand)
+  INDEX product_variants_kind_idx   (product_kind_id)

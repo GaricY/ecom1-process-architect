@@ -1,0 +1,23 @@
+--- executor_core/v0007/content.md
++++ executor_core/v0008/content.md
+@@ -126,12 +126,14 @@
+ 
+ Reads (return dicts):
+ 
+-- `ws.tree(root="", level=2)`
+-- `ws.list(path="/")`
+-- `ws.find(root="/", name="", kind="all"|"files"|"dirs", limit=10)`
+-- `ws.search(root="/", pattern="", limit=10)`
+-- `ws.stat(path)`
+-- `ws.read(path, number=False, start_line=0, end_line=0)`
++- `ws.read(path, number=False, start_line=0, end_line=0)` → `{path, content, content_type, sha256, truncated}`. File body is **`content`** (string), not `lines`/`stdout`/`text`. JSON files: `json.loads(res["content"])` before accessing fields.
++- `ws.list(path="/")` → `{path, entries: [{name, path, kind, content_type}]}`
++- `ws.tree(root="", level=2)` → `{root: {name, kind, content_type, children: [...]}, truncated}`
++- `ws.find(root="/", name="", kind="all"|"files"|"dirs", limit=10)` → `{paths: [str], truncated}`
++- `ws.search(root="/", pattern="", limit=10)` → `{matches: [{path, line, line_text}], truncated}`
++- `ws.stat(path)` → `{path, kind, content_type, writable}`
++
++`truncated=True` → response was cut; narrow the scope and re-issue.
+ 
+ Writes (mutating):
+ 

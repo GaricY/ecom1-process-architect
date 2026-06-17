@@ -1,0 +1,4 @@
+TABLE product_kinds  PK(id)
+  id           TEXT  NOT NULL
+  category_id  TEXT  NOT NULL
+  name         TEXT  NOT NULL

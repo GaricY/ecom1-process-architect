@@ -1,0 +1,7 @@
+# /bin/discount --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: discount <basket_id> <percent> <reason_code> <issuer_id>
+Applies the requested basket discount without policy checks. Read /docs/discounts.md before use.

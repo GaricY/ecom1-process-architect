@@ -1,0 +1,57 @@
+{
+  "unit_id": "bp_checkout",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-05-26T15:30:16+00:00",
+  "created_by": "codex",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/P0_analyze_all_review_fix.md",
+    "scope": "P0 full-run regression follow-up"
+  },
+  "rationale": "Resolve the checkout outcome contradiction: informal override wording is ignored and does not itself cause DENIED_SECURITY; after ownership passes, real stock/status gates determine unsupported outcomes.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "9878a1bde6855567e4c371201870e337483c0f8697507a1f1c24ee1305599204",
+      "why": "Checkout gate set, source order, and vocabulary anti-patterns."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "7e2b613dd2619f6315b5f7c70fd346f7cbe83822b475f1bca890f7b25fbe427f",
+      "why": "Identity gate applied via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "sha256": "65ef4279c83faf04c0c854f078421aad488f6059621f449ef6d9f54c6f4814ad",
+      "why": "Checkout tool signature."
+    },
+    {
+      "kind": "sql_table",
+      "path": "baskets",
+      "sha256": "c7f07d113f1f5471141e1f08292351fb50ef3608937d5b98beef5e16d7e85f3a",
+      "why": "Basket ownership, status, store pointer, and canonical shape."
+    },
+    {
+      "kind": "sql_table",
+      "path": "basket_lines",
+      "sha256": "04e01ed0d746f6bf2055115f90f263082454638fd59b3609ae2422b9cff82624",
+      "why": "Basket line quantities when queried directly."
+    },
+    {
+      "kind": "sql_table",
+      "path": "inventory",
+      "sha256": "cf2f013cb0d2f49d4b44b477410c453abd9481d5b779af9cf8ee548a3ce8d4fc",
+      "why": "available_today and missing-row checkout gates."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0002 if removing override-language as a DENIED_SECURITY trigger weakens true identity/role denials."
+  },
+  "no_semantic_change": false
+}

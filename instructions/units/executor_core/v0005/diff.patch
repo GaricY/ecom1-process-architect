@@ -1,0 +1,111 @@
+--- executor_core/v0004/content.md
++++ executor_core/v0005/content.md
+@@ -38,11 +38,46 @@
+    operating manual you must apply.
+ 3. The **live workspace** (everything you read via `execute_python`),
+    especially the active policy docs (`/docs/*.md`) and root `AGENTS.md`.
+-4. The local snapshot in `vault/`, `tree.md`, `bin-help/` — **a preview**,
+-   not authoritative. If it disagrees with what the live workspace returns,
+-   trust the live workspace.
+ 
+ You will not receive a score signal. Decide solely from the rules above.
++
++## Local snapshot — what is pre-loaded for `Read`
++
++The orchestrator dumps these into the task directory at trial start.
++Reading them costs zero MCP calls — they are your cheap-discovery
++surface *before* you write the first snippet:
++
++- `business_processes/` — the operating manual (entry point:
++  `index.md`).
++- `bin-help/sqlite_schema.txt` — canonical warehouse schema, FK edges,
++  column types, primary keys, **plus SQL conventions** (dialect
++  gotchas, the EAV layout of `product_properties`, value conventions
++  like lowercase `value_text`, `families.name` structure). Consult
++  before writing any SQL — even a "simple" one.
++- `bin-help/<tool>.help.txt` — `--help` output for each `/bin/<tool>`.
++- `vault/` — fresh mirror of live `/docs`, `/bin/README`, and every
++  `AGENTS.MD` / `README.md`, taken at trial start.
++- `tree.md` — `tree -L 2 /` of the live workspace, taken at trial
++  start.
++- `tmp/` — writable scratch directory for your own intermediate files
++  (CSV dumps, draft queries, post-mortem). The only path you may
++  `Write` to.
++
++
++## Before the first `execute_python`
++
++Three local reads (zero MCP cost):
++
++1. `Read business_processes/index.md` — pick the per-process file(s)
++   for this trial.
++2. `Read` every per-process file the index points to (typically 1–3:
++   `identity_and_auth`, `refs_and_submission`, and the topic BP).
++3. `Read bin-help/sqlite_schema.txt` whenever the task is data-shaped
++   (catalogue, inventory, basket, payment, customer). Skim the "SQL
++   conventions" header even on a task that "obviously" does not need
++   SQL — half the wasted snippets come from skipping this.
++
++Then write snippet 1.
+ 
+ ## Runtime boundary
+ 
+@@ -50,6 +85,9 @@
+ 
+ - `Read` / `Grep` / `Glob` — for reading the **local task directory only**
+   (CLAUDE.md, task.md, vault/, bin-help/, business_processes/, scratchpad.json).
++- `Write(./tmp/**)` — write-only to the local `tmp/` directory; use it for
++  your own scratch files (intermediate CSV dumps, draft queries,
++  post-mortem). All other writes are denied.
+ - `mcp__ecom-python__execute_python` — runs a Python snippet against the
+   live ECOM runtime. **This is the only runtime boundary.**
+ 
+@@ -104,7 +142,8 @@
+ 
+ - `ws.exec_tool(path, args=None, stdin="")` — the only generic invocation
+   surface (e.g. `ws.exec_tool("/bin/checkout", args=["--basket", bid])`).
+-- `ws.sql(query, json_output=True)` — shortcut on `/bin/sql`.
++- `ws.sql(query, json_output=True)` — shortcut on `/bin/sql`. **Returns
++  a dict, not parsed rows** — see "Calling `ws.sql`" below.
+ - `ws.date()` — shortcut on `/bin/date`.
+ - `ws.id()` — shortcut on `/bin/id`; the authoritative agent identity.
+ 
+@@ -115,8 +154,36 @@
+ 
+ `bin-help/` contains the live `--help` output for each `/bin/<tool>`.
+ Browse it with `Read` before calling unfamiliar tools. The warehouse
+-DB schema (tables, columns, FK edges, indexes) lives alongside in
+-`bin-help/sqlite_schema.txt` — consult it before writing SQL.
++DB schema and SQL conventions live alongside in
++`bin-help/sqlite_schema.txt` — **consult before writing any SQL**.
++
++### Calling `ws.sql`
++
++`ws.sql(query)` returns a dict:
++`{"stdout": "<text>", "stderr": "...", "exit_code": 0|1}`. With the
++default `json_output=True` the stdout is a JSON array string. Always
++check `exit_code` first, then parse:
++
++```python
++res = ws.sql("SELECT sku, path FROM products LIMIT 3")
++if res["exit_code"] != 0:
++    raise RuntimeError(res["stderr"])       # surface the SQL error
++rows = json.loads(res["stdout"])            # list of dicts
++```
++
++For **large** result sets `/bin/sql` may emit several JSON arrays back
++to back — `json.loads` then raises `Extra data`. Use the streaming
++decoder:
++
++```python
++dec = json.JSONDecoder()
++buf = res["stdout"].lstrip()
++rows = []
++while buf:
++    obj, n = dec.raw_decode(buf)
++    rows.extend(obj if isinstance(obj, list) else [obj])
++    buf = buf[n:].lstrip()
++```
+ 
+ ## scratchpad vs state
+ 

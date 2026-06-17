@@ -1,0 +1,11 @@
+--- bp_checkout/v0001/content.md
++++ bp_checkout/v0002/content.md
+@@ -40,7 +40,7 @@
+ 
+ - `/docs/security.md` and `/docs/checkout.md` — the two active policies applied.
+ - `/proc/baskets/<id>.json` — only when ownership passed (customer actor) or it is the action target (employee actor).
+-- See [refs_and_submission](refs_and_submission.md) for the construction contract.
++- See [refs](refs.md) for the construction contract.
+ 
+ ## Anti-patterns
+ 

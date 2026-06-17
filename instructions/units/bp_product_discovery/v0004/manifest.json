@@ -1,0 +1,34 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0004",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-21T01:25:56+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t13",
+    "trial_id": "vm2-LxGkjZzoKUK8asdDALiwe9B1nbe",
+    "score": 0.0,
+    "score_detail": [
+      "answer contains invalid reference '/proc/catalog/FST-3SJKL8BF.json'"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-041532/0013-t13-vm2-LxGkjZzoKUK8asdDALiwe9B1nbe",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-041532/0013-t13-vm2-LxGkjZzoKUK8asdDALiwe9B1nbe-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Grader rejected the trial with 'answer contains invalid reference /proc/catalog/<sku>.json' for a SKU whose available_today was NULL at the store. The Executor cited all six candidate SKUs from the question in refs even though only two satisfied the 'at least 4 items' threshold. The /AGENTS.MD shaping rule says availability answers must reference only the available products, but the prior bp_product_discovery applied that rule to the message text alone and was silent about refs. The Refs to set in scratchpad section copied every candidate's products.path. This version adds an explicit 'qualifying set' Process step and rewrites the Refs section so that for availability / threshold / predicate questions only the products that pass the predicate enter refs; NULL inventory and below-threshold availability both fail the predicate. Adds a matching anti-pattern and a NULL-LEFT-JOIN clarification.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "sha256": "a66a4727ffea2a183221f61b8ad593b209d827bb3c28fb1e260ebf2731f7c6cc",
+      "why": "Documents the products / inventory / stores table shapes (including the path column and inventory keyed by (store_id, sku)) that Process steps 2 and 6 rely on."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0001 content if the qualifying-set rule turns out to be too narrow (e.g. graders for some availability questions accept candidate SKUs in refs)."
+  },
+  "no_semantic_change": false
+}

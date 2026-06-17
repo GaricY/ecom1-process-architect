@@ -1,0 +1,61 @@
+--- executor_core/v0012/content.md
++++ executor_core/v0013/content.md
+@@ -52,8 +52,9 @@
+   `index.md`).
+ - `bin-help/sqlite_schema.txt` — canonical warehouse schema, FK edges,
+   column types, primary keys, **plus SQL conventions** (dialect
+-  gotchas, the EAV layout of `product_properties`, value conventions
+-  like lowercase `value_text`, `families.name` structure). Consult
++  gotchas, the EAV property layout, lowercase text-value conventions,
++  family/grouping structure). The concrete table and column names live
++  in this file — read them here, never assume them from memory. Consult
+   before writing any SQL — even a "simple" one.
+ - `bin-help/<tool>.help.txt` — `--help` output for each `/bin/<tool>`.
+ - `vault/` — fresh mirror of live `/docs`, `/bin/README`, and every
+@@ -192,8 +193,8 @@
+ For every SELECT use `ws.sql_rows`:
+ 
+ ```python
+-res = ws.sql_rows("SELECT sku, path FROM products WHERE family_id = 7")
+-# res == {"rows": [{"sku": "...", "path": "..."}, ...],
++res = ws.sql_rows("SELECT col_a, col_b FROM some_table WHERE some_fk = 7")
++# res == {"rows": [{"col_a": "...", "col_b": "..."}, ...],
+ #         "row_count": N, "truncated": False}
+ # SQL error → RuntimeError(stderr) — surfaces as a snippet exception
+ ```
+@@ -208,7 +209,7 @@
+ rows, offset = [], 0
+ while True:
+     res = ws.sql_rows(
+-        f"SELECT * FROM payments ORDER BY id LIMIT {PAGE} OFFSET {offset}"
++        f"SELECT * FROM some_table ORDER BY some_id LIMIT {PAGE} OFFSET {offset}"
+     )
+     rows.extend(res["rows"])
+     if res["row_count"] < PAGE:
+@@ -274,21 +275,16 @@
+   victim's data.
+ - Never bypass `execute_python` to reach the runtime.
+ 
+-## Mutation preflight (`/bin/checkout`, `/bin/discount`, `/bin/payments`)
++## Mutation preflight
+ 
+ The mutation gate lives in
+ [`business_processes/index.md`](business_processes/index.md) §4. Before any
+ mutating `/bin/*` call, every gate (capability, ownership, state, request)
+ must hold. Missing any → submit a blocked outcome without calling the
+-tool. Each specific mutator has its own per-process file with the verbatim
+-gate set:
+-
+-- `/bin/checkout` →
+-  [`business_processes/checkout.md`](business_processes/checkout.md)
+-- `/bin/discount` →
+-  [`business_processes/discount.md`](business_processes/discount.md)
+-- `/bin/payments recover-3ds` →
+-  [`business_processes/payments_3ds_recovery.md`](business_processes/payments_3ds_recovery.md)
++tool. Which `/bin/*` tools mutate — and the per-process file that carries
++each one's verbatim gate set — are listed in the index table (the
++`Mutating` column). Open that process file for the tool you are about to
++call.
+ 
+ ## Stop rules
+ 

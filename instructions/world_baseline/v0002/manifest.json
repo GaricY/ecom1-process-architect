@@ -1,0 +1,87 @@
+{
+  "version": "v0002",
+  "parent": "v0001",
+  "created_at": "2026-05-22T02:15:37+00:00",
+  "created_by": "process_architect",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LxL8MFEQKwZDZZfwSXC5oQQXFPE",
+    "baseline_version": "v0001",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260522-050537/0001-t01-vm2-LxL8MFEQKwZDZZfwSXC5oQQXFPE-process-architect-world-refresh-v0001",
+    "queue_priority": "world_refresh"
+  },
+  "rationale": "world_refresh advance from v0001",
+  "no_semantic_change": false,
+  "files": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "bytes": 2354,
+      "why": "top-level navigation: key locations, important tools, response shaping"
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/README.md",
+      "sha256": "405181535569246f1507ec54a56129f53538bc959788bfa1bb2f36e5051840f0",
+      "bytes": 5715,
+      "why": "Document Families taxonomy (active policies vs operational background)"
+    },
+    {
+      "kind": "workspace",
+      "path": "/run/actions/README.md",
+      "sha256": "2c25d7da9159e56242d7d7ec414b2ec4ecfcc531394ca8d597720a5139032aea",
+      "bytes": 64,
+      "why": "registered commerce-action control files (empty today; non-empty signals a new action domain)"
+    },
+    {
+      "kind": "bin_help",
+      "path": "sqlite_schema.txt",
+      "sha256": "56106491f8562e6adfc81f52a9c068ac1b97c440d52a524a75739027dedd3ccd",
+      "bytes": 6850,
+      "why": "warehouse schema; cross-cutting reference for SQL conventions across BPs"
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "sha256": "65ef4279c83faf04c0c854f078421aad488f6059621f449ef6d9f54c6f4814ad",
+      "bytes": 101,
+      "why": "/bin/checkout tool surface; a new verb can enable a checkout workflow even without a docs/schema change"
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "bytes": 81,
+      "why": "/bin/date tool surface; simulation-clock / dated-rule capability"
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "bytes": 234,
+      "why": "/bin/discount tool surface; a new verb can enable a discount workflow even without a docs/schema change"
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "bytes": 131,
+      "why": "/bin/id tool surface; caller identity (guest/customer/employee) capability"
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "be72833684356ee5588de72f46752a358606569e3480e2cc86647173f5b645b7",
+      "bytes": 356,
+      "why": "/bin/payments tool surface; new verbs (e.g. refund approval/finalization) signal a new payment-side workflow"
+    },
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "sha256": "a66a4727ffea2a183221f61b8ad593b209d827bb3c28fb1e260ebf2731f7c6cc",
+      "bytes": 1728,
+      "why": "/bin/sql tool surface; read-only warehouse query capability and usage contract"
+    }
+  ]
+}

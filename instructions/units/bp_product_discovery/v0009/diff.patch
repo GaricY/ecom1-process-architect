@@ -1,0 +1,31 @@
+--- bp_product_discovery/v0008/content.md
++++ bp_product_discovery/v0009/content.md
+@@ -15,21 +15,17 @@
+ 
+ ## Process
+ 
++For catalogue count/reporting update semantics, invoke [policy_update_scan](policy_update_scan.md). This file owns catalogue/inventory SQL and reply shaping; the helper owns bounded update matching and date-scope interpretation.
++
+ 1. Call `/bin/id` (cheap, also drives "my" handling). Identity is informational here; discovery answers do not depend on actor.
+ 2. For an availability question: `SELECT available_today FROM inventory WHERE store_id = ? AND sku = ?` (or the equivalent batch query for a list). `inventory` is keyed by `(store_id, sku)`; missing row means not stocked at that store. Treat both **no inventory row** (LEFT JOIN returns `NULL`) and `available_today = 0` as "not available today" — neither contributes to a positive availability answer.
+-3. For "how many products of kind X today?" or any catalogue **count** question: before answering with a plain `COUNT(*)`, check `/docs/README.md` "today's catalogue reporting rule" for dated overrides. From `/docs/README.md`:
++3. For "how many products of kind X today?" or any catalogue **count** question: invoke [policy_update_scan](policy_update_scan.md) before answering with a plain `COUNT(*)`. Pass the helper the catalogue-count workflow, requested product kind/name/`kind_id`, city/store/family/day scope from the request, and any candidate update paths found under the bounded `/docs` update locations. Then apply the helper result here:
+ 
+-   > Current reporting updates may live under paths such as `/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, or `/docs/catalogue-addenda/`. If a matching update names the catalogue count workflow, requested product kind, operating day, city, family hold, or similar scope, use that rule instead of the plain catalogue row count.
++   - Matching update with a count/reporting rule -> use that rule instead of plain `COUNT(*)`, and cite the matched update path plus `/docs/README.md` because the reporting-update rule shaped the answer.
++   - Matching update that narrows scope away from the request -> do not apply it; record why in scratchpad.
++   - No matching update -> answer from plain SQL `COUNT(*)` over the requested catalogue scope.
+ 
+-   Sub-steps — run all of them, in order, before submitting any count answer:
+-
+-   1. Use `ws.tree("/docs")` to enumerate the dated-update folders listed above. List every candidate update file whose name or body matches the request's workflow, requested kind, kind_id, city, or family scope.
+-   2. For every candidate update file, `ws.read` it and extract its scope fields (typically `Operating day`, `Workflow`, `Requested product kind`, `Requested kind_id`, plus any city / store / family qualifier).
+-   3. Call `/bin/date` (per [date_and_time](date_and_time.md)) **before** judging whether any candidate is stale. The simulation's "today" is the value `/bin/date` returns. Do **not** infer "today" from the harness, CLAUDE.md, system context, a file's modification time, or wall-clock reasoning — those are not the simulation's clock and routinely disagree with it.
+-   4. Decide whether the candidate update applies. An update is the active rule for this count question when its scope fields name the same workflow AND the same requested product kind (by name or `kind_id`) AND its `Operating day` equals `/bin/date`'s value AND any city / family qualifier matches the request. If all those agree, use the update's count rule (not plain `COUNT(*)`) AND cite the update path in refs.
+-   5. When a candidate update names the requested `kind_id` (or product-kind name) **verbatim**, treat that as strong evidence it is today's rule for this exact question. Do not dismiss such an update on the operating-day check unless `/bin/date` has been called this trial and its value plainly does not equal the update's `Operating day`. If `/bin/date` was not called, you cannot conclude the update is stale — go back to sub-step 3.
+-   6. If no candidate update matches after the checks above, plain `COUNT(*)` is the answer; record in scratchpad which updates were considered and why each was rejected (operating-day mismatch / wrong kind / wrong city) so the audit trail shows the rule was checked.
+-
++   The operating day in an update filename/header is not a local TTL check in this BP. Let [policy_update_scan](policy_update_scan.md) decide when `/bin/date` is a filter versus a scope dimension, and record that decision in scratchpad.
+ 4. For "which stores" / "is the store open?": consult `/proc/stores/<id>.json` (open/closed via SQL `stores.is_open`). For multi-store cities, apply the city nuance from `/proc/stores/README.md` before answering (e.g. "the west-side Vienna shop" = Meidling).
+ 5. **Reply shaping rule** (`/AGENTS.MD`): availability answers mention only what **is** available; do not list the unavailable. Same for stores: mention only the open ones. For yes/no, include the `<YES>` or `<NO>` token. For a count, include `<COUNT:N>`.
+ 6. **Refs shaping rule for availability questions** (also from `/AGENTS.MD` "should not reference unavailable products"). The reply shaping rule from step 5 governs `refs` too, not only the answer message:

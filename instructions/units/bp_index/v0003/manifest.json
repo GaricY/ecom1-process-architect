@@ -1,0 +1,20 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-05-26T08:22:43+00:00",
+  "created_by": "codex",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "task-019",
+    "change_plan": ".tasks/task-019/changes/changes_P0.md",
+    "scope": "P0 decomposition of current business processes"
+  },
+  "rationale": "Rewrite routing for the P0 decomposition: bp_refs_and_submission is removed from active routing and replaced with focused refs, submission_terminal, fraud_risk_review, policy_update_scan, and privacy_and_disclosure routes.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Create a new version from v0002 if the decomposed routing causes the executor to miss required process files."
+  },
+  "no_semantic_change": false
+}

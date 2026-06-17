@@ -1,0 +1,64 @@
+{
+  "world_files": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "why": "top-level navigation: key locations, important tools, response shaping"
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/README.md",
+      "why": "Document Families taxonomy (active policies vs operational background)"
+    },
+    {
+      "kind": "workspace",
+      "path": "/run/actions/README.md",
+      "why": "registered commerce-action control files (empty today; non-empty signals a new action domain)"
+    },
+    {
+      "kind": "workspace",
+      "path": "/bin/README.md",
+      "why": "/bin tool-surface guide: which /bin/* tools enforce nothing (discount→/docs/discounts.md, payments→/docs/payments/3ds.md, payments approve-refund/refund→/docs/returns.md) plus the canonical SQL entry+discovery queries and the 'SQL clock is broken — trust /bin/date' note. Cross-cutting (SQL + payments + discount + returns BPs lean on it), so world-owned like sqlite_schema.txt/sql.help.txt — affects_units left false. Lives at vault/bin/README.md (workspace), not bin-help/ (that dir is only /bin/<tool> --help dumps)."
+    },
+    {
+      "kind": "bin_help",
+      "path": "sqlite_schema.txt",
+      "why": "warehouse schema; cross-cutting reference for SQL conventions across BPs"
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "affects_units": true,
+      "why": "/bin/checkout tool surface; a new verb can enable a checkout workflow even without a docs/schema change. affects_units: narrowly scoped to the checkout BP — drift should refresh that unit per-unit, while still surfacing in world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "affects_units": true,
+      "why": "/bin/date tool surface; simulation-clock / dated-rule capability. affects_units: scoped to the date/time BP — per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "affects_units": true,
+      "why": "/bin/discount tool surface; a new verb can enable a discount workflow even without a docs/schema change. affects_units: scoped to the discount BP — per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "affects_units": true,
+      "why": "/bin/id tool surface; caller identity (guest/customer/employee) capability. affects_units: scoped to the identity/refs BPs — per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "affects_units": true,
+      "why": "/bin/payments tool surface; new verbs (e.g. refund approval/finalization) signal a new payment-side workflow. affects_units: scoped to the payments BP — per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "why": "/bin/sql tool surface; read-only warehouse query capability and usage contract. Cross-cutting (most BPs query SQL) — left world-only (matcher skips, world_refresh owns) to avoid per-unit fan-out"
+    }
+  ]
+}

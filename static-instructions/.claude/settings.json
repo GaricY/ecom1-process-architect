@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "mcp__ecom-python__execute_python",
+      "Write(./tmp/**)"
+    ],
+    "deny": [
+      "Bash",
+      "WebFetch",
+      "WebSearch",
+      "Edit",
+      "Write",
+      "Read(../**)",
+      "Read(/etc/**)",
+      "Read(/root/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/**)",
+      "Read(~/.claude/**)",
+      "Write(/etc/**)",
+      "Write(/root/**)",
+      "Write(../**)",
+      "Write(~/**)"
+    ]
+  }
+}

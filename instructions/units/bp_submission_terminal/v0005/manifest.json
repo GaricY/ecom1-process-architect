@@ -1,0 +1,27 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-05-29T12:00:14+00:00",
+  "created_by": "codex",
+  "mode": "failure_fix",
+  "trigger": {
+    "command": "hand-edit",
+    "task_id": "task-026",
+    "note": "move role-without-runtime-action guard from bp_index to submission terminal"
+  },
+  "rationale": "Move the role-without-supported-workflow guard into the terminal pre-submit checks, where unsupported role-shaped actions are finalized as OUTCOME_NONE_UNSUPPORTED without manual edits.",
+  "dependencies": [
+    {
+      "kind": "static",
+      "path": "static-instructions/runtime_prelude.py",
+      "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",
+      "why": "Defines submit_and_exit as the terminal helper that writes the answer via ws.answer and exits the snippet."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0004 if this terminal guard conflicts with a future dedicated action BP that intentionally adds a supported workflow."
+  },
+  "no_semantic_change": false
+}
