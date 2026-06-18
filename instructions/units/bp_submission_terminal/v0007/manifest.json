@@ -14,6 +14,12 @@
   "rationale": "Refactor submission_terminal into a thin final-payload preflight: domain outcome selection stays in the topic BP, refs projection stays in refs.md plus the topic BP, and this unit owns answer-format precedence, mutation post-state confirmation, blocked-message privacy, the single submit_and_exit call, and the stop rule.",
   "dependencies": [
     {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "why": "Live answer-format contract: the yes/no <YES>/<NO> token and response-shaping rules the terminal preflight reads from the live /AGENTS.MD rather than hardcoding."
+    },
+    {
       "kind": "static",
       "path": "static-instructions/runtime_prelude.py",
       "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",

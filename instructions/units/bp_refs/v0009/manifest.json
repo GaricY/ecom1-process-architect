@@ -15,6 +15,12 @@
   "dependencies": [
     {
       "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "why": "Top-level grounding-reference rules: full repo path for every referenced object, cite the applied policy document, and list every concrete candidate object when asking for clarification."
+    },
+    {
+      "kind": "workspace",
       "path": "/docs/security.md",
       "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
       "why": "Authority for cross-boundary and personal-information citation boundaries."

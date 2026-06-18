@@ -3,12 +3,14 @@
     {
       "kind": "workspace",
       "path": "/AGENTS.MD",
-      "why": "top-level navigation: key locations, important tools, response shaping"
+      "affects_units": true,
+      "why": "top-level navigation: key locations, important tools, response shaping. affects_units: bp_refs (grounding-reference rules) and bp_submission_terminal (yes/no <YES>/<NO> token + answer-format) pin it as a per-unit dependency, so its drift must mark those BPs stale (per-unit refresh) on top of the global world-drift attention. Narrow fan-out (only the two BPs that pin it), unlike cross-cutting sqlite_schema/sql.help which stay world-only."
     },
     {
       "kind": "workspace",
       "path": "/docs/README.md",
-      "why": "Document Families taxonomy (active policies vs operational background)"
+      "affects_units": true,
+      "why": "Document Families taxonomy (active policies vs operational background). affects_units: bp_product_discovery pins it as a per-unit dependency (catalogue reporting rule + dated-update folder list), so its drift must mark that BP stale (per-unit refresh) on top of the global world-drift attention. Narrow fan-out (only the BPs that pin it), unlike cross-cutting sqlite_schema/sql.help which stay world-only."
     },
     {
       "kind": "workspace",

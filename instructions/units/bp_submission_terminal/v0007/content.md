@@ -159,4 +159,4 @@ instead of patching refs locally here.
 > If any of these dependencies change, this BP file may have become stale and must be re-derived.
 
 - `runtime_prelude.py` - defines `submit_and_exit`, its `ws.answer` call, and the clean `SystemExit(0)` behavior after submission.
-- `/AGENTS.MD` - source of merchant reply-styling. It is world-only (tracked by `world_refresh`, deliberately not a per-unit manifest dependency); if its reply-styling protocol changes, this answer-format contract must be re-derived here.
+- `/AGENTS.MD` - source of merchant reply-styling. This unit pins it as a per-unit dependency so answer-format drift marks the terminal preflight stale even when `world_refresh` has not run yet.

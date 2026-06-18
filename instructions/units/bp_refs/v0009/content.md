@@ -296,6 +296,7 @@ safety.
 > If any of these dependencies change, this BP file may have become stale and must be re-derived.
 
 - `/docs/security.md` - cross-boundary rule and personal-information disclosure boundary.
+- `/AGENTS.MD` - top-level grounding-reference rules: full repo path for every referenced object, cite the applied policy document, and list every concrete candidate object when asking for clarification.
 - `/bin/id` (`--help`) - actor output shape used for customer/employee/guest branching.
 - SQL table `shopping_baskets` - customer ownership, store pointer, status, and canonical `record_path` for basket refs.
 - SQL table `payment_transactions` - customer ownership, basket/store pointers, status, and canonical `record_path` for payment refs.

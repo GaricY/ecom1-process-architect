@@ -12,7 +12,38 @@
     "change": "refs evidence ledger refactor"
   },
   "rationale": "Refactor refs from a flat scratchpad list into typed Evidence ledger roles. refs.md owns the shared model and safety projection; topic BPs classify their domain evidence; submission_terminal checks the completed ledger before submit.",
-  "dependencies": [],
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/merchant-continuity-and-critical-incidents.md",
+      "sha256": "e28bf950b9b1457135515ca39da06aa2cca1c8957a266b016054b188699ff552",
+      "why": "Decoy doc: incident vocabulary and its own boundary statement that grants no customer authorization."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/store-associate-exception-handbook.md",
+      "sha256": "747f9ae32758b072079b53e6e1e225d6a664724b27416a13ad88d95e749a4957",
+      "why": "Decoy doc: store-floor exception vocabulary and its own boundary statement."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/warehouse-systems-migration-runbook.md",
+      "sha256": "cd8ab8060ab810b4ef10c93cd415d99b9cf330559fcce82f420cf0af734eee80",
+      "why": "Decoy doc: warehouse migration vocabulary and its own boundary statement."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/powertools-agentic-os-origin-story.md",
+      "sha256": "4daaf46056c4277d1f15587e58732b81cf7a5755c8959c2ca46304d302c74af0",
+      "why": "Decoy doc: legacy-context vocabulary and its own boundary statement."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/README.md",
+      "sha256": "979477da9930204f8601cfbddacdce2def31f8374336449b65825bb6e78aaee0",
+      "why": "Defines the Document Families split (Active Decision Policies vs Operational Background) that this BP relies on to classify the decoys."
+    }
+  ],
   "rollback": {
     "strategy": "Retire this version to fall back to v0002, or issue a new manual_refactor version with adjusted ledger wording."
   },

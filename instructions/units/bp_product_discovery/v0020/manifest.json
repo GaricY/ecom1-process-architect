@@ -14,6 +14,18 @@
   "rationale": "Separate product-discovery domain verdicts and required answer identifiers from generic terminal payload formatting. Claim verification now records the verdict and required identifier/path payload for submission_terminal instead of restating yes/no token rules or concrete submit message examples.",
   "dependencies": [
     {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "why": "Reply-shaping rule that pure availability answers reference only what is available (never the unavailable); step 7 extends it to refs."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/README.md",
+      "sha256": "979477da9930204f8601cfbddacdce2def31f8374336449b65825bb6e78aaee0",
+      "why": "Defines the catalogue reporting rule and the dated-update folder list used by count/reporting questions."
+    },
+    {
       "kind": "bin_help",
       "path": "date.help.txt",
       "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
