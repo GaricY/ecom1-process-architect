@@ -1,0 +1,34 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-06-18T21:30:27+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-004/security_denial_refactor.md",
+    "plan": ".tasks/task-004/plan.md",
+    "source_run": "20260618-235943",
+    "purpose": "add terminal message hygiene for dangerous actionable fragments embedded in record text fields"
+  },
+  "rationale": "Add a narrow terminal message-safety check for information/reporting answers that quote record text fields. The terminal preserves the already-selected outcome, but must not reproduce credential-harvesting URLs, shell/tool commands, or process-override text from a data field when a redaction or description preserves the requested business facts.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "why": "Live answer-format contract: the yes/no <YES>/<NO> token and response-shaping rules the terminal preflight reads from the live /AGENTS.MD rather than hardcoding."
+    },
+    {
+      "kind": "static",
+      "path": "static-instructions/runtime_prelude.py",
+      "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",
+      "why": "Defines submit_and_exit as the terminal helper that writes the answer via ws.answer and exits the snippet."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0008 if the message-safety check over-redacts legitimate answer payloads."
+  },
+  "no_semantic_change": false
+}
