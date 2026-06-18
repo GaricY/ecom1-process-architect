@@ -1,0 +1,68 @@
+--- bp_fraud_risk_review/v0007/content.md
++++ bp_fraud_risk_review/v0008/content.md
+@@ -40,8 +40,8 @@
+ 11. When a mandatory hard family returns zero, validate the negative. Record the top max-metric for that family, not only `zero`: for travel, the largest same-actor observed speed or observed jump in scope; for burst, the largest same-actor short-window distinct-target count and observed spread. If the max-metric contradicts the zero result, fix the query before trusting the ledger.
+ 12. For high-count fuzzy signals, regroup by `(actor_id, short_time_window)` before discarding as noise. A broad legitimate tail can hide a dense hard-supported burst, but the broad tail itself must not be cited unless it passes the hard gate.
+ 13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort.
+-14. After the hard gate, the final cohort is the union of every hard-supported cluster in the task scope. Different hard families may identify different sub-clusters of the same risk answer. Do not submit only the first, largest, or cleanest hard cluster while another hard family has nonzero matches.
+-15. Interpret "one hit" / "one incident" as one evidence-connected campaign, not one pure date window. Time span is a sanity check after hard membership is established; different date or different MO is not enough to exclude a hard-supported cluster unless the brief explicitly narrows the scope.
++14. After the hard gate, the final cohort is the union of every hard-supported sub-cluster that belongs to the incident the brief asks about. Different hard families may identify different sub-clusters of the *same* evidence-connected incident; include all of them and do not submit only the first, largest, or cleanest sub-cluster of that incident. Sub-clusters belong to one incident only when a connecting signal ties them together (rule 15); hard hits on different actors with no connecting signal are separate candidates, not automatic co-members of one cohort.
++15. "One hit" / "one incident" / "one record" is a cardinality claim about one evidence-connected campaign, not one pure date window and not the union of every hard family's matches. Two clusters are evidence-connected only when they share the actor, share an exact identifier the sweep confirmed (`payment_method_fingerprint`, `device_fingerprint`, a repeated basket, or another cross-actor collision), or are tied by a structural cross-actor link - not merely because the same hard family flagged them, they fall on the same day, or they both look suspicious. When the brief asserts a single hit and the sweep surfaces multiple clusters that are NOT evidence-connected (different actors, no shared identifier, possibly different MO), they are competing candidates for that one hit, not co-members: select the single campaign whose records most strongly corroborate each other (more records, more distinct targets inside a tighter window, multiple reinforcing signals), cite only that campaign, and route the rest to `considered_not_cited`. Fall back to `OUTCOME_NONE_CLARIFICATION` citing the competitors only when two campaigns are genuinely tied and the brief gives no basis to choose. When the brief states no cardinality, rule 14's union stands. A different date or MO alone never excludes a sub-cluster that IS evidence-connected to the chosen incident.
+ 16. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, or temporal proximity.
+ 17. Run the final cohort query without `LIMIT` or with a bound far above the plausible cohort size and confirm it did not truncate.
+ 
+@@ -140,19 +140,19 @@
+ - hard-supported vs soft-only classification for each match set;
+ - missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
+ - validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
+-- hard-hit union check: if multiple hard families have hits, every hard-supported cluster is represented in the final refs;
+-- exclusion reason for any hard hit left out; "different date" or "different MO" is not enough unless the user brief explicitly narrowed the scope;
++- incident-membership / cardinality check: every sub-cluster evidence-connected to the chosen incident is represented in the final refs; if the brief asserts a single hit and the hard clusters are not evidence-connected, only the selected campaign's records are cited, with the failed connecting-signal test recorded (e.g. cross-actor identifier collision = zero) and the competing candidates listed in `considered_not_cited`;
++- exclusion reason for any hard hit left out; "different date" or "different MO" is not enough to exclude a sub-cluster evidence-connected to the chosen incident;
+ - per-record evidence map for the final cohort;
+ - disjoint hard sub-cluster count and temporal span;
+ - confirmation that no final record is supported only by a soft signal;
+ - final cohort count with no truncation.
+ 
+-The message records and `refs` records must be the same pruned hard-supported union.
++The message records and `refs` records must be the same pruned hard-supported cohort.
+ 
+ ## Outcomes
+ 
+ - `OUTCOME_OK`: complete hard-supported cohort or requested risk answer found and cited.
+-- `OUTCOME_NONE_CLARIFICATION`: the brief does not define enough scope to choose between multiple plausible hard-supported cohorts.
++- `OUTCOME_NONE_CLARIFICATION`: the brief does not define enough scope to choose between multiple plausible hard-supported cohorts - including a single-hit brief with two or more equally evidence-connected campaigns and no tiebreak.
+ - `OUTCOME_NONE_UNSUPPORTED`: the requested risk action requires a mutation or policy not present in the runtime.
+ - `OUTCOME_DENIED_SECURITY`: only when the task asks to expose private customer/contact data outside the allowed boundary.
+ 
+@@ -177,7 +177,8 @@
+ `considered_not_cited`:
+ 
+ - Soft-only candidates, threshold-only bands, rejected hard-family candidates,
+-  false leads, and candidate clusters outside the final hard-supported union.
++  false leads, and candidate clusters outside the final hard-supported cohort -
++  including competing unconnected hard clusters dropped under a single-hit brief.
+ - Private contact/profile fields read for risk context but not allowed in the
+   answer.
+ 
+@@ -188,7 +189,8 @@
+ 
+ `refs_must_not_include`:
+ 
+-- Soft-only records, truncated examples, rejected candidates, private contact
++- Soft-only records, truncated examples, rejected candidates, competing
++  unconnected clusters dropped under a single-hit brief, private contact
+   records, or rows used only to validate a zero result.
+ 
+ `post_state_records`:
+@@ -212,7 +214,9 @@
+ - Treating stable observed coordinates as soft when one actor rotates through many distinct stores, targets, or resources inside minutes.
+ - Sweeping only observed coordinates when a claimed target coordinate axis exists.
+ - Unioning a soft-only cluster into a true incident because it is nearby in time, amount, customer family, or narrative similarity.
+-- Dropping a nonzero hard-supported cluster because another hard cluster is cleaner, larger, earlier, or uses a different MO.
++- Unioning hard hits on different actors into one cohort with no cross-actor connecting signal (shared fingerprint/device, repeated basket, or another confirmed collision), especially when the brief asserts a single hit; unconnected actors are competing candidates, not one campaign.
++- Treating every record returned by one hard-family query as one cluster; independent single-actor flags from the same family are separate candidates until a connecting signal links them.
++- Dropping a hard-supported sub-cluster of the *same* evidence-connected incident because another sub-cluster is cleaner, larger, earlier, or uses a different MO.
+ - Dropping smaller hard-supported sub-clusters of the same incident.
+ - Using `LIMIT 10` or `LIMIT 20` on the query that drives the final answer.
+ - Treating "one hit" as one record, one actor, or one date window.

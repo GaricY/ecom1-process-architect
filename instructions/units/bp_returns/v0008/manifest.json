@@ -1,0 +1,75 @@
+{
+  "unit_id": "bp_returns",
+  "version": "v0008",
+  "parent": "v0007",
+  "status": "active",
+  "created_at": "2026-06-18T09:04:42+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-002/submission_terminal_refactor.md",
+    "plan": ".tasks/task-002/plan.md",
+    "purpose": "separate terminal preflight from domain reasoning and refs projection"
+  },
+  "rationale": "Remove generic answer-token wording from the returns topic BP. The returns process now records yes/no or identifier answer kind and domain facts, while submission_terminal owns the final message payload format.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/returns.md",
+      "sha256": "dde4289fce561e43dbb85cac5cc87415c3f042d72ce043748d71032fa57e1bab",
+      "why": "Authoritative refund-workflow policy: the four/five-gate sets (including the linked-payment paid gate) and the role/status enums that this edit operationalises as a no-short-circuit, always-read-and-cite-the-payment rule."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Identity/ownership/role rule named verbatim as a prerequisite by /docs/returns.md; part of the applied-policy bundle and refs whenever the refund flow is evaluated."
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "be72833684356ee5588de72f46752a358606569e3480e2cc86647173f5b645b7",
+      "why": "Tool signatures for approve-refund <return_id> and refund <return_id>; if a new return-mutating verb appears the Process/Tools sections must be re-derived."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_requests",
+      "sha256": "1f62b186328a837536425904e8789daaf26b56fcf44eb0b75b2762e4cc2f2e3c",
+      "why": "Return id, return_status, reason code, and basket/payment/customer foreign keys used for bulk triple reconciliation; status enum drives the gate text."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transactions",
+      "sha256": "19104e8b96a076bde97c0f841c2b9ac35f781199842368b2f8d866b2299848c1",
+      "why": "payment_status (the paid gate) and basket/customer links; the linked payment is the record this edit forces to be read and cited."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket ownership (customer_id) used by the finalization triple check referenced in Process C."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transaction_items",
+      "sha256": "fd85ad998f44b4477ac3e3e64ec766dde9e24e25cec62400cac44178d5f795bc",
+      "why": "Surviving line snapshot for archived payments during information/reconciliation lookups described in the archived-payment note."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/returns/README.md",
+      "sha256": "dd87ed87f590ff6d6804c3c7e6340d1c44052f81ec4b4b4cab3d21f52be334ea",
+      "why": "Return status vocabulary and reconciliation keys; source for the status tokens enumerated in the gates."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/payments/README.md",
+      "sha256": "278fc0d64459f7aa0a282f75a78ea451c5a5317ad2033f615bf66854ecc80cfc",
+      "why": "Archived-payment semantics (basket_archived, cold-storage baskets, payment line snapshots) referenced by the reconciliation and finalization gates."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0007 if removing explicit topic-level payload wording causes return state answers to lose their required format."
+  },
+  "no_semantic_change": false
+}

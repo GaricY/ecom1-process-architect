@@ -1,0 +1,64 @@
+--- bp_fraud_risk_review/v0008/content.md
++++ bp_fraud_risk_review/v0009/content.md
+@@ -33,13 +33,14 @@
+    - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, or any smooth threshold band with no structural confirmation.
+ 8. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
+ 9. For location/target signals, keep the query shapes separate:
+-   - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time;
++   - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time. The consecutive-pair comparison is only a detector. When it flags an actor, the fraud unit is that actor's dense anomaly window — the tight time span in which that actor's observed coordinates cannot be reconciled to one trajectory (one identity present at impossibly-separated places). Expand the hit to every archived row of that actor inside that window, including rows whose neighbouring transition is same-location or fell just outside the pairwise time gate; never cite only the two rows that bracket a flagged jump while dropping the rest of the window;
++   - a confirmed travel incident is a dense moving burst: one actor rotating through several distinct, impossibly-separated observed locations within minutes (large observed spread, unlike the stationary burst below). A single isolated two-event crossing — the actor's only events in the window, with no surrounding dense rotation and no other hard-family signal on the same actor or rows — is not by itself a confirmed incident, however large the distance; record it as a soft candidate in `considered_not_cited` and corroborate before citing. This does not weaken inseparable-group inclusion once a cluster is genuinely confirmed;
+    - do not compute impossible travel from store, customer home-area, or other claimed target coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
+    - stationary single-actor burst is grouped by one actor/customer, not by one store and not by multiple customers. The window is a dense sub-window from each event, not `MAX(payment_created_at) - MIN(payment_created_at)` over the actor's whole history. Count events, distinct stores/targets/resources, and distinct cities when joined; confirm observed-coordinate spread inside the window is small; expand a hard hit to all in-window records for that actor without `LIMIT`.
+ 10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores or distant customer home-area at ordinary cadence is remote shopping context; stable observed plus many distinct stores, cities, targets, or resources within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store/home distance alone.
+ 11. When a mandatory hard family returns zero, validate the negative. Record the top max-metric for that family, not only `zero`: for travel, the largest same-actor observed speed or observed jump in scope; for burst, the largest same-actor short-window distinct-target count and observed spread. If the max-metric contradicts the zero result, fix the query before trusting the ledger.
+ 12. For high-count fuzzy signals, regroup by `(actor_id, short_time_window)` before discarding as noise. A broad legitimate tail can hide a dense hard-supported burst, but the broad tail itself must not be cited unless it passes the hard gate.
+-13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort.
++13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort. This applies once a cluster is confirmed hard; it does not promote a lone isolated two-event travel crossing (rule 9) into a confirmed incident on its own.
+ 14. After the hard gate, the final cohort is the union of every hard-supported sub-cluster that belongs to the incident the brief asks about. Different hard families may identify different sub-clusters of the *same* evidence-connected incident; include all of them and do not submit only the first, largest, or cleanest sub-cluster of that incident. Sub-clusters belong to one incident only when a connecting signal ties them together (rule 15); hard hits on different actors with no connecting signal are separate candidates, not automatic co-members of one cohort.
+ 15. "One hit" / "one incident" / "one record" is a cardinality claim about one evidence-connected campaign, not one pure date window and not the union of every hard family's matches. Two clusters are evidence-connected only when they share the actor, share an exact identifier the sweep confirmed (`payment_method_fingerprint`, `device_fingerprint`, a repeated basket, or another cross-actor collision), or are tied by a structural cross-actor link - not merely because the same hard family flagged them, they fall on the same day, or they both look suspicious. When the brief asserts a single hit and the sweep surfaces multiple clusters that are NOT evidence-connected (different actors, no shared identifier, possibly different MO), they are competing candidates for that one hit, not co-members: select the single campaign whose records most strongly corroborate each other (more records, more distinct targets inside a tighter window, multiple reinforcing signals), cite only that campaign, and route the rest to `considered_not_cited`. Fall back to `OUTCOME_NONE_CLARIFICATION` citing the competitors only when two campaigns are genuinely tied and the brief gives no basis to choose. When the brief states no cardinality, rule 14's union stands. A different date or MO alone never excludes a sub-cluster that IS evidence-connected to the chosen incident.
+ 16. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, or temporal proximity.
+@@ -78,6 +79,8 @@
+ ```
+ 
+ If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
++
++This query surfaces only *adjacent* impossible transitions; it is a detector, not the cohort. Once it flags an actor, re-extract that actor's full dense anomaly window — every archived row within the tight span around the flagged transition where the actor's observed locations cannot be reconciled to one trajectory — and cite the whole window-cluster. Non-adjacent rows, same-city rows inside the window, and rows whose neighbour transition fell just outside the pairwise gate all belong to the incident; citing only the bracketing pair undercounts both the cohort and the answer amount. Conversely, confirm the window is a genuine multi-event rotation across distinct locations: a lone two-event crossing for an actor with no surrounding cluster and no other hard-family hit is a soft candidate, not a confirmed incident — keep it in `considered_not_cited` unless corroborated.
+ 
+ ### Stationary Single-Actor Burst Shape
+ 
+@@ -116,6 +119,8 @@
+ 
+ If this shape returns a hard hit, expand the final cluster to all in-window records for that actor. If it returns zero, record the top short-window `distinct_stores`, `payment_count`, and `observed_spread_l1` from the same sliding-window shape.
+ 
++The stationary shape requires a *small* `observed_spread_l1`; it deliberately excludes the moving multi-location burst (one actor at several impossibly-separated places in a tight window). Do not conclude "no burst" from a zero here — a large short-window `distinct_stores`/`distinct_cities` with a *large* observed spread is a moving travel burst and belongs to the impossible-travel family above, where its full window-cluster is the cohort.
++
+ ### General Risk Primitives
+ 
+ For new risk angles such as delivery, reservation, refund, inventory, or non-3DS payment flows, first map the schema into these axes:
+@@ -140,6 +145,7 @@
+ - hard-supported vs soft-only classification for each match set;
+ - missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
+ - validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
++- travel-cohort completeness: for each confirmed impossible-travel actor, the cited rows are that actor's full dense anomaly window, not only the rows that bracket a flagged adjacent jump; and any isolated single-pair travel crossing left uncited is recorded in `considered_not_cited` with its reason;
+ - incident-membership / cardinality check: every sub-cluster evidence-connected to the chosen incident is represented in the final refs; if the brief asserts a single hit and the hard clusters are not evidence-connected, only the selected campaign's records are cited, with the failed connecting-signal test recorded (e.g. cross-actor identifier collision = zero) and the competing candidates listed in `considered_not_cited`;
+ - exclusion reason for any hard hit left out; "different date" or "different MO" is not enough to exclude a sub-cluster evidence-connected to the chosen incident;
+ - per-record evidence map for the final cohort;
+@@ -179,6 +185,8 @@
+ - Soft-only candidates, threshold-only bands, rejected hard-family candidates,
+   false leads, and candidate clusters outside the final hard-supported cohort -
+   including competing unconnected hard clusters dropped under a single-hit brief.
++- Isolated two-event travel crossings that did not reach a confirmed dense
++  window-cluster and were not corroborated by another hard family.
+ - Private contact/profile fields read for risk context but not allowed in the
+   answer.
+ 
+@@ -207,6 +215,9 @@
+ - Treating observed-vs-home distance as hard evidence by itself; home coordinates are coarse risk-fixture context.
+ - Treating a missing live basket file on an archived payment as a hard inconsistency before checking the archive flag and payment line snapshot.
+ - Computing impossible travel from store coordinates or other claimed target coordinates instead of observed coordinates.
++- Citing only the time-adjacent rows that bracket an impossible-travel jump while dropping the same actor's other rows inside the same dense anomaly window.
++- Treating an isolated two-event impossible-travel crossing as a confirmed incident when the actor shows no surrounding dense multi-location rotation and no other hard-family signal on the same actor or rows.
++- Concluding "no burst" from the stationary-burst shape when the actor's dense short window has a large observed spread; that is a moving travel burst, not an absence of fraud.
+ - Substituting a multi-customer same-store/co-location query for the stationary single-actor multi-target burst check.
+ - Treating `MAX(payment_created_at) - MIN(payment_created_at)` over an actor's whole history as a dense burst window.
+ - Treating a new device, high amount, or one actor's long busy timeline as fraud without a hard signal.

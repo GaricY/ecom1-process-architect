@@ -1,0 +1,16 @@
+--- executor_core/v0015/content.md
++++ executor_core/v0016/content.md
+@@ -323,9 +323,8 @@
+ 
+ ## Answer format
+ 
+-The `message` answer-format / token contract has a single home:
++The `message` answer-format contract has a single home:
+ [`business_processes/submission_terminal.md`](business_processes/submission_terminal.md)
+-§ *Answer format*. Read and apply it immediately before `submit_and_exit`. It is
+-not restated here — deliberately, so the contract cannot drift across copies.
+-The format clause and the yes/no token are easy to drop, so re-read the
+-instruction and that section before composing `message`.
++§ *Answer format*. Read and apply it immediately before `submit_and_exit`.
++Do not restate examples or token rules in `executor_core`; the terminal section
++is the source of truth, so the contract cannot drift across copies.

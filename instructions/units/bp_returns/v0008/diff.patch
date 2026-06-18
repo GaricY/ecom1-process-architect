@@ -1,0 +1,11 @@
+--- bp_returns/v0007/content.md
++++ bp_returns/v0008/content.md
+@@ -32,7 +32,7 @@
+ 
+ 1. Read the return via `/proc/returns/<id>.json` (or reconcile in bulk via `/bin/sql` joining `return_requests`, `shopping_baskets`, `payment_transactions` on the triple).
+ 2. Reconcile the triple: `return.payment_id` resolves under `/proc/payments/`; if the basket resolves under `/proc/baskets/`, it must share the same `customer_id`. If the basket file is missing but the linked payment is archived (`basket_archived` / `is_archived_basket_reference`), treat that as normal cold storage for information lookup and use the payment's `customer_id`, `basket_id`, and line snapshot (or SQL `payment_transaction_items`) as surviving evidence. If a non-archived leg fails to resolve, or resolved customer ids contradict each other, treat as `OUTCOME_NONE_UNSUPPORTED` — the record set is inconsistent.
+-3. For yes/no questions about whether a return is in a given state, compare the record's `status` to the requested token and answer with `<YES>` / `<NO>`. For shape / id lookups, answer in the literal format the instruction demands. No tool runs.
++3. For yes/no questions about whether a return is in a given state, compare the record's `status` to the requested token and record the boolean verdict as a yes/no answer kind for [submission_terminal](submission_terminal.md) to shape. For shape / id lookups, record the bare value or identifier the instruction asks for and let the terminal payload contract apply the exact final format. No tool runs.
+ 
+ ### B. Refund approval (employee path)
+ 

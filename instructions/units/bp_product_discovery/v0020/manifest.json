@@ -1,0 +1,75 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0020",
+  "parent": "v0019",
+  "status": "active",
+  "created_at": "2026-06-18T09:04:42+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-002/submission_terminal_refactor.md",
+    "plan": ".tasks/task-002/plan.md",
+    "purpose": "separate terminal preflight from domain reasoning and refs projection"
+  },
+  "rationale": "Separate product-discovery domain verdicts and required answer identifiers from generic terminal payload formatting. Claim verification now records the verdict and required identifier/path payload for submission_terminal instead of restating yes/no token rules or concrete submit message examples.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted date provider used when product count/update handling invokes policy_update_scan."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start (drives 'my' handling)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "Public product facts, properties JSON, and the canonical catalogue record_path cited for each item in a catalogue comparison or claim-verification answer."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variant_properties",
+      "sha256": "ea7da8c4f086eeabf0f263a9be56a6b30a9ef6dbeaf679f847741e2814aea4e4",
+      "why": "Per-SKU property rows (product_sku, property_key, property_value_*) used for claim verification."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_families",
+      "sha256": "f91adba41b6f6ca6cceae027026d468cd1c66c86fc2d9e6f83113f80c733636b",
+      "why": "Family/brand/model grouping used to identify products."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_kinds",
+      "sha256": "64d8ca45a0a4021f9503e4fec160b3d5881a049e84137d0f472f662f37c89121",
+      "why": "product_kind_id and product-kind scope for count questions."
+    },
+    {
+      "kind": "sql_table",
+      "path": "store_inventory",
+      "sha256": "d183bb628f5e91971122c50c63308a0c5fcdd8e4d9c8f86e46f0b6ca2648e5bc",
+      "why": "Store/SKU availability source: available_today_quantity keyed by (store_id, product_sku)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Public store ids, record_path cite paths, city nuance targets, and open status."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/stores/README.md",
+      "sha256": "4f5df1bf77a5435fadc5ce1f7397de2e56d1c5ef31e019110404b82124ded838",
+      "why": "Natural-language branch nuance used to choose between multiple stores in one city."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0019 if the terminal delegation weakens product claim-verification payload requirements."
+  },
+  "no_semantic_change": false
+}

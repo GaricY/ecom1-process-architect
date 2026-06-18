@@ -1,0 +1,46 @@
+--- bp_product_discovery/v0020/content.md
++++ bp_product_discovery/v0021/content.md
+@@ -47,7 +47,13 @@
+ Run this when the brief has that shape:
+ 
+ 1. **Read the input artifact live** and derive its baseline facts (old prices, quantities, listed SKUs, claimed totals) from its content. Keep its absolute live path (the path the task named, e.g. under `/uploads/...`).
+-2. **Map each line/SKU to the live catalogue** via SQL on `product_variants` (and related tables) and copy each matched product's `product_variants.record_path` verbatim. Compute the comparison from the input's baseline values against the current SQL values.
++2. **Map each line to the live catalogue** via SQL on `product_variants` (and related tables) and copy each matched product's `product_variants.record_path` verbatim. Compute the comparison from the input's baseline values against the current SQL values.
++
++   **An OCR'd / scanned / photographed input has unreliable identifier tokens.** Receipts, scans, and OCR dumps routinely corrupt characters — digit↔letter confusions such as `0`↔`O`, `1`↔`I`/`l`, `5`↔`S`, `8`↔`B`, `2`↔`Z`, `6`↔`G` — so a SKU/ref string copied off such a document is a hint, not an exact catalogue key. Do **not** conclude a line's product is missing from the catalogue just because an exact-`product_sku` match (or a literal substring `search`) returned no row. When an exact-SKU lookup misses a line:
++
++   - Re-resolve that line by the **other identifying fields the document itself prints** — product name / brand / series / model plus the line's unit price — with a tolerant SQL filter on `product_variants` (e.g. narrow by `brand` / `series` / `model` and `price_cents = <unit_price × 100>`, or `LOWER(product_name) LIKE LOWER('%…%')` on the de-noised name, then narrow by unit price). A printed unit price and human-readable name survive OCR far better than the SKU token and usually pin exactly one catalogue row.
++   - Only treat a line as **genuinely not sellable today** after both the exact-SKU lookup **and** this field-based reconciliation fail to find any plausible catalogue row. A single unmatched SKU token is not evidence the product is gone, and one unresolved line must not silently flip an otherwise within-tolerance comparison to the negative answer.
++   - Cite the reconciled row's `product_variants.record_path` (its real catalogue SKU), not the OCR'd token, and record the OCR'd-token→resolved-SKU mapping in `scratchpad["decision"]`.
+ 3. **The input artifact's own live path is a required ref.** The answer's baseline / "old" / "claimed" side came directly from it, so it is load-bearing answer evidence — not a mere audit-trail read. Cite the absolute live input path (e.g. the named `/uploads/...` path) in final `refs`, alongside the catalogue records you compared against, unless [privacy_and_disclosure](privacy_and_disclosure.md) forbids citing that input. If the baseline is pasted only inside `task.md` and has no live workspace path, keep it in scratchpad and do not fabricate a ref.
+ 
+ ## Catalogue claim verification
+@@ -128,9 +134,8 @@
+ - Comparison-against-an-input answers: the absolute live path of the
+   request-named input artifact whose facts the answer compared against, in
+   addition to the matched `product_variants.record_path` for each catalogue item
+-  the comparison used.
+-- `/docs/README.md` and matched update docs when a reporting/update rule shaped
+-  the answer.
++  the comparison used (including any line first resolved by name + price after
++  an OCR'd SKU token failed to match — cite the resolved row's `record_path`).
+ 
+ `refs_must_not_include`:
+ 
+@@ -149,6 +154,7 @@
+ - **Citing a SKU with no `store_inventory` row or with observed `available_today_quantity = 0` in `refs`** on a pure availability question. The "do not reference unavailable products" rule in `/AGENTS.MD` is not only about the answer text — it governs `refs` when availability defines the answer set. A SKU with no row is not stocked or observed at the queried store, and an observed `0` is still not positively available; both can satisfy a "less than / fewer than K" or "out of stock" count, but neither is citeable product availability evidence. Copying either product's `record_path` into `refs` is exactly what the grader rejects with `answer contains invalid reference '/proc/catalog/...json'`. Keep such SKUs in `scratchpad["decision"]` as the audit trail instead.
+ - **Dropping a public product ref from a non-pure availability answer because that product failed the stock predicate.** If the final answer identifies the product as a catalogue record in its own right, the ref grounds that identity/match claim unless a stronger policy forbids citing it.
+ - **Comparing live catalogue data against a handed-in input document (old receipt, uploaded OCR/scan, invoice, report) and citing only the catalogue records, dropping the input file's own live path.** The input supplied the baseline / "old" / "claimed" side of the comparison, so it is load-bearing evidence the answer depends on — not a discardable `read_set` entry. Copy the absolute live input path (the path the task named, e.g. under `/uploads/...`) into `refs` unless [privacy_and_disclosure](privacy_and_disclosure.md) forbids it, alongside the `/proc/catalog/...` records you compared against.
++- **Declaring a line item from an OCR'd / scanned / photographed input "not in the catalogue" — and flipping an otherwise within-tolerance comparison to the negative answer — because one exact-`product_sku` lookup or literal `search` returned no row.** OCR corrupts SKU tokens (`0`↔`O`, `1`↔`I`/`l`, `5`↔`S`, `8`↔`B`, `2`↔`Z`, `6`↔`G`, …); the printed unit price and human-readable name survive far better. Before concluding a product is gone, re-resolve the unmatched line by the name + brand/series/model + unit price the document also prints, with a tolerant SQL filter on `product_variants`. Only after that fallback also finds nothing is the line genuinely absent — and even then, the missing line is one item, not automatic grounds to invert a comparison the matched lines satisfy.
+ - **Dropping the selected store ref from a store-scoped availability/count answer because unavailable product refs are forbidden.** The selected store row is public location evidence for the inventory query. The restriction is against unavailable products and rejected/non-selected stores, not against the store actually queried.
+ - Skipping the catalogue reporting rule check on count questions when the live `/docs` tree exposes dated update candidates.
+ - **Declaring a dated update stale without calling `/bin/date` in this trial.** Wall-clock reasoning, the harness date, CLAUDE.md's "today", and the system clock are not the simulation's clock. If `/bin/date` has not been called, the operating-day comparison is not valid — and a dated update that names the requested workflow / kind / city must not be dropped from refs based on that invalid comparison.
+@@ -164,7 +170,7 @@
+ 
+ - `/docs/README.md` — defines the catalogue reporting rule and the dated-update folder list.
+ - `/AGENTS.MD` — source of the reply-shaping rule "availability answers reference only what is available", which step 7 extends to `refs`.
+-- `/bin/sql` (`--help`) — table shapes for `product_variants`, `product_variant_properties`, `store_inventory`, `stores`, `product_kinds`; the claim-verification section relies on the `product_variants.properties` JSON / `product_variant_properties (product_sku, property_key, property_value_*)` shape (one SKU → one value per property key) for the "extra claim is a property on the same SKU, not a sibling row" rule.
++- `/bin/sql` (`--help`) — table shapes for `product_variants`, `product_variant_properties`, `store_inventory`, `stores`, `product_kinds`; the claim-verification section relies on the `product_variants.properties` JSON / `product_variant_properties (product_sku, property_key, property_value_*)` shape (one SKU → one value per property key) for the "extra claim is a property on the same SKU, not a sibling row" rule, and the comparison-against-input section relies on `product_variants` carrying `brand`, `series`, `model`, `product_name`, and `price_cents` so an OCR-mangled line can be re-resolved by name + price.
+ - SQL table `product_variants` — public product facts, `properties`, and canonical catalogue `record_path`.
+ - SQL table `product_variant_properties` — property rows used for claim verification.
+ - SQL table `product_families` — family/brand/model grouping used to identify products.

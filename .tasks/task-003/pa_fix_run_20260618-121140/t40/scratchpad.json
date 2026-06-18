@@ -1,0 +1,150 @@
+{
+  "refs": [
+    "/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json",
+    "/proc/payments/pay_20210428T143900Z_15AuaLMi22.json",
+    "/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json",
+    "/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json",
+    "/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json",
+    "/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json",
+    "/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json",
+    "/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json",
+    "/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json",
+    "/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json",
+    "/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json",
+    "/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json",
+    "/proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json",
+    "/proc/payments/pay_20210506T114710Z_CH88xpNE7i.json",
+    "/proc/payments/pay_20210506T120253Z_FHLaja4i2r.json",
+    "/proc/payments/pay_20210506T121126Z_QUxvV35QqK.json",
+    "/proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json",
+    "/proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json",
+    "/proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json",
+    "/proc/payments/pay_20210506T125655Z_PbRnfQc37t.json",
+    "/proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json",
+    "/proc/payments/pay_20210506T130608Z_jT661ai8wU.json",
+    "/proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json",
+    "/proc/payments/pay_20210526T004138Z_AmUjSajRn4.json",
+    "/proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json"
+  ],
+  "business_process": {
+    "primary": "fraud_risk_review.md",
+    "reason": "Task asks to identify fraudulent payment records from archived payment history"
+  },
+  "scope": "All archived payments (is_archived_basket_reference=1), 1027 total across 100 customers, 10 stores, 2021-04-28 to 2021-07-04",
+  "hard_sweep_ledger": {
+    "cross_actor_pmf": {
+      "result": "zero",
+      "max_metric": "max customers sharing one PMF = 1 (no sharing)",
+      "scope": "all 1027 archived payments"
+    },
+    "cross_actor_dfp": {
+      "result": "zero",
+      "max_metric": "max customers sharing one DFP = 1 (no sharing)",
+      "scope": "all 1027 archived payments"
+    },
+    "repeated_baskets": {
+      "result": "zero",
+      "scope": "all 1027 archived payments"
+    },
+    "identical_timestamps": {
+      "result": "zero",
+      "scope": "all 1027 archived payments"
+    },
+    "workflow_state_3ds": {
+      "result": "not applicable",
+      "reason": "All 1027 archived payments have three_ds_status=NULL; no 3DS workflow applies"
+    },
+    "amount_vs_lines": {
+      "result": "zero",
+      "scope": "all 1027 archived payments, payment_amount_cents vs SUM(qty*unit_price)"
+    },
+    "impossible_observed_travel": {
+      "result": "hard hit",
+      "customers": [
+        "cust_031",
+        "cust_032",
+        "cust_033",
+        "cust_034",
+        "cust_035",
+        "cust_082"
+      ],
+      "query_shape": "partition by customer_id, order by payment_created_at, window 0-15 min, L1 > 2.0",
+      "max_metric_non_fraud": "max observed L1 = 0.023 degrees for non-fraud customers within 15 min (vs 3.1-6.6 for fraud)",
+      "hits": 7
+    },
+    "stationary_single_actor_burst": {
+      "result": "hard hit",
+      "customers": [
+        "cust_068"
+      ],
+      "query_shape": "self-join within 5-min window, distinct_stores >= 4, observed_spread_l1 < 0.05",
+      "hit_details": "cust_068: 12 payments to 10 distinct stores in 3 minutes, observed spread L1 = 0.0037-0.007"
+    }
+  },
+  "final_cohort": {
+    "cluster_1_cust068_burst": {
+      "signal": "stationary_single_actor_burst",
+      "records": [
+        "/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json",
+        "/proc/payments/pay_20210428T143900Z_15AuaLMi22.json",
+        "/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json",
+        "/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json",
+        "/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json",
+        "/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json",
+        "/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json",
+        "/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json",
+        "/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json",
+        "/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json",
+        "/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json",
+        "/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json"
+      ],
+      "date": "2021-04-28",
+      "window": "14:38:38 to 14:41:34 (3 min)",
+      "distinct_stores": 10,
+      "observed_spread_L1": 0.0066
+    },
+    "cluster_2_impossible_travel_may06": {
+      "signal": "impossible_observed_travel",
+      "records": [
+        "/proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json",
+        "/proc/payments/pay_20210506T114710Z_CH88xpNE7i.json",
+        "/proc/payments/pay_20210506T120253Z_FHLaja4i2r.json",
+        "/proc/payments/pay_20210506T121126Z_QUxvV35QqK.json",
+        "/proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json",
+        "/proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json",
+        "/proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json",
+        "/proc/payments/pay_20210506T125655Z_PbRnfQc37t.json",
+        "/proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json",
+        "/proc/payments/pay_20210506T130608Z_jT661ai8wU.json"
+      ],
+      "date": "2021-05-06",
+      "customers": [
+        "cust_031",
+        "cust_032",
+        "cust_033",
+        "cust_034",
+        "cust_035"
+      ],
+      "min_L1_jump": 5.25,
+      "max_minutes": 9.03
+    },
+    "cluster_3_impossible_travel_cust082": {
+      "signal": "impossible_observed_travel",
+      "records": [
+        "/proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json",
+        "/proc/payments/pay_20210526T004138Z_AmUjSajRn4.json",
+        "/proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json"
+      ],
+      "date": "2021-05-26",
+      "customers": [
+        "cust_082"
+      ],
+      "min_L1_jump": 3.13,
+      "max_minutes": 14.13
+    }
+  },
+  "total_cohort_count": 25,
+  "answer": "Fraudulent payment records identified from archived payments (25 records total, hard-supported by two signals):\n\nSignal A \u2014 Stationary single-actor multi-target burst (cust_068, 2021-04-28): 12 payments to 10 distinct stores within ~3 minutes while observed coordinates remain nearly stationary (L1 spread < 0.007 degrees):\n- /proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json\n- /proc/payments/pay_20210428T143900Z_15AuaLMi22.json\n- /proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json\n- /proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json\n- /proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json\n- /proc/payments/pay_20210428T144028Z_WXecxa2tEU.json\n- /proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json\n- /proc/payments/pay_20210428T144050Z_AthFLEeAUq.json\n- /proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json\n- /proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json\n- /proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json\n- /proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json\n\nSignal B \u2014 Impossible observed travel (sequential same-actor observed coordinates move hundreds of km within 5\u201314 minutes; max L1 for non-fraud customers in same window is 0.023 degrees):\n\ncust_031 (2021-05-06, 8.3 min, L1=6.60):\n- /proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json\n- /proc/payments/pay_20210506T114710Z_CH88xpNE7i.json\n\ncust_032 (2021-05-06, 8.5 min, L1=5.86):\n- /proc/payments/pay_20210506T120253Z_FHLaja4i2r.json\n- /proc/payments/pay_20210506T121126Z_QUxvV35QqK.json\n\ncust_033 (2021-05-06, 5.6 min, L1=5.25):\n- /proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json\n- /proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json\n\ncust_034 (2021-05-06, 9.0 min, L1=5.86):\n- /proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json\n- /proc/payments/pay_20210506T125655Z_PbRnfQc37t.json\n\ncust_035 (2021-05-06, 7.3 min, L1=5.86):\n- /proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json\n- /proc/payments/pay_20210506T130608Z_jT661ai8wU.json\n\ncust_082 (2021-05-26, 14.1 min + 12.8 min, L1=3.65 + 3.13):\n- /proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json\n- /proc/payments/pay_20210526T004138Z_AmUjSajRn4.json\n- /proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json\n\nHard sweep results: cross-actor PMF/DFP collisions=zero (max sharing=1), repeated baskets=zero, identical timestamps=zero, 3DS invariants=not applicable (all archived payments have no 3DS), amount-vs-lines=zero.",
+  "message": "Fraudulent payment records identified from archived payments (25 records total, hard-supported by two signals):\n\nSignal A \u2014 Stationary single-actor multi-target burst (cust_068, 2021-04-28): 12 payments to 10 distinct stores within ~3 minutes while observed coordinates remain nearly stationary (L1 spread < 0.007 degrees):\n- /proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json\n- /proc/payments/pay_20210428T143900Z_15AuaLMi22.json\n- /proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json\n- /proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json\n- /proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json\n- /proc/payments/pay_20210428T144028Z_WXecxa2tEU.json\n- /proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json\n- /proc/payments/pay_20210428T144050Z_AthFLEeAUq.json\n- /proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json\n- /proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json\n- /proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json\n- /proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json\n\nSignal B \u2014 Impossible observed travel (sequential same-actor observed coordinates move hundreds of km within 5\u201314 minutes; max L1 for non-fraud customers in same window is 0.023 degrees):\n\ncust_031 (2021-05-06, 8.3 min, L1=6.60):\n- /proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json\n- /proc/payments/pay_20210506T114710Z_CH88xpNE7i.json\n\ncust_032 (2021-05-06, 8.5 min, L1=5.86):\n- /proc/payments/pay_20210506T120253Z_FHLaja4i2r.json\n- /proc/payments/pay_20210506T121126Z_QUxvV35QqK.json\n\ncust_033 (2021-05-06, 5.6 min, L1=5.25):\n- /proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json\n- /proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json\n\ncust_034 (2021-05-06, 9.0 min, L1=5.86):\n- /proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json\n- /proc/payments/pay_20210506T125655Z_PbRnfQc37t.json\n\ncust_035 (2021-05-06, 7.3 min, L1=5.86):\n- /proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json\n- /proc/payments/pay_20210506T130608Z_jT661ai8wU.json\n\ncust_082 (2021-05-26, 14.1 min + 12.8 min, L1=3.65 + 3.13):\n- /proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json\n- /proc/payments/pay_20210526T004138Z_AmUjSajRn4.json\n- /proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json\n\nHard sweep results: cross-actor PMF/DFP collisions=zero (max sharing=1), repeated baskets=zero, identical timestamps=zero, 3DS invariants=not applicable (all archived payments have no 3DS), amount-vs-lines=zero.",
+  "outcome": "OUTCOME_OK"
+}

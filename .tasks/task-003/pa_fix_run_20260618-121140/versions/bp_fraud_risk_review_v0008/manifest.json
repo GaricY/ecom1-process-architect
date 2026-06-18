@@ -1,0 +1,106 @@
+{
+  "unit_id": "bp_fraud_risk_review",
+  "version": "v0008",
+  "parent": "v0007",
+  "status": "active",
+  "created_at": "2026-06-18T09:31:11+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t40",
+    "trial_id": "vm2-Lys6JAbcpQBUx1p7G4qDbLaDrum",
+    "score": 0.9140538573265076,
+    "score_detail": [
+      "payment fraud refs recovered ~90% EUR from fraud amount, and also marked a few payments as false positives."
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260618-121140/0040-t40-vm2-Lys6JAbcpQBUx1p7G4qDbLaDrum",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260618-121140/0040-t40-vm2-Lys6JAbcpQBUx1p7G4qDbLaDrum-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "The brief asserted a cardinality ('one hit is present in the archived payments'), but the Executor unioned one genuinely evidence-connected campaign (cust_068 stationary single-actor burst) with impossible-travel flags on six unrelated customers that shared no actor and no exact identifier (its own sweep showed cross-actor PMF/DFP sharing = 1, i.e. none) and a different MO. That over-inclusion produced false positives and a 91.4% FAIL. The cause is rule 14, which v0003 broadened from v0002's 'union sub-clusters that share a verified hard signature with the incident' to 'union of every hard-supported cluster in scope', plus rule 15's 'different date/MO is not enough to exclude a cluster' - together they force unioning unconnected clusters even under a single-hit brief. The fix restores the connection qualifier (so v0003's real anti-under-inclusion behaviour is preserved: sub-clusters of the SAME evidence-connected incident are still unioned) and adds explicit cardinality reconciliation: when the brief asserts one hit and the hard clusters are NOT evidence-connected (different actors, no shared identifier), treat them as competing candidates, select the single best-corroborated campaign, and route the rest to considered_not_cited (clarification only when genuinely tied). Connection is defined via the cross-actor identifier-collision result already produced by the mandatory sweep, so no new query machinery is added.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "3bd139117a62033269296913a839f6b061bf291de8dad76be0dd26bd229baa1d",
+      "why": "Legitimate 3DS workflow-state transitions used for the payment workflow-state invariant hard family referenced by the sweep."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transactions",
+      "sha256": "19104e8b96a076bde97c0f841c2b9ac35f781199842368b2f8d866b2299848c1",
+      "why": "Primary risk record. The connection/cardinality rule keys on its actor (customer_id) and exact identifiers (payment_method_fingerprint, device_fingerprint) plus observed coordinates, payment_created_at, and is_archived_basket_reference."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "Customer identity (actor axis) and home_latitude/home_longitude context for distinguishing remote shopping from observed-location fraud; the evidence-connection test compares actors."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Joined store location axis for geo anomaly checks in the travel/burst query shapes."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket/customer/store joins and archive context; repeated-basket collisions are one of the cross-actor connecting signals."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_basket_items",
+      "sha256": "ca521eecd63814fb15b584e6bcc1e677c95388b5b535907a0cb2b831ef87fc69",
+      "why": "Basket resource lines (requested_quantity) for quantity/resource reconciliation in record/table invariants."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transaction_items",
+      "sha256": "fd85ad998f44b4477ac3e3e64ec766dde9e24e25cec62400cac44178d5f795bc",
+      "why": "Line-level reconciliation (purchased_quantity, item_unit_price_cents) for amount-vs-lines hard checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "Catalogue price joins for amount/line checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "store_inventory",
+      "sha256": "d183bb628f5e91971122c50c63308a0c5fcdd8e4d9c8f86e46f0b6ca2648e5bc",
+      "why": "Reserve/availability arithmetic and store/SKU resource axis for the General Risk Primitives."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_requests",
+      "sha256": "1f62b186328a837536425904e8789daaf26b56fcf44eb0b75b2762e4cc2f2e3c",
+      "why": "Return/payment/basket/customer workflow joins for broader risk invariants."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/payments/README.md",
+      "sha256": "278fc0d64459f7aa0a282f75a78ea451c5a5317ad2033f615bf66854ecc80cfc",
+      "why": "Archived-payment semantics, observed-coordinate meaning, and opaque fingerprint semantics underpinning the travel/burst signals and the identifier-collision connection test."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/customers/README.md",
+      "sha256": "f2f98e45217552712e60e54e2a2ccfc9cd29ca1f6d06b4dfd20f903d9b3c3733",
+      "why": "Coarse customer home-area coordinate semantics used by risk fixtures, distinguishing home context from observed-location fraud."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/stores/README.md",
+      "sha256": "4f5df1bf77a5435fadc5ce1f7397de2e56d1c5ef31e019110404b82124ded838",
+      "why": "Store branch coordinate semantics for payment-risk/distance checks."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0007 content if this re-introduces under-inclusion (e.g. dropping a real evidence-connected sub-cluster); v0007 unconditionally unions every hard cluster in scope."
+  },
+  "no_semantic_change": false
+}

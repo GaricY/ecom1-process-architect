@@ -1,0 +1,120 @@
+{
+  "refs": [
+    "/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json",
+    "/proc/payments/pay_20210428T143900Z_15AuaLMi22.json",
+    "/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json",
+    "/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json",
+    "/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json",
+    "/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json",
+    "/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json",
+    "/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json",
+    "/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json",
+    "/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json",
+    "/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json",
+    "/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json"
+  ],
+  "scope": {
+    "predicate": "is_archived_basket_reference = 1",
+    "universe": {
+      "distinct_customers": 100,
+      "distinct_stores": 10,
+      "earliest": "2021-04-28T14:38:38Z",
+      "latest": "2021-07-04T21:31:27Z",
+      "total_archived": 1027
+    }
+  },
+  "hard_sweep": {
+    "family_1_cross_actor_identifiers": {
+      "result": "zero",
+      "max_metric": "max PMF: 1 customer per fingerprint; max device: 1 customer per fingerprint; no shared baskets",
+      "query": "GROUP BY PMF/device, HAVING COUNT(DISTINCT customer_id) > 1"
+    },
+    "family_2_workflow_state_3ds": {
+      "result": "zero",
+      "max_metric": "all 1027 archived payments are paid with three_ds_status=NULL; no 3DS columns set",
+      "query": "paid + failed/requires_3ds_action OR exhausted attempts"
+    },
+    "family_3_record_table_invariants": {
+      "result": "zero",
+      "max_metric": "no amount/line discrepancies, no duplicate payment_ids, no multi-payment baskets",
+      "query": "SUM(item_unit_price_cents * purchased_quantity) vs payment_amount_cents"
+    },
+    "family_4_impossible_observed_travel": {
+      "result": "hard hit",
+      "hit_actor": "cust_082",
+      "details": "5 payments on 2021-05-26T00:27:30Z-01:15:12Z (~47 min) across Vienna, Salzburg, Graz, Ljubljana, Bratislava; max L1=3.65 in 14.1 min",
+      "isolated_crossings": [
+        "cust_031",
+        "cust_032",
+        "cust_033",
+        "cust_034",
+        "cust_035"
+      ],
+      "isolated_note": "Each has exactly 2 payments on 2021-05-06 with L1>5.0 jump; no surrounding dense rotation \u2192 soft candidate per rule 9",
+      "max_l1_15min": 6.603752
+    },
+    "family_5_stationary_single_actor_burst": {
+      "result": "hard hit",
+      "hit_actor": "cust_068",
+      "details": "12 payments 2021-04-28T14:38:38Z to 14:41:34Z (~3 min) at ALL 10 stores; observed_spread_l1<0.007 (near Bratislava lat~48.16 lon~17.24)",
+      "distinct_stores": 10,
+      "payment_count": 12,
+      "window_minutes": 2.93,
+      "max_observed_spread": 0.0066
+    }
+  },
+  "cardinality_analysis": {
+    "brief_claim": "one hit",
+    "cluster_A": {
+      "actor": "cust_068",
+      "family": "stationary_burst",
+      "records": 12,
+      "distinct_stores": 10,
+      "window_minutes": 2.93
+    },
+    "cluster_B": {
+      "actor": "cust_082",
+      "family": "moving_burst_travel",
+      "records": 5,
+      "distinct_cities": 5,
+      "window_minutes": 47
+    },
+    "connecting_signal_test": "zero shared PMF, zero shared device fingerprint, different dates (Apr 28 vs May 26), different actors",
+    "verdict": "Two unconnected clusters. Selected cust_068 as it has more records (12>5), more distinct targets (10>5), tighter window (3min<47min). cust_082 \u2192 considered_not_cited."
+  },
+  "final_cohort": {
+    "actor": "cust_068",
+    "window": "2021-04-28T14:38:38Z to 2021-04-28T14:41:34Z",
+    "signal": "stationary_single_actor_burst: 12 payments at all 10 stores in ~3 min; observed_spread_l1<0.007",
+    "count": 12,
+    "paths": [
+      "/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json",
+      "/proc/payments/pay_20210428T143900Z_15AuaLMi22.json",
+      "/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json",
+      "/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json",
+      "/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json",
+      "/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json",
+      "/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json",
+      "/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json",
+      "/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json",
+      "/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json",
+      "/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json",
+      "/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json"
+    ]
+  },
+  "considered_not_cited": {
+    "cust_082": "competing unconnected moving burst (5 payments, 5 cities, 47 min); not evidence-connected to cust_068",
+    "cust_031": "isolated two-event crossing 2021-05-06, no dense window, soft candidate",
+    "cust_032": "isolated two-event crossing 2021-05-06, no dense window, soft candidate",
+    "cust_033": "isolated two-event crossing 2021-05-06, no dense window, soft candidate",
+    "cust_034": "isolated two-event crossing 2021-05-06, no dense window, soft candidate",
+    "cust_035": "isolated two-event crossing 2021-05-06, no dense window, soft candidate"
+  },
+  "business_process": {
+    "primary": "fraud_risk_review.md",
+    "reason": "Task asks to identify fraudulent payment records from archived history \u2014 complete-set anomaly discovery"
+  },
+  "answer": "Fraudulent payment campaign identified: stationary single-actor multi-store burst by customer cust_068 on 2021-04-28.\n\nSignal: cust_068 made 12 payments across all 10 stores in a 3-minute window (14:38:38\u201314:41:34 UTC) while observed coordinates remained stationary near Bratislava (lat\u224848.16, lon\u224817.24, observed_spread_l1<0.007). It is physically impossible to be present simultaneously at stores in Salzburg, Innsbruck, Bratislava, Brno, Ljubljana, Vienna, Graz, Linz, etc. within minutes from a single location.\n\nFraudulent payment records (12):\n- /proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json\n- /proc/payments/pay_20210428T143900Z_15AuaLMi22.json\n- /proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json\n- /proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json\n- /proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json\n- /proc/payments/pay_20210428T144028Z_WXecxa2tEU.json\n- /proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json\n- /proc/payments/pay_20210428T144050Z_AthFLEeAUq.json\n- /proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json\n- /proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json\n- /proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json\n- /proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json\n\nFiles left unchanged as instructed.",
+  "message": "Fraudulent payment campaign identified: stationary single-actor multi-store burst by customer cust_068 on 2021-04-28.\n\nSignal: cust_068 made 12 payments across all 10 stores in a 3-minute window (14:38:38\u201314:41:34 UTC) while observed coordinates remained stationary near Bratislava (lat\u224848.16, lon\u224817.24, observed_spread_l1<0.007). It is physically impossible to be present simultaneously at stores in Salzburg, Innsbruck, Bratislava, Brno, Ljubljana, Vienna, Graz, Linz, etc. within minutes from a single location.\n\nFraudulent payment records (12):\n- /proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json\n- /proc/payments/pay_20210428T143900Z_15AuaLMi22.json\n- /proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json\n- /proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json\n- /proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json\n- /proc/payments/pay_20210428T144028Z_WXecxa2tEU.json\n- /proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json\n- /proc/payments/pay_20210428T144050Z_AthFLEeAUq.json\n- /proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json\n- /proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json\n- /proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json\n- /proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json\n\nFiles left unchanged as instructed.",
+  "outcome": "OUTCOME_OK"
+}

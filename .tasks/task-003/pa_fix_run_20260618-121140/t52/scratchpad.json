@@ -1,0 +1,49 @@
+{
+  "refs": [
+    "/uploads/receipt_ocr_c3vKx4Lh.txt",
+    "/proc/catalog/Metabo/PWR-21134N3Q.json",
+    "/proc/catalog/Ryobi/PWR-RZ0VIO7N.json",
+    "/proc/catalog/Metabo/PWR-2AKHB0DM.json"
+  ],
+  "business_process": {
+    "primary": "product_discovery.md",
+    "reason": "Comparison of old receipt items against today's catalogue prices (excl. VAT)."
+  },
+  "decision": {
+    "old_total_excl_vat": 4183.47,
+    "items": {
+      "PWR-21134N3Q": {
+        "qty": 1,
+        "old_unit": 313.5,
+        "today_unit": 313.0,
+        "status": "found"
+      },
+      "PWR-RZ0VIO7N": {
+        "qty": 3,
+        "old_unit": 503.99,
+        "today_unit": 504.0,
+        "status": "found"
+      },
+      "PWR-2AKHB0DM": {
+        "qty": 2,
+        "old_unit": 699.0,
+        "today_unit": 699.0,
+        "status": "found"
+      },
+      "PWR-2UZGI1QM": {
+        "qty": 2,
+        "old_unit": 480.0,
+        "today_unit": null,
+        "status": "NOT IN CATALOGUE"
+      }
+    },
+    "today_total_3_products": 3223.0,
+    "old_total_3_products": 3223.47,
+    "diff_3_products": -0.47,
+    "missing_product_value": 960.0,
+    "verdict": "NO \u2014 PWR-2UZGI1QM not in catalogue; full-basket comparison impossible. Total gap > 3 EUR."
+  },
+  "answer": "<NO> The total would not stay within EUR 3 of the old receipt. One product from the receipt \u2014 SKU PWR-2UZGI1QM (METABO BRUSHLESS BS 1OW-I., qty 2 at EUR 480.00 each excl. VAT, old line total EUR 960.00) \u2014 is no longer in the current catalogue and cannot be sold today. The three remaining products (PWR-21134N3Q, PWR-RZ0VIO7N, PWR-2AKHB0DM) would total EUR 3223.00 excl. VAT today versus EUR 3223.47 on the old receipt (a difference of EUR 0.47), but the missing product's EUR 960.00 means the full-basket today's total cannot be assembled.",
+  "message": "<NO> The total would not stay within EUR 3 of the old receipt. One product from the receipt \u2014 SKU PWR-2UZGI1QM (METABO BRUSHLESS BS 1OW-I., qty 2 at EUR 480.00 each excl. VAT, old line total EUR 960.00) \u2014 is no longer in the current catalogue and cannot be sold today. The three remaining products (PWR-21134N3Q, PWR-RZ0VIO7N, PWR-2AKHB0DM) would total EUR 3223.00 excl. VAT today versus EUR 3223.47 on the old receipt (a difference of EUR 0.47), but the missing product's EUR 960.00 means the full-basket today's total cannot be assembled.",
+  "outcome": "OUTCOME_OK"
+}

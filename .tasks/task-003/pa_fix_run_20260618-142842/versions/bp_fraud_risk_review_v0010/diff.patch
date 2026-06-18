@@ -1,0 +1,82 @@
+--- bp_fraud_risk_review/v0009/content.md
++++ bp_fraud_risk_review/v0010/content.md
+@@ -41,8 +41,8 @@
+ 11. When a mandatory hard family returns zero, validate the negative. Record the top max-metric for that family, not only `zero`: for travel, the largest same-actor observed speed or observed jump in scope; for burst, the largest same-actor short-window distinct-target count and observed spread. If the max-metric contradicts the zero result, fix the query before trusting the ledger.
+ 12. For high-count fuzzy signals, regroup by `(actor_id, short_time_window)` before discarding as noise. A broad legitimate tail can hide a dense hard-supported burst, but the broad tail itself must not be cited unless it passes the hard gate.
+ 13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort. This applies once a cluster is confirmed hard; it does not promote a lone isolated two-event travel crossing (rule 9) into a confirmed incident on its own.
+-14. After the hard gate, the final cohort is the union of every hard-supported sub-cluster that belongs to the incident the brief asks about. Different hard families may identify different sub-clusters of the *same* evidence-connected incident; include all of them and do not submit only the first, largest, or cleanest sub-cluster of that incident. Sub-clusters belong to one incident only when a connecting signal ties them together (rule 15); hard hits on different actors with no connecting signal are separate candidates, not automatic co-members of one cohort.
+-15. "One hit" / "one incident" / "one record" is a cardinality claim about one evidence-connected campaign, not one pure date window and not the union of every hard family's matches. Two clusters are evidence-connected only when they share the actor, share an exact identifier the sweep confirmed (`payment_method_fingerprint`, `device_fingerprint`, a repeated basket, or another cross-actor collision), or are tied by a structural cross-actor link - not merely because the same hard family flagged them, they fall on the same day, or they both look suspicious. When the brief asserts a single hit and the sweep surfaces multiple clusters that are NOT evidence-connected (different actors, no shared identifier, possibly different MO), they are competing candidates for that one hit, not co-members: select the single campaign whose records most strongly corroborate each other (more records, more distinct targets inside a tighter window, multiple reinforcing signals), cite only that campaign, and route the rest to `considered_not_cited`. Fall back to `OUTCOME_NONE_CLARIFICATION` citing the competitors only when two campaigns are genuinely tied and the brief gives no basis to choose. When the brief states no cardinality, rule 14's union stands. A different date or MO alone never excludes a sub-cluster that IS evidence-connected to the chosen incident.
++14. After the hard gate, the final cohort is the union of every hard-supported cluster in scope - both every sub-cluster of a single evidence-connected incident AND every separate incident that independently clears the hard gate. Different hard families may surface different sub-clusters of one incident or different incidents entirely; include all of them and never submit only the first, largest, cleanest, tightest-window, or highest-count one. A connecting signal (rule 15) tells you whether two clusters are the *same* incident or two independent incidents - it labels the evidence map; it does not gate citation. Both connected sub-clusters and unconnected independent hard incidents belong in refs.
++15. "One hit" / "one incident" / "one record" in a discovery brief is an existence assurance - fraud IS present, go find the fraudulent records - not a cap that lets you cite one cluster and discard another that independently clears the hard gate. Membership is decided by the hard gate (rules 7-13), not by the singular phrasing. A connecting signal (shared actor, shared exact identifier - `payment_method_fingerprint`, `device_fingerprint`, a repeated basket - or another confirmed cross-actor collision) only classifies two clusters as one incident vs. two independent incidents; either way each cluster that clears the hard gate is cited. Do NOT drop a fully hard-supported cluster (confirmed dense travel burst, stationary multi-target burst, identifier collision, or record/state invariant) because it is unconnected to a larger cluster, falls on a different date, uses a different MO, or has fewer records or a looser window than a competitor - a tighter or larger stationary burst never displaces a separately-confirmed travel burst, and vice versa. What a singular brief DOES exclude is soft material (lone two-event crossings, threshold-only bands, high amount or busy-timeline alone); the hard gate already removes those, so route them to `considered_not_cited`. Fall back to `OUTCOME_NONE_CLARIFICATION` only when two candidate cohorts are mutually-exclusive readings of the *same* records (citing both would be self-contradictory) and the brief gives no basis to choose - not merely because two independent hard incidents both exist. When the brief states no cardinality, this same union stands.
+ 16. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, or temporal proximity.
+ 17. Run the final cohort query without `LIMIT` or with a bound far above the plausible cohort size and confirm it did not truncate.
+ 
+@@ -80,7 +80,7 @@
+ 
+ If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
+ 
+-This query surfaces only *adjacent* impossible transitions; it is a detector, not the cohort. Once it flags an actor, re-extract that actor's full dense anomaly window — every archived row within the tight span around the flagged transition where the actor's observed locations cannot be reconciled to one trajectory — and cite the whole window-cluster. Non-adjacent rows, same-city rows inside the window, and rows whose neighbour transition fell just outside the pairwise gate all belong to the incident; citing only the bracketing pair undercounts both the cohort and the answer amount. Conversely, confirm the window is a genuine multi-event rotation across distinct locations: a lone two-event crossing for an actor with no surrounding cluster and no other hard-family hit is a soft candidate, not a confirmed incident — keep it in `considered_not_cited` unless corroborated.
++This query surfaces only *adjacent* impossible transitions; it is a detector, not the cohort. Once it flags an actor, re-extract that actor's full dense anomaly window — every archived row within the tight span around the flagged transition where the actor's observed locations cannot be reconciled to one trajectory — and cite the whole window-cluster. Non-adjacent rows, same-city rows inside the window, and rows whose neighbour transition fell just outside the pairwise gate all belong to the incident; citing only the bracketing pair undercounts both the cohort and the answer amount. Conversely, confirm the window is a genuine multi-event rotation across distinct locations: a lone two-event crossing for an actor with no surrounding cluster and no other hard-family hit is a soft candidate, not a confirmed incident — keep it in `considered_not_cited` unless corroborated. A confirmed dense travel burst stays in the cohort even when a stationary burst by a *different* actor also exists; the two are independent hard incidents, not competitors (rule 15).
+ 
+ ### Stationary Single-Actor Burst Shape
+ 
+@@ -146,8 +146,8 @@
+ - missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
+ - validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
+ - travel-cohort completeness: for each confirmed impossible-travel actor, the cited rows are that actor's full dense anomaly window, not only the rows that bracket a flagged adjacent jump; and any isolated single-pair travel crossing left uncited is recorded in `considered_not_cited` with its reason;
+-- incident-membership / cardinality check: every sub-cluster evidence-connected to the chosen incident is represented in the final refs; if the brief asserts a single hit and the hard clusters are not evidence-connected, only the selected campaign's records are cited, with the failed connecting-signal test recorded (e.g. cross-actor identifier collision = zero) and the competing candidates listed in `considered_not_cited`;
+-- exclusion reason for any hard hit left out; "different date" or "different MO" is not enough to exclude a sub-cluster evidence-connected to the chosen incident;
++- incident-membership / cardinality check: every cluster that clears the hard gate is represented in the final refs — each sub-cluster of an evidence-connected incident AND each independent hard incident; a singular-phrased brief ("one hit") removes no hard-supported cluster from refs. Record the connecting-signal test result (e.g. cross-actor identifier collision = zero) to label same-incident vs. independent, and list only soft/threshold-only candidates in `considered_not_cited`;
++- exclusion reason for any record left out; "different date", "different MO", "fewer records", or "looser window than another cluster" is never enough to exclude a hard-supported cluster — only failure of the hard gate is;
+ - per-record evidence map for the final cohort;
+ - disjoint hard sub-cluster count and temporal span;
+ - confirmation that no final record is supported only by a soft signal;
+@@ -158,7 +158,7 @@
+ ## Outcomes
+ 
+ - `OUTCOME_OK`: complete hard-supported cohort or requested risk answer found and cited.
+-- `OUTCOME_NONE_CLARIFICATION`: the brief does not define enough scope to choose between multiple plausible hard-supported cohorts - including a single-hit brief with two or more equally evidence-connected campaigns and no tiebreak.
++- `OUTCOME_NONE_CLARIFICATION`: the brief does not define enough scope to choose between mutually-exclusive candidate cohorts - two readings of the *same* records that cannot both be true, with no tiebreak. Multiple independent hard-supported clusters are not by themselves a clarification trigger: cite them all.
+ - `OUTCOME_NONE_UNSUPPORTED`: the requested risk action requires a mutation or policy not present in the runtime.
+ - `OUTCOME_DENIED_SECURITY`: only when the task asks to expose private customer/contact data outside the allowed boundary.
+ 
+@@ -183,8 +183,7 @@
+ `considered_not_cited`:
+ 
+ - Soft-only candidates, threshold-only bands, rejected hard-family candidates,
+-  false leads, and candidate clusters outside the final hard-supported cohort -
+-  including competing unconnected hard clusters dropped under a single-hit brief.
++  false leads, and candidate clusters that did not clear the hard gate.
+ - Isolated two-event travel crossings that did not reach a confirmed dense
+   window-cluster and were not corroborated by another hard family.
+ - Private contact/profile fields read for risk context but not allowed in the
+@@ -197,9 +196,10 @@
+ 
+ `refs_must_not_include`:
+ 
+-- Soft-only records, truncated examples, rejected candidates, competing
+-  unconnected clusters dropped under a single-hit brief, private contact
+-  records, or rows used only to validate a zero result.
++- Soft-only records, truncated examples, rejected candidates, private contact
++  records, or rows used only to validate a zero result. A hard-supported cluster
++  is never excluded merely because the brief used singular phrasing or because
++  another hard cluster is larger, tighter, or cleaner.
+ 
+ `post_state_records`:
+ 
+@@ -225,12 +225,12 @@
+ - Treating stable observed coordinates as soft when one actor rotates through many distinct stores, targets, or resources inside minutes.
+ - Sweeping only observed coordinates when a claimed target coordinate axis exists.
+ - Unioning a soft-only cluster into a true incident because it is nearby in time, amount, customer family, or narrative similarity.
+-- Unioning hard hits on different actors into one cohort with no cross-actor connecting signal (shared fingerprint/device, repeated basket, or another confirmed collision), especially when the brief asserts a single hit; unconnected actors are competing candidates, not one campaign.
+-- Treating every record returned by one hard-family query as one cluster; independent single-actor flags from the same family are separate candidates until a connecting signal links them.
++- Dropping a fully hard-supported cluster (confirmed dense travel burst, stationary multi-target burst, identifier collision, or record/state invariant) because it is unconnected to a larger cluster, sits on a different date, uses a different MO, or has fewer records or a looser window than a competitor; under a single-hit brief the singular phrasing asserts fraud exists, it does not cap the cohort to the highest-count cluster.
++- Treating every record returned by one hard-family query as one cluster; independent single-actor flags from the same family are separate incidents — each cited if it clears the hard gate — not one merged cluster.
+ - Dropping a hard-supported sub-cluster of the *same* evidence-connected incident because another sub-cluster is cleaner, larger, earlier, or uses a different MO.
+ - Dropping smaller hard-supported sub-clusters of the same incident.
+ - Using `LIMIT 10` or `LIMIT 20` on the query that drives the final answer.
+-- Treating "one hit" as one record, one actor, or one date window.
++- Treating "one hit" as one record, one actor, one date window, or a licence to cite only the single highest-count cluster.
+ - Inventing shared PMF/DFP, workflow, or geo evidence that was not returned by a query.
+ 
+ ## Dependencies
