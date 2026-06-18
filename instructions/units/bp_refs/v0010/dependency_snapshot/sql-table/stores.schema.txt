@@ -1,0 +1,9 @@
+TABLE stores  PK(store_id)
+  store_id     TEXT     NOT NULL
+  record_path  TEXT     NOT NULL
+  store_name   TEXT     NOT NULL
+  city         TEXT     NOT NULL
+  is_open      INTEGER  NOT NULL
+  latitude     REAL     NOT NULL
+  longitude    REAL     NOT NULL
+  INDEX stores_city_idx  (city)

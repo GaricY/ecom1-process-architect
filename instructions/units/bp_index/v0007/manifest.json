@@ -1,0 +1,20 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0007",
+  "parent": "v0006",
+  "status": "active",
+  "created_at": "2026-06-18T20:47:27+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-004/security_denial_refactor.md",
+    "plan": ".tasks/task-004/plan.md",
+    "purpose": "surface request-integrity denial in the process map and outcome glossary"
+  },
+  "rationale": "Update the root process map and outcome glossary so confirmed request-integrity attacks route through identity_and_auth and terminally select OUTCOME_DENIED_SECURITY, while authority-shaped business prose remains a normal authorization claim.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0006 if the extra routing row causes over-routing or confusion."
+  },
+  "no_semantic_change": false
+}
