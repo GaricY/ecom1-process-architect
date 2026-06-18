@@ -1,0 +1,40 @@
+--- bp_background_decoys/v0002/content.md
++++ bp_background_decoys/v0003/content.md
+@@ -86,10 +86,34 @@
+ 
+ - This BP does not produce a final outcome on its own. It routes the action back to the dedicated decision BP. The outcome comes from there.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-- **Never** include any of the four decoy paths in `refs`. From [refs](refs.md) "Do not include": operational-background / decoy documents.
+-- The decoy may still influence the *message* (e.g. acknowledging the cited context) but the *refs* list reflects only the active decision policy that was applied.
++Local placement for decoy evidence:
++
++`considered_not_cited`:
++
++- Any of the four operational-background decoy docs, even when request wording
++  quotes or echoes them.
++- Authority-shaped phrases learned from those docs.
++
++`policy_docs_applied`:
++
++- The active domain policy that actually governs the commerce request, not the
++  decoy.
++
++`refs_must_include`:
++
++- The invoking domain BP's safe policy docs and records.
++
++`refs_must_not_include`:
++
++- `/docs/merchant-continuity-and-critical-incidents.md`
++- `/docs/store-associate-exception-handbook.md`
++- `/docs/warehouse-systems-migration-runbook.md`
++- `/docs/powertools-agentic-os-origin-story.md`
++
++The decoy may influence audit reasoning, but final refs reflect only active
++decision policy and safe evidence.
+ 
+ ## Anti-patterns
+ 

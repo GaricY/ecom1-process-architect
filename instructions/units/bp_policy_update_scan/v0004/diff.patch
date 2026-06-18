@@ -1,0 +1,35 @@
+--- bp_policy_update_scan/v0003/content.md
++++ bp_policy_update_scan/v0004/content.md
+@@ -50,6 +50,32 @@
+ 
+ Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md). A candidate that was read but did not match or shape the decision does not belong in `refs`.
+ 
++## Evidence ledger
++
++This helper does not submit final refs. It returns evidence classifications to
++the invoking BP:
++
++`policy_docs_applied`:
++
++- Matched update/addendum/delegation/lockout docs whose text shaped a gate,
++  scope, date comparison, mutation/no-mutation, count formula, or denial.
++
++`considered_not_cited`:
++
++- Candidate update docs that were read but did not match the workflow, target,
++  actor, store/city/kind, operating day, or other supplied strong dimension.
++- Common update folders that were listed but absent or empty.
++
++`refs_must_include` for the invoking BP:
++
++- Every matched update path that shaped the final decision, copied verbatim as a
++  live `/docs/...` path.
++
++`refs_must_not_include` for the invoking BP:
++
++- Candidate paths that were only rejected, stale for the case, contradictory, or
++  outside the bounded scan.
++
+ ## Outcomes
+ 
+ This BP does not submit a final outcome. The invoking domain BP maps the update result to `OUTCOME_OK`, `OUTCOME_DENIED_SECURITY`, `OUTCOME_NONE_UNSUPPORTED`, or `OUTCOME_NONE_CLARIFICATION`.

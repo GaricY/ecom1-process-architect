@@ -1,0 +1,75 @@
+--- bp_fraud_risk_review/v0006/content.md
++++ bp_fraud_risk_review/v0007/content.md
+@@ -2,9 +2,9 @@
+ 
+ ## When this process applies
+ 
+-Read this process for fraud, risk, anomaly, Risk-Ops, archived-payment review, "identify the fraudulent records", "mark every suspicious payment", or any plural task that asks for a complete risk cohort. It is an information/discovery BP. It does not authorize payment mutation and does not own final refs or submission.
+-
+-After finding the cohort, use [refs](refs.md) to build citations and [submission_terminal](submission_terminal.md) to submit.
++Read this process for fraud, risk, anomaly, Risk-Ops, archived-payment review, "identify the fraudulent records", "mark every suspicious payment", or any plural task that asks for a complete risk cohort. It is an information/discovery BP. It does not authorize payment mutation and does not own final refs projection or submission.
++
++After finding the cohort, classify the Evidence ledger and use [refs](refs.md) to project citations and [submission_terminal](submission_terminal.md) to submit.
+ 
+ ## Inputs
+ 
+@@ -128,7 +128,7 @@
+ 
+ Then apply the same hard primitives: impossible observed movement for one actor, too many claimed targets/resources in a short sub-window for one actor, exact identifier collision across actors, ledger reconciliation across tables, and policy/workflow-state invariant. Tables such as `store_inventory`, `shopping_basket_items`, and `return_requests` are current examples for resource/invariant checks; future delivery tables should be added to dependencies only when the BP explicitly references them.
+ 
+-## Coverage check before refs/submission
++## Coverage check before ledger/submission
+ 
+ Scratchpad must show:
+ 
+@@ -156,12 +156,44 @@
+ - `OUTCOME_NONE_UNSUPPORTED`: the requested risk action requires a mutation or policy not present in the runtime.
+ - `OUTCOME_DENIED_SECURITY`: only when the task asks to expose private customer/contact data outside the allowed boundary.
+ 
+-## Refs to set in scratchpad
+-
+-- Every `/proc/...` record marked in the answer.
+-- The topic policy doc if a workflow-state invariant from that policy was applied, commonly `/docs/payments/3ds.md`.
+-- Public customer/store/catalogue records only when the request or evidence explanation relies on them.
+-- Then run [refs](refs.md) for final citation safety.
++## Evidence ledger
++
++Local placement for risk-review evidence:
++
++`policy_docs_applied`:
++
++- `/docs/payments/3ds.md` only when a workflow-state invariant from the 3DS
++  policy shaped the hard signal.
++- Other topic policies only if a future risk primitive explicitly applies their
++  workflow-state invariant.
++
++`answer_records`:
++
++- The final hard-supported `/proc/...` cohort, one path per record marked or
++  identified in the answer.
++- Public customer/store/catalogue records only when the answer's evidence
++  explanation relies on them.
++
++`considered_not_cited`:
++
++- Soft-only candidates, threshold-only bands, rejected hard-family candidates,
++  false leads, and candidate clusters outside the final hard-supported union.
++- Private contact/profile fields read for risk context but not allowed in the
++  answer.
++
++`refs_must_include`:
++
++- Every `/proc/...` record in the final message cohort.
++- Any policy doc whose workflow-state invariant actually shaped a hard signal.
++
++`refs_must_not_include`:
++
++- Soft-only records, truncated examples, rejected candidates, private contact
++  records, or rows used only to validate a zero result.
++
++`post_state_records`:
++
++- none; this BP is information-only and never mutates.
+ 
+ ## Anti-patterns
+ 

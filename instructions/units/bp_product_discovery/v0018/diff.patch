@@ -1,0 +1,74 @@
+--- bp_product_discovery/v0017/content.md
++++ bp_product_discovery/v0018/content.md
+@@ -62,17 +62,61 @@
+ - `OUTCOME_NONE_UNSUPPORTED`: the question requires data not present in the SQL projection (extremely rare for pure discovery).
+ - `OUTCOME_NONE_CLARIFICATION`: the question names a city with multiple branches and does not pick one, and the city nuance does not disambiguate; or a claim-verification brief whose "base product" identifying set matches several SKUs and cannot be narrowed.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-- The SQL projection queried — answer-bearing facts ground on the public catalogue.
+-- For a product cite: **copy `product_variants.record_path` from SQL verbatim** into refs (e.g. the row's `record_path` column may be `/proc/catalog/STO-XYZ.json`). Do NOT synthesise `/proc/products/<sku>.json`.
+-- For a store cite: **copy `stores.record_path` from SQL verbatim** into refs.
+-- **Store-scoped availability questions only:** include the selected store's `stores.record_path` because it is the public evidence for the inventory query; do not include rejected candidate stores.
+-- **Pure availability questions only:** include a product's `record_path` only when it has an observed positive quantity at the queried store and passes the availability test (step 7). For `available_today_quantity`, this means `> 0`; for a low-stock predicate such as `< K`, cite only `0 < available_today_quantity < K`. Drop the paths of SKUs with no `store_inventory` row, with observed `0`, or whose positive observed quantity fails the test.
+-- **Non-pure availability with catalogue identity/match claims:** include `product_variants.record_path` for every public product printed or otherwise identified in the final answer, even when its stock predicate failed. Do not cite products merely considered and rejected if they are not identified in the answer.
+-- **Claim-verification questions only:** include the base SKU's `product_variants.record_path` (the one the brief said to cite). Do not include a sibling SKU that only happened to carry the extra-claim property — it is not the product the brief asked about.
+-- `/docs/README.md` if the answer depended on the catalogue reporting rule.
+-- Any matching dated update under `/docs/...` returned by [policy_update_scan](policy_update_scan.md) that named the requested workflow / kind / city. Include it whenever the update shaped the active reporting rule. If you considered a dated update and ruled it out as stale, the ruling must be backed by an actual `/bin/date` call this trial — and you should still keep `/docs/README.md` in refs because the reporting rule was applied even when the override did not.
++Local placement for catalogue/inventory evidence:
++
++`policy_docs_applied`:
++
++- `/docs/README.md` when the catalogue reporting rule or dated reporting-update
++  rule shaped the answer.
++- Matched update docs returned by `policy_update_scan` when they changed the
++  count/reporting rule.
++- `/AGENTS.MD` is protocol evidence for pure availability reply shaping; it is
++  normally scratchpad evidence, not a final ref, unless the task/process treats
++  it as grounding.
++
++`answer_records`:
++
++- SQL rows from `product_variants`, `store_inventory`, `stores`, and property
++  tables that determine the public answer.
++- For product refs, copy `product_variants.record_path` verbatim (for example
++  `/proc/catalog/<sku>.json`); never synthesize `/proc/products/<sku>.json`.
++- For store refs, copy `stores.record_path` verbatim.
++
++`considered_not_cited`:
++
++- Rejected stores from branch/city disambiguation.
++- Products considered and rejected when the final answer does not identify
++  them.
++- Sibling SKUs read only to disprove an extra claim about the base SKU.
++- Pure-availability products with no `store_inventory` row, observed
++  `available_today_quantity = 0`, or a positive quantity that fails the
++  requested availability predicate.
++
++`refs_must_include`:
++
++- Store-scoped availability/count answers: the selected store's
++  `stores.record_path`.
++- Pure availability answers: only products with an observed positive quantity at
++  the queried store that pass the availability predicate. For low-stock
++  predicates, cite only `0 < available_today_quantity < K`.
++- Non-pure availability with catalogue identity/match claims: every public
++  product record printed or otherwise identified in the final answer.
++- Claim-verification tasks: the base SKU's `product_variants.record_path`, not a
++  sibling SKU.
++- `/docs/README.md` and matched update docs when a reporting/update rule shaped
++  the answer.
++
++`refs_must_not_include`:
++
++- Rejected candidate stores, unavailable products in pure availability answers,
++  sibling SKUs that only served audit, synthetic paths, and unmatched update
++  candidates.
++
++`post_state_records`:
++
++- none; this BP is information-only.
+ 
+ ## Anti-patterns
+ 

@@ -1,0 +1,82 @@
+--- bp_payments_3ds_recovery/v0009/content.md
++++ bp_payments_3ds_recovery/v0010/content.md
+@@ -2,7 +2,7 @@
+ 
+ ## When this process applies
+ 
+-A request to recover a stuck 3DS payment: "recover the payment", "recover the checkout" alongside a `pay_*` id, "the 3DS failed", `requires_3ds_action`. This is the **only** 3DS-recovery operation the runtime supports — there is no "mark paid", no "bypass 3DS", no "re-checkout". Routes through [identity_and_auth](identity_and_auth.md) for ownership. The basket is already `checked_out`; do not re-run [checkout](checkout.md) — but `/docs/checkout.md` is still an **applied policy** (see "Applied policies" below and the Refs section).
++A request to recover a stuck 3DS payment: "recover the payment", "recover the checkout" alongside a `pay_*` id, "the 3DS failed", `requires_3ds_action`. This is the **only** 3DS-recovery operation the runtime supports — there is no "mark paid", no "bypass 3DS", no "re-checkout". Routes through [identity_and_auth](identity_and_auth.md) for ownership. The basket is already `checked_out`; do not re-run [checkout](checkout.md) — but `/docs/checkout.md` is still an **applied policy** (see "Applied policies" below and the Evidence ledger section).
+ 
+ ## Inputs
+ 
+@@ -77,20 +77,60 @@
+ From `/docs/payments/3ds.md`, modulated by the step 6 [policy_update_scan](policy_update_scan.md) result:
+ 
+ - `OUTCOME_OK`: gates 1–5 passed, no matching policy update blocks the action (or its lockout window has lifted per `/bin/date`), `/bin/payments recover-3ds` ran, post-state confirms a fresh challenge with payment still `requires_3ds_action`. Refs include `/docs/security.md`, `/docs/checkout.md`, `/docs/payments/3ds.md`, every matching policy update returned by [policy_update_scan](policy_update_scan.md), plus the customer's own `/proc/payments/<id>.json` and `/proc/baskets/<id>.json`.
+-- `OUTCOME_DENIED_SECURITY`: identity does not match (foreign payment, claimed identity that `/bin/id` does not return, override claim). **Do not mutate.** Cross-boundary refs are policy-docs only — see [Refs to set in scratchpad](#refs-to-set-in-scratchpad). The policy-update sweep is skipped because eligibility was never evaluated; the dated updates are not cited.
++- `OUTCOME_DENIED_SECURITY`: identity does not match (foreign payment, claimed identity that `/bin/id` does not return, override claim). **Do not mutate.** Cross-boundary refs are policy-docs only - see [Evidence ledger](#evidence-ledger). The policy-update sweep is skipped because eligibility was never evaluated; the dated updates are not cited.
+ - `OUTCOME_NONE_UNSUPPORTED`: identity matches but any of — basket not `checked_out`, payment not `requires_3ds_action`, basket/payment `basket_id` mismatch, `three_ds.status == 3ds-status1`, `three_ds.attempts >= three_ds.max_attempts`, **or** a matching policy update from step 6 blocks the action now (active lockout window, hard suspension, altered cap that the current state fails). **Do not mutate.** Refs include `/docs/security.md`, `/docs/checkout.md`, `/docs/payments/3ds.md`, every matching policy update returned by [policy_update_scan](policy_update_scan.md), plus the customer's own `/proc/payments/<id>.json` and `/proc/baskets/<id>.json` (own-record ownership passed).
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-The applied-policy set depends on whether the 3DS recovery was actually evaluated against the basket/payment:
++Local placement for 3DS recovery evidence:
+ 
+-- **Ownership matched (OUTCOME_OK or OUTCOME_NONE_UNSUPPORTED):** the full prerequisite chain was applied — include all three docs and every matching dated update:
+-  - `/docs/security.md`
+-  - `/docs/checkout.md` — prerequisite policy that `/docs/payments/3ds.md` defers to. **Not optional**; the grader rejects with `answer missing required reference '/docs/checkout.md'` if it is dropped.
+-  - `/docs/payments/3ds.md`
+-  - Every matching update path returned by [policy_update_scan](policy_update_scan.md). Topic-folder siblings such as `/docs/payments/<file>.md` and cross-workflow update paths are equally required when they match and shape the decision. Copy each path verbatim from the helper's candidate read/list result; do not synthesise.
+-  - `/proc/payments/<id>.json` and `/proc/baskets/<id>.json` — own-record ownership passed (customer actor) or action target (employee actor).
+-- **Cross-boundary customer-actor denial (OUTCOME_DENIED_SECURITY):** the recovery was never evaluated — only `/docs/security.md` was applied to block the action, and the topic doc names what was being attempted. Refs are policy-docs only: `["/docs/security.md", "/docs/payments/3ds.md"]`. The foreign payment/basket paths must NOT appear. `/docs/checkout.md` does NOT belong here either — checkout policy was not applied because identity blocked the flow before eligibility was checked. Dated policy updates also do NOT belong here — the sweep is downstream of identity. See [refs](refs.md) — "checkout" wording with a `pay_*` id routes to `/docs/payments/3ds.md`, not `/docs/checkout.md`.
++`policy_docs_applied`:
++
++- Ownership matched (`OUTCOME_OK` or `OUTCOME_NONE_UNSUPPORTED` after
++  eligibility evaluation): `/docs/security.md`, `/docs/checkout.md`, and
++  `/docs/payments/3ds.md`.
++- Customer cross-boundary denial: `/docs/security.md` plus the topic doc
++  `/docs/payments/3ds.md`; `/docs/checkout.md` is not applied because identity
++  stopped the flow before checkout eligibility.
++- Every matched update path returned by `policy_update_scan` that shaped the
++  recovery decision.
++
++`action_targets`:
++
++- `/proc/payments/<id>.json` payment target.
++- Linked `/proc/baskets/<id>.json` checked-out basket target.
++
++`answer_records`:
++
++- Owned payment and linked basket records when ownership passed and they decide
++  recoverability or unsupported state.
++
++`post_state_records`:
++
++- `/proc/payments/<id>.json` re-read after `/bin/payments recover-3ds` to prove
++  payment remains `requires_3ds_action` with a fresh challenge before
++  `OUTCOME_OK`.
++
++`considered_not_cited`:
++
++- Foreign payment, basket, or customer records in a customer cross-boundary
++  denial.
++- Unrelated payment/basket candidates and unmatched dated updates.
++
++`refs_must_include`:
++
++- Ownership-matched OK/unsupported: `/docs/security.md`, `/docs/checkout.md`,
++  `/docs/payments/3ds.md`, every matched update path, owned payment target, and
++  linked owned basket target.
++- `OUTCOME_OK`: post-state payment path, deduped with the payment target.
++- Cross-boundary customer denial: policy docs only,
++  `["/docs/security.md", "/docs/payments/3ds.md"]`.
++
++`refs_must_not_include`:
++
++- Foreign payment/basket/customer records in cross-boundary denials,
++  `/docs/checkout.md` on identity-stop denials, dated updates skipped downstream
++  of identity, and local `bin-help` paths.
+ 
+ ## Anti-patterns
+ 

@@ -1,0 +1,45 @@
+{
+  "unit_id": "bp_os_tooling_incidents",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-06-18T00:26:47+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-001/evidence_ledger.md",
+    "plan": ".tasks/task-001/plan.md",
+    "change": "refs evidence ledger refactor"
+  },
+  "rationale": "Refactor refs from a flat scratchpad list into typed Evidence ledger roles. refs.md owns the shared model and safety projection; topic BPs classify their domain evidence; submission_terminal checks the completed ledger before submit.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/os-and-tooling-incidents-and-workarounds.md",
+      "sha256": "70c7edd8725c53175f4069cba5cf0a9e29350fe6b171e17c4999660310132b48",
+      "why": "Sole authority for the workaround-use policy: /bin/id prerequisite, employee-only gate, fail-fast wording, reference-the-specific-incident-file rule, and the boundary statement."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor source for the employee-only gate, consumed via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "claude.help.txt",
+      "sha256": "2785c400eed2ed15151daea978405086eb5bbc80564fa83debf6a0d4a11282d9",
+      "why": "The /bin/claude 'Embrace AI / account not authorized' surface used as the canonical no-documented-workaround example; if a real /docs onboarding/workaround policy for this tool appears, the no-workaround branch must be re-derived."
+    },
+    {
+      "kind": "bin_help",
+      "path": "codex.help.txt",
+      "sha256": "afd6f3872f2790eeb5c450ef94084ca3b0e352749befddf2b99d1f4ae5b84eb5",
+      "why": "The /bin/codex equivalent surface; same re-derivation trigger as the claude surface."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0002, or issue a new manual_refactor version with adjusted ledger wording."
+  },
+  "no_semantic_change": false
+}

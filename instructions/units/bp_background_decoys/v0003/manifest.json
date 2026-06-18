@@ -1,0 +1,20 @@
+{
+  "unit_id": "bp_background_decoys",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-06-18T00:26:47+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-001/evidence_ledger.md",
+    "plan": ".tasks/task-001/plan.md",
+    "change": "refs evidence ledger refactor"
+  },
+  "rationale": "Refactor refs from a flat scratchpad list into typed Evidence ledger roles. refs.md owns the shared model and safety projection; topic BPs classify their domain evidence; submission_terminal checks the completed ledger before submit.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0002, or issue a new manual_refactor version with adjusted ledger wording."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,79 @@
+--- bp_discount/v0010/content.md
++++ bp_discount/v0011/content.md
+@@ -67,18 +67,67 @@
+ - `OUTCOME_DENIED_SECURITY`: any of — claimed manager approval that `/bin/id` does not show, an override claim, `issuer_id ≠ /bin/id user`, **or** actor lacks `discount_manager` **and** no matching dated update delegates the role for this exact case. **Do not mutate.**
+ - `OUTCOME_NONE_UNSUPPORTED`: identity is authorized (actor has `discount_manager` or a matching dated update delegates it, and `issuer_id` matches) but a non-security gate fails — basket not `active`, existing discount, subtotal/percent rule fails, reason code not in the allowed set, a basket line is not checkout-eligible, or the named dated update does not name the dimension that fails (e.g. dated update delegates the role only for one reason code and the request uses a different reason code). **Do not mutate.**
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-The discount policy bridges into the checkout policy at gate 8. `/docs/checkout.md` is also applied when checkout eligibility is used to resolve which basket the request targets (for example, a checkoutable / last checkoutable basket). Whenever either use applies, `/docs/checkout.md` MUST be in `refs`. The step 2 helper result adds one more "applied policy" path whenever a matched dated update shaped the decision. Concretely:
++Local placement for discount evidence:
+ 
+-- `/docs/security.md` — always (identity gate).
+-- `/docs/discounts.md` — always (the discount policy itself).
+-- `/docs/checkout.md` — required on `OUTCOME_OK` (every line passed the checkoutability gate), on any `OUTCOME_NONE_UNSUPPORTED` that reached gate 8 (basket was `active`, no existing discount, store matched or was overridden by a dated update, subtotal/percent and reason code legal), and whenever checkout eligibility selected the target basket before a later non-security denial (store mismatch, subtotal/percent fail, or reason-code fail). It is **not** required when checkout rules were never applied: identity-only denials (`OUTCOME_DENIED_SECURITY` on missing `discount_manager` with no matching dated update, on `issuer_id` mismatch, on override-claim wording) and explicit-`basket_id` requests denied before the line gate is reached.
+-- **The matched dated update's absolute path** — required whenever a matching update from step 2 was applied to reach the outcome, on `OUTCOME_OK` or on a denial that depended on the update's scope (for example, a role delegation, a denial of delegation, or another named gate change). Cite the exact path where it appears under `/docs/...`; no specific folder family is required.
+-- `/proc/baskets/<id>.json` — when the action target is the basket (employee actor: required even on role-denial; see [refs](refs.md)).
+-- **`/proc/stores/<basket.store_id>.json` — required whenever the request names the store (by display name or `store_*` id) OR whenever the discount policy reads `basket.store_id` (every authorized OK path, every gate-5 store-mismatch denial, AND every identity-only / capability-gap denial whose request named the store or named a person as "manager of" the store).** Resolve the path by reading the row (`ws.read("/proc/stores/<basket.store_id>.json")`) or by copying the `stores.record_path` column from a `/bin/sql` projection — never synthesise. The store record is a **public** record (it describes the merchant's public surface, not personal data), so including it is never a cross-boundary leak; it is the public source of truth for the manager-store-match gate at step 5 AND for any "is X really a manager of Y" claim quoted in the request. The grader rejects with `answer missing required reference '/proc/stores/<id>.json'` when it is dropped — including on capability-gap denials where the customer asked to discount their own basket and the request named the store or a putative manager of it. This rule applies in every actor branch (customer cross-boundary, customer own-record, employee, guest) and is independent of which gate produced the denial.
++`policy_docs_applied`:
+ 
+-Reading `/docs/checkout.md` (via `ws.read` or via the cited gate-text quote in this BP) is the way to make the citation truthful. Add it to `refs` in the same snippet that confirms the line gate passed or selects the target by checkout eligibility. The same discipline applies to the matched dated update path — `ws.read` it before citing. The same discipline applies to the store record — read it (or take its `record_path` from SQL) in the same snippet that decides the outcome, so the path you cite is the canonical one and not a guess.
++- `/docs/security.md` for identity and issuer authority.
++- `/docs/discounts.md` for the discount gate set.
++- `/docs/checkout.md` when checkout eligibility is used to resolve a target or
++  gate basket lines.
++- Any matched update path from `policy_update_scan` that shaped role
++  delegation, store/reason/basket/day scope, blocking, or another named gate.
++
++`actor_or_protocol_evidence`:
++
++- `/bin/id` result for actor, roles, and issuer id.
++- Employee store/role evidence when read for the manager-store gate; final refs
++  include it only when `refs.md` and the branch permit.
++
++`action_targets`:
++
++- `/proc/baskets/<id>.json` as the discount target when safe under the actor
++  branch.
++- `/proc/stores/<basket.store_id>.json` as a public store evidence record when
++  the request names the store/manager claim or the policy reads
++  `basket.store_id`.
++
++`answer_records`:
++
++- Basket, store, subtotal/product/line/inventory SQL rows, matched updates, and
++  role/store evidence that determine OK, unsupported, or capability-denial
++  outcome.
++
++`post_state_records`:
++
++- `/proc/baskets/<id>.json` re-read after `/bin/discount` to prove the requested
++  discount object is present before `OUTCOME_OK`.
++
++`considered_not_cited`:
++
++- Unmatched dated updates, rejected candidate baskets/stores, foreign customer
++  baskets in cross-boundary denials, local tool-help paths, and retired phrase
++  docs/wording.
++
++`refs_must_include`:
++
++- `/docs/security.md` and `/docs/discounts.md` on every discount decision.
++- `/docs/checkout.md` when checkout rules were applied: OK discounts, denials
++  that reached the line gate, or target selection by checkout eligibility.
++- Every matched update path that shaped the decision.
++- The basket action target when safe, including employee action-target denials.
++- The public store record whenever the request names the store or manager-store
++  claim, or the policy reads `basket.store_id`.
++- The post-state basket path for `OUTCOME_OK` (deduped with the action target).
++
++`refs_must_not_include`:
++
++- `/docs/checkout.md` on identity-only denials where checkout rules were never
++  applied.
++- Unmatched update candidates, foreign customer baskets on cross-boundary
++  denials, local `bin-help` paths, and synthetic store paths.
+ 
+ ## Anti-patterns
+ 

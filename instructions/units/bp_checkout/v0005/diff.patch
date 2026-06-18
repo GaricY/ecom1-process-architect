@@ -1,0 +1,55 @@
+--- bp_checkout/v0004/content.md
++++ bp_checkout/v0005/content.md
+@@ -40,11 +40,48 @@
+ - `OUTCOME_NONE_UNSUPPORTED`: identity passed but any of — basket already `checked_out`, any line has no `store_inventory` row for the basket's `store_id`, any line `requested_quantity > available_today_quantity`. **Do not mutate.**
+ - `OUTCOME_NONE_CLARIFICATION`: the request does not uniquely identify the basket among the actor's eligible records.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-- `/docs/security.md` and `/docs/checkout.md` — the two active policies applied.
+-- `/proc/baskets/<id>.json` — only when ownership passed (customer actor) or it is the action target (employee actor).
+-- See [refs](refs.md) for the construction contract.
++Local placement for checkout evidence:
++
++`policy_docs_applied`:
++
++- `/docs/security.md` for identity/ownership.
++- `/docs/checkout.md` for status and line-availability gates.
++
++`action_targets`:
++
++- `/proc/baskets/<id>.json` when ownership passed for a customer actor or it is
++  the employee action target.
++
++`answer_records`:
++
++- The basket record and the SQL inventory/line rows that decide eligibility or
++  unsupported state. SQL rows without safe live record paths remain decision
++  evidence, not automatic final refs.
++
++`post_state_records`:
++
++- `/proc/baskets/<id>.json` re-read after `/bin/checkout` to prove
++  `status == checked_out` before `OUTCOME_OK`.
++
++`considered_not_cited`:
++
++- Foreign baskets on customer cross-boundary denial.
++- Inventory rows, missing inventory rows, and rejected candidate baskets that
++  shaped the decision but do not have safe required live refs.
++
++`refs_must_include`:
++
++- `/docs/security.md` and `/docs/checkout.md`.
++- The basket action target when ownership passed or the employee action-target
++  exception applies.
++- The post-state basket path for `OUTCOME_OK` (deduped with the action target).
++
++`refs_must_not_include`:
++
++- Foreign basket records on customer cross-boundary denials, local `bin-help`
++  paths, and store-floor vocabulary/decoy docs.
+ 
+ ## Anti-patterns
+ 

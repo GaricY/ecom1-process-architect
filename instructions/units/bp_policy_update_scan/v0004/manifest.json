@@ -1,0 +1,27 @@
+{
+  "unit_id": "bp_policy_update_scan",
+  "version": "v0004",
+  "parent": "v0003",
+  "status": "active",
+  "created_at": "2026-06-18T00:26:47+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-001/evidence_ledger.md",
+    "plan": ".tasks/task-001/plan.md",
+    "change": "refs evidence ledger refactor"
+  },
+  "rationale": "Refactor refs from a flat scratchpad list into typed Evidence ledger roles. refs.md owns the shared model and safety projection; topic BPs classify their domain evidence; submission_terminal checks the completed ledger before submit.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted date/timestamp provider used for operating-day and lockout comparisons."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0003, or issue a new manual_refactor version with adjusted ledger wording."
+  },
+  "no_semantic_change": false
+}

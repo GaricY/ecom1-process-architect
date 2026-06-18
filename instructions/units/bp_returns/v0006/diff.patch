@@ -1,0 +1,77 @@
+--- bp_returns/v0005/content.md
++++ bp_returns/v0006/content.md
+@@ -81,19 +81,63 @@
+ - `OUTCOME_NONE_UNSUPPORTED`: identity / role is authorized but the workflow gate fails — payment not `paid`, return not in the required status for the requested step, triple does not reconcile, or the request is for a non-refund return mutation (replacement, manual reject, etc.) for which no tool exists. From `/docs/returns.md`: "If identity or role is authorized but the return is not in the required status for the requested workflow step, do not mutate files or run payment tools; answer with `OUTCOME_NONE_UNSUPPORTED`." **No mutation runs.**
+ - `OUTCOME_NONE_CLARIFICATION`: the request names "the return" without enough scoping among the actor's eligible returns, or names a workflow step (approve / finalize) without a return id when more than one matches.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-The applied-policy bundle depends on whether the actor / ownership check passed. See [refs](refs.md) for the construction contract.
++Local placement for return/refund evidence:
+ 
+-- **Ownership / role matched (any `OUTCOME_OK`, or `OUTCOME_NONE_UNSUPPORTED` reached after the role/ownership gate):**
+-  - `/docs/security.md` — prerequisite cited verbatim by `/docs/returns.md` ("read and apply `/docs/security.md`"). **Not optional**; the grader rejects with `answer missing required reference '/docs/security.md'` if dropped.
+-  - `/docs/returns.md` — the topic policy doc.
+-  - `/proc/returns/<id>.json` — the action target (employee actor: target; customer actor: own record, ownership match).
+-  - `/proc/payments/<return.payment_id>.json` — read to gate `status == paid` (every approve/finalize decision reads it). Customer actor: own-record ownership already passed via triple reconciliation. Employee actor: target-adjacent record material to the decision.
+-  - `/proc/baskets/<return.basket_id>.json` — required on the finalization path when it exists and the policy reads `basket.customer_id`; on the approval or archived-information path, include it only when materially read/resolved (do not cite a missing cold-storage basket).
+-- **Cross-boundary customer-actor denial (`OUTCOME_DENIED_SECURITY` on a foreign return):** policy-docs only — `["/docs/security.md", "/docs/returns.md"]`. The foreign `/proc/returns/...`, `/proc/baskets/...`, `/proc/payments/...` paths MUST NOT appear. See [refs](refs.md) "Customer-actor cross-boundary rule".
+-- **Customer-actor own-record capability-gap denial (customer asks to approve their own refund; `/bin/id` does not return `refund_manager`):** policy-docs **plus** the action-target `/proc/returns/<id>.json` and the customer's own `/proc/payments/<id>.json` and `/proc/baskets/<id>.json` when materially read. Ownership passed; targets are not personal-data leaks.
+-- **Employee-actor capability-gap denial (employee lacks `refund_manager`, or employee tries to invoke the customer-only finalization path):** policy-docs plus `/proc/returns/<id>.json` as the action target. See [refs](refs.md) "Employee-actor exception".
++`policy_docs_applied`:
++
++- `/docs/security.md` and `/docs/returns.md` whenever the return/refund flow is
++  evaluated or denied on this topic.
++
++`action_targets`:
++
++- `/proc/returns/<id>.json` as the return/refund target.
++- Linked `/proc/payments/<return.payment_id>.json` when read for the paid gate
++  or information reconciliation.
++- Linked `/proc/baskets/<return.basket_id>.json` when read for finalization or
++  triple reconciliation.
++
++`answer_records`:
++
++- Return/payment/basket records that determine lookup answer, approval
++  eligibility, finalization eligibility, unsupported state, or own-record
++  capability-gap denial.
++- Surviving payment line snapshots for archived-payment information lookups
++  when the basket file aged out.
++
++`post_state_records`:
++
++- `/proc/returns/<id>.json` re-read after `approve-refund` to prove
++  `refund_pending`.
++- `/proc/returns/<id>.json` re-read after `refund` to prove the closed/finalized
++  shape.
++
++`considered_not_cited`:
++
++- Foreign return/payment/basket records in customer cross-boundary denials.
++- Missing cold-storage basket paths on archived-information lookups when the
++  payment snapshot is the surviving evidence.
++- Unsupported replacement/manual-edit branches.
++
++`refs_must_include`:
++
++- Ownership/role matched OK or unsupported after the gate: `/docs/security.md`,
++  `/docs/returns.md`, the return target, the linked payment read for the paid
++  gate, and the linked basket when materially read/resolved.
++- Cross-boundary customer denial: policy docs only,
++  `["/docs/security.md", "/docs/returns.md"]`.
++- Customer own-record capability-gap denial: policy docs plus the owned return
++  target and linked own payment/basket records when materially read.
++- Employee capability-gap denial: policy docs plus `/proc/returns/<id>.json` as
++  the action target.
++- `OUTCOME_OK` mutations: post-state return path, deduped with the action
++  target.
++
++`refs_must_not_include`:
++
++- Foreign return/payment/basket records in cross-boundary denials, private owner
++  or contact fields in message, and local tool-help paths.
+ 
+ ## Anti-patterns
+ 

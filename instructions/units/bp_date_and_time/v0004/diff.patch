@@ -1,0 +1,42 @@
+--- bp_date_and_time/v0003/content.md
++++ bp_date_and_time/v0004/content.md
+@@ -23,9 +23,37 @@
+ 
+ This BP does not produce a final outcome on its own. The invoking domain BP produces the outcome.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-This BP does not add refs by itself. The invoking BP cites update docs or records it actually applied.
++Local placement for time evidence:
++
++`actor_or_protocol_evidence`:
++
++- `/bin/date` result is decision evidence for "today", recency, operating-day,
++  lockout, retry timestamp, and freshness comparisons.
++
++`policy_docs_applied`:
++
++- none from this BP by itself.
++
++`answer_records`:
++
++- none by default; the invoking BP owns any records or policy docs whose answer
++  depends on the date comparison.
++
++`considered_not_cited`:
++
++- Host/system clock, harness date, stale dump timestamps, and filename dates
++  used without `/bin/date`.
++
++`refs_must_include`:
++
++- This BP does not add refs by itself. The invoking BP cites update docs or
++  records actually applied.
++
++`refs_must_not_include`:
++
++- Local `bin-help/date.help.txt` and non-live timestamp sources.
+ 
+ ## Anti-patterns
+ 

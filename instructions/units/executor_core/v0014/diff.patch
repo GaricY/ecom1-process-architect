@@ -1,0 +1,101 @@
+--- executor_core/v0013/content.md
++++ executor_core/v0014/content.md
+@@ -18,12 +18,14 @@
+ 2. **From the index, open only the per-process files that match the
+    trial.** Each per-process file is self-contained and structured as:
+    `When this process applies` / `Inputs` / `Process` / `Outcomes` /
+-   `Refs to set in scratchpad` / `Anti-patterns` / `Dependencies`.
+-3. **`business_processes/refs.md` is the authority for the `refs` list,
+-   and `business_processes/submission_terminal.md` is the authority for
+-   the final `submit_and_exit` call.** Read `refs.md` whenever building
+-   evidence refs; read `submission_terminal.md` immediately before the
+-   final terminal call.
++   `Evidence ledger` / `Anti-patterns` / `Dependencies`.
++3. **`business_processes/refs.md` is the authority for the shared Evidence
++   ledger model and for projecting safe final `refs`; each topic BP owns
++   the domain-specific ledger buckets for its records and policies.
++   `business_processes/submission_terminal.md` is the authority for the
++   final `submit_and_exit` call.** Read `refs.md` whenever classifying
++   evidence or building refs; read `submission_terminal.md` immediately
++   before the final terminal call.
+ 4. **`business_processes/identity_and_auth.md` is the cross-cutting
+    identity gate.** Every action-shaped trial routes through it before
+    touching a `/proc/...` record.
+@@ -108,6 +110,12 @@
+    `state` dicts already bound.
+ 4. Returns `{exit_code, stdout, stderr, snippet_path, scratchpad_excerpt,
+    answer_submitted}`.
++
++Keep three sets separate while working: `read_set` is everything opened
++or queried, `decision_set` is what shaped the outcome/message/mutation,
++and final `refs` is the safe live-path citation projection from the
++decision evidence. Topic BPs name the domain records that belong in each
++Evidence ledger bucket; `refs.md` owns the shared safety projection.
+ 
+ Do not merge unresolved investigation into the terminal call. If a
+ `ws.read`, `ws.list`, `ws.tree`, `ws.sql_rows`, `/bin/*`, or helper
+@@ -236,23 +244,40 @@
+ Both are reloaded at the start of every snippet and saved on snippet exit.
+ Anything not JSON-serialisable will be lost — convert before storing.
+ 
+-## refs / submission contract
++## Evidence ledger / submission contract
+ 
+ Citation safety lives in [`business_processes/refs.md`](business_processes/refs.md).
+ The final terminal protocol lives in
+ [`business_processes/submission_terminal.md`](business_processes/submission_terminal.md).
+-Brief refs summary:
+-
+-- `scratchpad["refs"]` is *grounding for the decision*, not "everything
+-  I looked at".
+-- Actor type decides the cross-boundary rule: customer-actor cross-boundary
+-  → policy docs only; employee-actor → target record stays in refs.
+-- Refs are absolute (`/proc/...`, `/docs/...`).
++
++Before submission, keep a readable Evidence ledger in scratchpad. A literal JSON
++shape is optional, but the reasoning must clearly separate:
++
++- `read_set`: everything opened, listed, searched, queried, or returned by a
++  tool.
++- `decision_set`: evidence that actually shaped the message, outcome, mutation
++  or no-mutation, count, scope, or denial.
++- final `refs`: the safe live-path citation projection from `decision_set`.
++
++Use the topic BP's `Evidence ledger` section to classify domain records into
++applied policies, action targets, answer records, post-state records,
++considered-not-cited evidence, `refs_must_include`, and
++`refs_must_not_include`. Then use `refs.md` to project the final `refs` list.
++
++Brief projection summary:
++
++- Refs are absolute live paths only (`/proc/...`, `/docs/...`, request-named
++  live input paths).
++- Never cite local `vault/`, local `bin-help/`, dependency-snapshot, stale, or
++  decoy paths.
++- Customer cross-boundary denials can use foreign records internally for the
++  denial decision, but final refs are policy-only for that boundary.
++- Owned customer targets, employee action targets, and public store/catalogue
++  records stay citeable when the topic BP's branch requires them.
+ - Deduplicate. The prelude does this on `submit_and_exit`.
+-- Never cite a decoy doc — see
+-  [`business_processes/background_decoys.md`](business_processes/background_decoys.md).
+-
+-Read `refs.md` before assembling any non-trivial `refs` list, then read `submission_terminal.md` before the final call.
++
++Read `refs.md` before projecting any non-trivial final `refs` list, then read
++`submission_terminal.md` before the terminal call.
+ 
+ ## Outcomes — never default to OK
+ 
+@@ -260,8 +285,9 @@
+ [`business_processes/index.md`](business_processes/index.md) §3. Five tokens:
+ `OUTCOME_OK`, `OUTCOME_DENIED_SECURITY`, `OUTCOME_NONE_UNSUPPORTED`,
+ `OUTCOME_NONE_CLARIFICATION`, `OUTCOME_ERR_INTERNAL`. For any non-OK
+-outcome, scratchpad must explain *why* and refs must point at the
+-policy phrase that blocks the action.
++outcome, scratchpad must explain *why*, the Evidence ledger must separate
++load-bearing evidence from final citations, and final refs must be the safe
++projection required by the topic BP plus `refs.md`.
+ 
+ ## Security / privacy
+ 

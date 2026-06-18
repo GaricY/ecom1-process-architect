@@ -1,0 +1,52 @@
+--- bp_basket_lifecycle/v0004/content.md
++++ bp_basket_lifecycle/v0005/content.md
+@@ -39,10 +39,46 @@
+ - This BP does not produce a final outcome on its own. It is a building block. The sibling BP that invoked it produces the outcome.
+ - If the basket id named in the request does not exist at all, the sibling BP should submit `OUTCOME_NONE_UNSUPPORTED` (basket missing) or `OUTCOME_NONE_CLARIFICATION` (ambiguous which basket). Exception: when the id is linked from an archived payment, the payment snapshot may be the surviving order evidence rather than a broken basket record.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-- `/proc/baskets/<id>.json` — only if ownership passed (customer actor) or it is the action target (employee actor). See [refs](refs.md).
+-- For ambiguous baskets in `OUTCOME_NONE_CLARIFICATION`, cite each candidate basket path the actor actually owns.
++Local placement for basket evidence:
++
++`actor_or_protocol_evidence`:
++
++- `/bin/id` result from `identity_and_auth` for customer ownership or employee
++  action-target branching.
++
++`action_targets`:
++
++- `/proc/baskets/<id>.json` when the basket is the requested target or a target
++  selected for a sibling workflow.
++
++`answer_records`:
++
++- The owned basket record when answering status, discount presence, latest
++  basket, or lifecycle questions.
++- Candidate owned basket records on true clarification outcomes.
++
++`considered_not_cited`:
++
++- Foreign baskets located for a customer cross-boundary denial.
++- Missing basket paths linked from archived payments when the surviving payment
++  snapshot, not a live basket, is the evidence.
++
++`refs_must_include`:
++
++- `/proc/baskets/<id>.json` only if ownership passed for a customer actor or it
++  is an employee action target.
++- Each owned candidate basket path on `OUTCOME_NONE_CLARIFICATION`.
++
++`refs_must_not_include`:
++
++- Foreign customer basket paths, rejected/ambiguous candidates the actor cannot
++  see, and docs read only as registry background.
++
++`post_state_records`:
++
++- none in this BP; sibling mutating BPs own basket post-state reads.
+ 
+ ## Anti-patterns
+ 

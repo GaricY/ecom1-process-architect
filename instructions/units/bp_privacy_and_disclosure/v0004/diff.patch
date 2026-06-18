@@ -1,0 +1,54 @@
+--- bp_privacy_and_disclosure/v0003/content.md
++++ bp_privacy_and_disclosure/v0004/content.md
+@@ -35,12 +35,46 @@
+ - `OUTCOME_NONE_CLARIFICATION`: the request is ambiguous between multiple people/records and asking would avoid disclosing the wrong data.
+ - `OUTCOME_NONE_UNSUPPORTED`: the requested communication/contact workflow has no active policy or tool.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-- Always include `/docs/security.md` when denying disclosure.
+-- Include the actor's own customer record only when ownership passed and the data is necessary.
+-- Do not include customer or employee contact records merely because SQL returned their `record_path`.
+-- Delegate final citation safety to [refs](refs.md).
++Local placement for disclosure evidence:
++
++`policy_docs_applied`:
++
++- `/docs/security.md` whenever personal/contact data disclosure is allowed or
++  denied.
++
++`actor_or_protocol_evidence`:
++
++- `/bin/id` / `ws.id()` for actor type and ownership.
++- The actor's own customer record only when the request is about the actor's own
++  account and the answer requires those fields.
++
++`answer_records`:
++
++- Allowed public merchant records: stores and catalogue products used by the
++  answer.
++- Allowed own-account customer fields when ownership passed and the field is
++  necessary.
++
++`considered_not_cited`:
++
++- Foreign customer/contact/profile rows and private employee contact rows read
++  only to deny disclosure.
++- SQL rows whose `record_path` appeared but whose fields are private or
++  unnecessary.
++
++`refs_must_include`:
++
++- `/docs/security.md` on any disclosure denial.
++- Safe own-record or public-record paths when those records ground the answer.
++
++`refs_must_not_include`:
++
++- Customer or employee contact records merely because SQL returned
++  `record_path`.
++- Foreign customer ids, emails, display names, home/contact fields, employee
++  contact fields, or coordinates in final refs/message.
+ 
+ ## Anti-patterns
+ 
