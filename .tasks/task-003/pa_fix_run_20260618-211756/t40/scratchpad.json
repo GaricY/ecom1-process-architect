@@ -1,0 +1,135 @@
+{
+  "refs": [
+    "/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json",
+    "/proc/payments/pay_20210428T143900Z_15AuaLMi22.json",
+    "/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json",
+    "/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json",
+    "/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json",
+    "/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json",
+    "/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json",
+    "/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json",
+    "/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json",
+    "/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json",
+    "/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json",
+    "/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json",
+    "/proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json",
+    "/proc/payments/pay_20210506T114710Z_CH88xpNE7i.json",
+    "/proc/payments/pay_20210506T120253Z_FHLaja4i2r.json",
+    "/proc/payments/pay_20210506T121126Z_QUxvV35QqK.json",
+    "/proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json",
+    "/proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json",
+    "/proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json",
+    "/proc/payments/pay_20210506T125655Z_PbRnfQc37t.json",
+    "/proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json",
+    "/proc/payments/pay_20210506T130608Z_jT661ai8wU.json",
+    "/proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json",
+    "/proc/payments/pay_20210526T004138Z_AmUjSajRn4.json",
+    "/proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json"
+  ],
+  "scope": "All archived payments (is_archived_basket_reference=1), total=1027",
+  "scope_predicate": "All archived payments (is_archived_basket_reference=1)",
+  "universe_size": 1027,
+  "hard_sweep_ledger": {
+    "family_1a_shared_pmf": {
+      "result": "zero",
+      "max_metric": "max_customers_per_pmf=1"
+    },
+    "family_1b_shared_dfp": {
+      "result": "zero",
+      "max_metric": "max_customers_per_dfp=1"
+    },
+    "family_1c_repeated_baskets": {
+      "result": "zero",
+      "max_metric": "no basket with >1 payment"
+    },
+    "family_2_workflow_state_3ds": {
+      "result": "not_applicable",
+      "reason": "All 1027 archived payments have three_ds_status=NULL, three_ds_attempts=NULL - no 3DS data populated"
+    },
+    "family_3_amount_vs_lines": {
+      "result": "zero",
+      "max_metric": "all 1027 payments: payment_amount_cents == sum(qty*unit_price)"
+    },
+    "family_4_impossible_travel": {
+      "result": "hard_hit",
+      "scan_scope": "all 1027 archived payments",
+      "actor_axis": "customer_id",
+      "time_axis": "payment_created_at",
+      "coordinate_axis": "observed_latitude, observed_longitude",
+      "window_definition": "consecutive events per customer within 15 minutes",
+      "threshold": "L1 > 2.0",
+      "max_metric": "max L1 jump within 15 min = 6.604 (cust_031)",
+      "hits": [
+        {
+          "customers": [
+            "cust_031",
+            "cust_032",
+            "cust_033",
+            "cust_034",
+            "cust_035"
+          ],
+          "date": "2021-05-06",
+          "count_per_customer": 2
+        },
+        {
+          "customer": "cust_082",
+          "date": "2021-05-26",
+          "count": 3
+        }
+      ]
+    },
+    "family_5_stationary_burst": {
+      "result": "hard_hit",
+      "scan_scope": "all 1027 archived payments",
+      "actor_axis": "customer_id",
+      "time_axis": "payment_created_at",
+      "target_axis": "store_id",
+      "window_definition": "rolling 5-minute sub-window per customer (self-join)",
+      "threshold": "distinct_stores >= 4 AND observed_spread_l1 < 0.05",
+      "max_metric": "cust_068: 10 distinct stores in ~3 min, observed_spread=0.007",
+      "hits": [
+        {
+          "customer": "cust_068",
+          "date": "2021-04-28",
+          "count": 12
+        }
+      ]
+    }
+  },
+  "fraud_cohort": {
+    "total": 25,
+    "clusters": [
+      {
+        "signal": "stationary_burst",
+        "customer": "cust_068",
+        "date": "2021-04-28",
+        "count": 12
+      },
+      {
+        "signal": "impossible_travel",
+        "customers": [
+          "cust_031",
+          "cust_032",
+          "cust_033",
+          "cust_034",
+          "cust_035"
+        ],
+        "date": "2021-05-06",
+        "count": 10
+      },
+      {
+        "signal": "impossible_travel",
+        "customer": "cust_082",
+        "date": "2021-05-26",
+        "count": 3
+      }
+    ]
+  },
+  "business_process": {
+    "primary": "fraud_risk_review.md",
+    "reason": "Task asks to find payment records that are part of a confirmed fraud incident in archived payment history - complete cohort discovery"
+  },
+  "answer": "The fraud incident comprises 25 archived payment records identified by two hard signals across three clusters.\n\nCluster 1 \u2014 stationary single-actor burst (cust_068, 2021-04-28): 12 payments at 10 distinct stores in under 3 minutes while observed coordinates remained nearly stationary (spread L1 < 0.007):\n/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json\n/proc/payments/pay_20210428T143900Z_15AuaLMi22.json\n/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json\n/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json\n/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json\n/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json\n/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json\n/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json\n/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json\n/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json\n/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json\n/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json\n\nCluster 2 \u2014 impossible observed travel (cust_031, cust_032, cust_033, cust_034, cust_035, 2021-05-06): each customer made two consecutive payments with an L1 coordinate jump >5.2 degrees within 5\u20139 minutes (physically impossible movement):\n/proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json\n/proc/payments/pay_20210506T114710Z_CH88xpNE7i.json\n/proc/payments/pay_20210506T120253Z_FHLaja4i2r.json\n/proc/payments/pay_20210506T121126Z_QUxvV35QqK.json\n/proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json\n/proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json\n/proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json\n/proc/payments/pay_20210506T125655Z_PbRnfQc37t.json\n/proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json\n/proc/payments/pay_20210506T130608Z_jT661ai8wU.json\n\nCluster 3 \u2014 impossible observed travel (cust_082, 2021-05-26): a chain of 3 consecutive payments with observed coordinate jumps of L1=3.65 in 14 min and L1=3.13 in 13 min:\n/proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json\n/proc/payments/pay_20210526T004138Z_AmUjSajRn4.json\n/proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json",
+  "message": "The fraud incident comprises 25 archived payment records identified by two hard signals across three clusters.\n\nCluster 1 \u2014 stationary single-actor burst (cust_068, 2021-04-28): 12 payments at 10 distinct stores in under 3 minutes while observed coordinates remained nearly stationary (spread L1 < 0.007):\n/proc/payments/pay_20210428T143838Z_FJT4ktFYHA.json\n/proc/payments/pay_20210428T143900Z_15AuaLMi22.json\n/proc/payments/pay_20210428T143926Z_4s3V7sGjCG.json\n/proc/payments/pay_20210428T143935Z_gAd7jQvGp2.json\n/proc/payments/pay_20210428T143946Z_Guv7jBBZhv.json\n/proc/payments/pay_20210428T144028Z_WXecxa2tEU.json\n/proc/payments/pay_20210428T144044Z_Hr1GP2nrdE.json\n/proc/payments/pay_20210428T144050Z_AthFLEeAUq.json\n/proc/payments/pay_20210428T144108Z_EWAMYQdGY1.json\n/proc/payments/pay_20210428T144120Z_7Dcnqm5WmW.json\n/proc/payments/pay_20210428T144126Z_DsPqK9r45Y.json\n/proc/payments/pay_20210428T144134Z_NqWpRFoqYn.json\n\nCluster 2 \u2014 impossible observed travel (cust_031, cust_032, cust_033, cust_034, cust_035, 2021-05-06): each customer made two consecutive payments with an L1 coordinate jump >5.2 degrees within 5\u20139 minutes (physically impossible movement):\n/proc/payments/pay_20210506T113853Z_LuGaYp3sSG.json\n/proc/payments/pay_20210506T114710Z_CH88xpNE7i.json\n/proc/payments/pay_20210506T120253Z_FHLaja4i2r.json\n/proc/payments/pay_20210506T121126Z_QUxvV35QqK.json\n/proc/payments/pay_20210506T122053Z_3FDm6EDeDa.json\n/proc/payments/pay_20210506T122627Z_WnzYMpsRPk.json\n/proc/payments/pay_20210506T124753Z_W5mLEQxzj5.json\n/proc/payments/pay_20210506T125655Z_PbRnfQc37t.json\n/proc/payments/pay_20210506T125853Z_NHZJDKZQfu.json\n/proc/payments/pay_20210506T130608Z_jT661ai8wU.json\n\nCluster 3 \u2014 impossible observed travel (cust_082, 2021-05-26): a chain of 3 consecutive payments with observed coordinate jumps of L1=3.65 in 14 min and L1=3.13 in 13 min:\n/proc/payments/pay_20210526T002730Z_HkHUXAQSXh.json\n/proc/payments/pay_20210526T004138Z_AmUjSajRn4.json\n/proc/payments/pay_20210526T005427Z_PzNmaU8UB9.json",
+  "outcome": "OUTCOME_OK"
+}

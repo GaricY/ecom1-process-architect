@@ -1,0 +1,26 @@
+# bp_refs v0009
+
+- mode: `failure_fix`
+- created_by: `process_architect`
+- created_at: `2026-06-18T18:38:32+00:00`
+- parent: `v0008`
+
+## Rationale
+
+Owning layer: refs_safety (request-named-input class is bp_refs-owned per the layer map; the symptom surfaced in product_discovery's refs build, but that is the first-symptom unit, not the owner). The task pointed at an input file ("Look at the old receipt in /uploads/"); the Executor read /uploads/receipt_ocr_EDpwT7M9.txt, derived the old-total side of the comparison from it, but cited only the downstream catalogue records it compared against, so the grader flagged the missing required reference. bp_refs already carried the request-named-input rule, but it was bypassed structurally: the final-projection and checklist step 2 subordinate request-input classification to the topic BP ledger, and product_discovery's ledger has no request-input bucket, so the unconditional citation never fired. Fix narrows on the existing rule rather than adding a new safeguard: the request_named_inputs category is marked a shared invariant owned here (cite the input even when refs_must_include lists only the downstream records), and checklist step 5 is reworded into a hard topic-BP-independent backstop that fires even when the topic ledger never classified an input. The existing anti-pattern already describes this exact failure, so no new prose was added. Not a regressing PA rule: v0008 is a human Evidence-ledger refactor.
+
+## Rollback
+
+Create a new version from v0008 content if the strengthened request-named-input backstop over-cites input files (e.g. inputs the answer did not actually use).
+
+## Dependencies
+- `workspace:/docs/security.md` — Privacy boundary for the 'cite the request-named input unless a privacy rule forbids it' carve-out and the cross-boundary citation branches.
+- `bin_help:id.help.txt` — Actor output shape used for the customer/employee/guest citation branches in this unit.
+- `sql_table:shopping_baskets` — Basket ownership, store pointer, status, and canonical record_path for identity-scoped basket ref rules.
+- `sql_table:payment_transactions` — Payment ownership and canonical record_path for identity-scoped payment ref rules.
+- `sql_table:return_requests` — Return ownership and canonical record_path for identity-scoped return ref rules.
+- `sql_table:customer_accounts` — Customer identity/contact fields that are private by default and govern the cross-boundary drop rules.
+- `sql_table:employee_accounts` — Employee roster/contact fields and assigned-store scope that separate private vs operational refs.
+- `sql_table:stores` — Public store record_path and location fields required by the public-record sweep.
+- `sql_table:product_variants` — Public catalogue record_path and SKU fields; the canonical downstream records the receipt is compared against in this task class.
+- `workspace:/proc/README.md` — Source-of-truth manifest for /proc record families and the live path roots refs must point at.

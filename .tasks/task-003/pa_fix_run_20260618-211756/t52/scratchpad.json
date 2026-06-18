@@ -1,0 +1,28 @@
+{
+  "refs": [
+    "/proc/catalog/hand_tools/hammers_measuring_cutting/HND-1M3W2PUY.json",
+    "/proc/catalog/power_tools/cordless_saw_sander/PWR-20JT29HY.json",
+    "/proc/catalog/automotive/chargers_bulbs/AUT-2Q01EBLG.json",
+    "/proc/catalog/cleaning/cloths_mops_wipes/CLN-2DNCIVXM.json",
+    "/proc/catalog/workshop_machines/saws_cutters/MAC-1Y69S241.json"
+  ],
+  "business_process": {
+    "primary": "product_discovery.md",
+    "reason": "Price comparison of old receipt items against current catalogue prices \u2014 read-only product discovery."
+  },
+  "evidence": {
+    "read_set": [
+      "/uploads/receipt_ocr_EDpwT7M9.txt",
+      "product_variants table"
+    ],
+    "decision_set": {
+      "old_total_excl_vat_eur": 7461.92,
+      "new_total_excl_vat_eur": 7462.0,
+      "diff_eur": 0.08,
+      "note": "Two receipt SKUs had OCR O/0 confusion (PWR-2OJT29HY\u2192PWR-20JT29HY, AUT-2QO1EBLG\u2192AUT-2Q01EBLG). All 5 products found in current catalogue."
+    }
+  },
+  "answer": "<YES> The current total (excluding VAT) would be EUR 7462.00 versus EUR 7461.92 on the old receipt \u2014 a difference of EUR 0.08, well within the 2 EUR threshold.",
+  "message": "<YES> The current total (excluding VAT) would be EUR 7462.00 versus EUR 7461.92 on the old receipt \u2014 a difference of EUR 0.08, well within the 2 EUR threshold.",
+  "outcome": "OUTCOME_OK"
+}

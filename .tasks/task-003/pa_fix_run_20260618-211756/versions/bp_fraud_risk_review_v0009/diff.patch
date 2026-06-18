@@ -1,0 +1,79 @@
+--- bp_fraud_risk_review/v0008/content.md
++++ bp_fraud_risk_review/v0009/content.md
+@@ -21,7 +21,7 @@
+ 2. The analysis scope is the user's predicate, not a suspect found mid-analysis. If the brief says archived payments, every mandatory hard family scans all archived payments. A customer, date, store, device, or identifier surfaced by one family is a candidate cluster only; it must not narrow the remaining hard-family scans.
+ 3. Read the full column list for the in-scope table from `bin-help/sqlite_schema.txt`. Do not search only columns whose names sound like "fraud". Identify the actor, event time, observed location, claimed target, exact identifier, resource, and workflow-state columns that exist.
+ 4. Before choosing an answer, run the mandatory hard sweep and record each family as `zero`, `hard hit`, or `not applicable` because required columns are absent:
+-   - cross-actor exact identifier collisions: shared `payment_method_fingerprint`, shared `device_fingerprint`, repeated baskets, identical timestamps, or other exact values across actors;
++   - cross-actor exact identifier collisions: the hard case is a shared **payment instrument** (`payment_method_fingerprint`) across different actors - one instrument/card cannot belong to multiple unrelated actors - plus repeated baskets, identical timestamps, or other exact instrument/resource values shared across actors. A shared `device_fingerprint` across actors is *not* hard by itself: a device is routinely shared by many legitimate customers - in-store shared hardware (terminal, kiosk, or service-desk channels report one device for everyone who pays there) and household, public, or app/runtime devices. Promote a cross-actor device collision to hard only when it is corroborated on the same actors by a shared payment instrument or by per-actor impossible observed travel. Never infer "device travel" from a shared device's observed coordinates: those coordinates belong to different actors and stores, not one moving device;
+    - workflow-state invariants: `paid` rows carrying failed/pending 3DS columns, exhausted attempts, or impossible state transitions under the topic doc;
+    - record/table invariants: amount vs lines/products, archive flags, payment vs basket/customer/store joins, inventory/reserve arithmetic, return/payment/basket joins, duplicate payments. Missing live basket files on archived payments are not hard mismatches by themselves; use the payment line snapshot / `payment_transaction_items`;
+    - impossible observed travel: sequential events by the same actor whose observed coordinates move impossibly far for the elapsed time;
+@@ -29,8 +29,8 @@
+ 5. For every hard-sweep family, the ledger must record the query shape, not only the result: scan scope, actor axis, time axis, coordinate/target axis, window definition, and max-metric used to validate zero results.
+ 6. Finding one hard-supported cluster is not enough to submit. Continue the mandatory hard sweep until every family above has a recorded result and trustworthy query shape.
+ 7. Classify candidate match sets before building the final cohort:
+-   - hard-supported: exact identifier collision across actors, impossible observed travel, stationary single-actor multi-target burst, workflow-state invariant, or record/table invariant;
+-   - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, or any smooth threshold band with no structural confirmation.
++   - hard-supported: cross-actor payment-instrument (`payment_method_fingerprint`) collision, impossible observed travel, stationary single-actor multi-target burst, workflow-state invariant, or record/table invariant;
++   - soft-only: a cross-actor `device_fingerprint` collision with no shared payment instrument and no per-actor impossible travel, one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, or any smooth threshold band with no structural confirmation.
+ 8. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
+ 9. For location/target signals, keep the query shapes separate:
+    - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time. The hard signal is observed displacement per elapsed time exceeding plausible travel speed, not a fixed absolute jump or a fixed window length: a small displacement over near-zero minutes and a large displacement just past the example window are both physically impossible and both qualify. When one consecutive hop is impossible, expand the cluster along that actor's ordered payments to every adjacent hop that is also impossible by speed, so a multi-hop chain is cited whole — do not cite only the hops that happen to clear an illustrative distance literal;
+@@ -42,7 +42,7 @@
+ 13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the candidate cohort.
+ 14. After the hard gate, the final cohort is the union of every hard-supported cluster in the task scope. Different hard families may identify different sub-clusters of the same risk answer. Do not submit only the first, largest, or cleanest hard cluster while another hard family has nonzero matches.
+ 15. Interpret "one hit" / "one incident" as one evidence-connected campaign, not one pure date window. Time span is a sanity check after hard membership is established; different date or different MO is not enough to exclude a hard-supported cluster unless the brief explicitly narrows the scope.
+-16. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, or temporal proximity.
++16. Build a per-record evidence map before refs. Each cited record must have a path, hard signal name, query/condition, and cluster id. Remove any record whose only justification is narrative, threshold-only, customer-level suspicion, temporal proximity, or a device-fingerprint collision with no instrument or per-actor travel corroboration.
+ 17. Run the final cohort query without `LIMIT` or with a bound far above the plausible cohort size and confirm it did not truncate.
+ 
+ ## Risk Investigation Tricks
+@@ -126,7 +126,9 @@
+ - resource axis: SKU, basket, payment, return, inventory row, delivery item, or reserved stock;
+ - invariant axis: amount/lines, basket/customer/store joins, inventory/reserve arithmetic, return/payment/basket joins, and workflow state under the relevant `/docs/...` policy.
+ 
+-Then apply the same hard primitives: impossible observed movement for one actor, too many claimed targets/resources in a short sub-window for one actor, exact identifier collision across actors, ledger reconciliation across tables, and policy/workflow-state invariant. Tables such as `store_inventory`, `shopping_basket_items`, and `return_requests` are current examples for resource/invariant checks; future delivery tables should be added to dependencies only when the BP explicitly references them.
++When the actor axis is a device or payment method, separate instrument from device: the same payment instrument under different actors is a hard collision; the same device under different actors is shared-hardware/shared-device context until a payment instrument or per-actor impossible movement corroborates it.
++
++Then apply the same hard primitives: impossible observed movement for one actor, too many claimed targets/resources in a short sub-window for one actor, exact instrument collision across actors, ledger reconciliation across tables, and policy/workflow-state invariant. Tables such as `store_inventory`, `shopping_basket_items`, and `return_requests` are current examples for resource/invariant checks; future delivery tables should be added to dependencies only when the BP explicitly references them.
+ 
+ ## Coverage check before ledger/submission
+ 
+@@ -137,7 +139,7 @@
+ - mandatory hard-sweep ledger with each family marked `zero`, `hard hit`, or `not applicable`;
+ - for each mandatory hard family: scan scope, actor axis, time axis, coordinate/target axis, window definition, and max-metric;
+ - match counts per signal and per coordinate/target axis where applicable;
+-- hard-supported vs soft-only classification for each match set;
++- hard-supported vs soft-only classification for each match set, including whether any cross-actor identifier collision is instrument-based (hard) or device-only (soft until corroborated);
+ - missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
+ - validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
+ - travel-chain completeness: for each impossible-travel hit, the cited cluster covers every consecutive impossible-speed hop for that actor in the burst, not only the hops that cleared the example distance/time literals;
+@@ -178,7 +180,9 @@
+ `considered_not_cited`:
+ 
+ - Soft-only candidates, threshold-only bands, rejected hard-family candidates,
+-  false leads, and candidate clusters outside the final hard-supported union.
++  device-only collision groups with no instrument or per-actor travel
++  corroboration, false leads, and candidate clusters outside the final
++  hard-supported union.
+ - Private contact/profile fields read for risk context but not allowed in the
+   answer.
+ 
+@@ -202,6 +206,8 @@
+ - Submitting after the first hard cluster without completing the mandatory hard sweep.
+ - Recording `zero` for a hard family without a max-metric from the same query shape.
+ - Searching only PMF/DFP/distance columns and skipping workflow-state columns.
++- Treating a cross-actor `device_fingerprint` collision as hard without a shared payment instrument or per-actor impossible observed travel on the same actors; shared in-store terminals/kiosks/service desks and household/public/app devices produce device collisions that point to no single fraudulent actor.
++- Reading a shared device's pooled observed coordinates as "device travel"; those coordinates belong to several actors and stores, so the only valid travel check is per single actor.
+ - Submitting a threshold-only distance band with no discrete or structural confirmation.
+ - Treating observed-vs-home distance as hard evidence by itself; home coordinates are coarse risk-fixture context.
+ - Treating a missing live basket file on an archived payment as a hard inconsistency before checking the archive flag and payment line snapshot.
+@@ -235,6 +241,6 @@
+ - SQL table `product_variants` - catalogue price joins for amount/line checks.
+ - SQL table `store_inventory` - reserve/availability arithmetic and store/SKU resource axis.
+ - SQL table `return_requests` - return/payment/basket/customer workflow joins.
+-- `/proc/payments/README.md` - archived-payment semantics, observed-coordinate meaning, and opaque fingerprint semantics.
++- `/proc/payments/README.md` - archived-payment semantics, observed-coordinate meaning, and opaque instrument/device fingerprint semantics.
+ - `/proc/customers/README.md` - coarse customer home-area coordinate semantics used by risk fixtures.
+ - `/proc/stores/README.md` - store branch coordinate semantics for payment-risk/distance checks.

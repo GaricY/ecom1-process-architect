@@ -45,6 +45,11 @@ decision under `pa-output/`.
 
 - **Single-unit edit.** You may only emit a new version of the unit
   the orchestrator named. Touching other units is rejected.
+- **Classify the owning layer before editing.** A dependency mismatch in
+  this unit does not automatically mean this unit should absorb every
+  related rule. Classify the issue as `domain_policy`,
+  `topic_evidence`, `refs_safety`, `terminal_protocol`, or `routing`
+  before changing prose.
 - **Never hard-code task literals.** No literal `cust_*`, `basket_*`,
   `pay_*` ids, employee/customer names, product display names, or
   trial-specific phrasing.
@@ -61,6 +66,20 @@ decision under `pa-output/`.
   `agent/instructions/units/`.** Orchestrator owns that.
 - **No external commands, no MCP runtime, no web.** Reason from this
   directory.
+- **Do not jam foreign-layer rules into the stale unit.** If the correct
+  owner is another unit (`refs.md`, `submission_terminal.md`,
+  `bp_index`, or a different topic BP), do not smuggle that rule into
+  the current unit. Either keep the current unit semantically unchanged
+  if it still matches its own dependencies, or make only the local
+  re-derivation and note the neighboring owner in the rationale.
+- **Small diff discipline.** Prefer the smallest current-world
+  adjustment. Do not turn a refresh into a broad rewrite or add multiple
+  defensive anti-patterns unless the dependency drift truly requires it.
+- **Concise final report.** After writing `pa-output`, keep your
+  conversational result short: changed/no-semantic-change decision,
+  owning layer, and preflight status. Do not paste a long postmortem;
+  the durable record is `pa-decision.json`, `content.md`, and the
+  generated report.
 
 ## Tools
 
@@ -89,15 +108,31 @@ When writing process text:
 
 1. Read `processes/active/<unit_id>/content.md` and its `manifest.json`.
 2. Read `unit-deps-diff.patch`. Identify which deps changed and how.
-3. Walk current source files in `vault/` / `bin-help/` for the
+3. Classify the drift by owning layer:
+   - `domain_policy`: gates, statuses, workflow, tool calls, exact
+     policy wording. Owner: the narrow topic BP.
+   - `topic_evidence`: which domain records/docs are evidence. Owner:
+     the topic BP Evidence ledger.
+   - `refs_safety`: shared citation/privacy/live-path/decoy/dedup
+     rules. Owner: `bp_refs`.
+   - `terminal_protocol`: final message shape, post-state before OK,
+     one submit, stop after submit. Owner: `bp_submission_terminal`.
+   - `routing`: request-shape-to-process mapping. Owner: `bp_index`.
+
+   In refresh mode you can only edit the named unit. If this unit is
+   not the owner, do not move the foreign rule here. Use
+   `no_semantic_change: true` when the named unit remains correct, or
+   refresh only its local stale wording and call out the neighboring
+   owner in `rationale`.
+4. Walk current source files in `vault/` / `bin-help/` for the
    changed deps (e.g. if `/docs/X.md` shows in the diff, open
    `vault/docs/X.md`). Use `processes/inventory.md` to check whether
    another unit also references the moved wording.
-4. Read prior `version-history/units/<unit_id>/v*/changes.md` (last
+5. Read prior `version-history/units/<unit_id>/v*/changes.md` (last
    1–2 versions). If a rule you are about to add was already tried
    and reverted, do not re-introduce it under new wording — widen the
    rule differently.
-5. Decide:
+6. Decide:
    - **No semantic change.** Existing text still describes the right
      behaviour despite the dep drift. Set
      `no_semantic_change: true`; omit `pa-output/units/<unit_id>/content.md`.
@@ -107,7 +142,7 @@ When writing process text:
      `pa-output/units/<unit_id>/content.md`. The orchestrator replaces
      the version's content with this file verbatim — no metadata,
      version markers, or diff fences. Just the prose.
-6. Record the **full** new dependency set (not a diff). Keep it
+7. Record the **full** new dependency set (not a diff). Keep it
    minimal — only files whose change can plausibly invalidate the
    process again. World-tracked files are owned by `world_refresh` /
    `world_create` PA modes and should NOT appear in your deps.
@@ -167,7 +202,7 @@ Before writing `pa-output/pa-decision.json`:
    wrong — fix or drop the entry before submitting.
 2. **Re-read sibling units** in `processes/inventory.md` that share
    the dependencies you list. If your edit changes wording another
-   unit also uses, leave a `notes_for_human` line for the operator.
+   unit also uses, mention the neighboring owner in `rationale`.
 3. **Re-read the last 1–2 `version-history/units/<unit_id>/v*/changes.md`**
    to avoid re-introducing a rule that was already removed.
 

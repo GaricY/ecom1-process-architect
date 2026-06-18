@@ -40,6 +40,61 @@ Do not browse the whole dump just to "get context". Open current files when a di
 
 Maintain these ledgers in scratchpad before writing output.
 
+### Owning Layer Ledger
+
+Before changing any unit, classify the drift by the layer that owns the
+rule. Do not edit the unit where the symptom is easiest to describe if
+another layer owns the rule.
+
+```text
+domain_policy
+  Gate, status, workflow, tool call, exact policy wording.
+  Owner: narrow topic BP.
+
+topic_evidence
+  Which domain records/docs are answer evidence.
+  Owner: topic BP Evidence ledger.
+
+refs_safety
+  Shared citation rules: privacy, cross-boundary, live absolute paths,
+  decoys, dedup, request-named input class.
+  Owner: refs.md.
+
+terminal_protocol
+  Final message shape, submit preflight, post-state before OK mutation,
+  one submit, stop after submit.
+  Owner: submission_terminal.md.
+
+routing
+  Which BP to read for which request shape.
+  Owner: bp_index.
+```
+
+Signals:
+
+- `/AGENTS.MD` drift that changes answer-format/reply-token behavior is
+  a `terminal_protocol` signal. Do not add `/AGENTS.MD` as an ordinary
+  dependency to many topic units.
+- Policy/tool/schema drift that changes workflow gates, statuses,
+  verbs, or record-state rules is `domain_policy` for the narrow topic
+  BP.
+- Drift that changes which domain records/docs must be evidence is
+  `topic_evidence` for the topic BP, even if the grader symptom is a
+  missing/extra ref.
+- Drift that changes shared privacy/citation semantics is
+  `refs_safety`; after changing `refs.md`, check affected topic ledgers
+  for consistency instead of duplicating the shared rule into each BP.
+- New or changed trigger/routing language is `routing` and belongs in
+  `bp_index`.
+
+Keep prose small: prefer one precise owner edit plus any required
+cross-link over broad defensive rewrites across several units.
+
+Keep your conversational final response compact: summarize changed/new
+units, the owning-layer decisions, and final preflight status. Do not
+paste a long postmortem; the durable record is `pa-decision.json`,
+content files, and the generated report.
+
 ### Source Delta Ledger
 
 For every entry in `world-changes.md` (each vault content edit, moved, new, and removed file) AND every hunk in `bin-help-diff.patch` (tool/command + SQL schema), record:

@@ -1,0 +1,36 @@
+--- bp_fraud_risk_review/v0007/content.md
++++ bp_fraud_risk_review/v0008/content.md
+@@ -33,7 +33,7 @@
+    - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, or any smooth threshold band with no structural confirmation.
+ 8. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
+ 9. For location/target signals, keep the query shapes separate:
+-   - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time;
++   - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time. The hard signal is observed displacement per elapsed time exceeding plausible travel speed, not a fixed absolute jump or a fixed window length: a small displacement over near-zero minutes and a large displacement just past the example window are both physically impossible and both qualify. When one consecutive hop is impossible, expand the cluster along that actor's ordered payments to every adjacent hop that is also impossible by speed, so a multi-hop chain is cited whole — do not cite only the hops that happen to clear an illustrative distance literal;
+    - do not compute impossible travel from store, customer home-area, or other claimed target coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
+    - stationary single-actor burst is grouped by one actor/customer, not by one store and not by multiple customers. The window is a dense sub-window from each event, not `MAX(payment_created_at) - MIN(payment_created_at)` over the actor's whole history. Count events, distinct stores/targets/resources, and distinct cities when joined; confirm observed-coordinate spread inside the window is small; expand a hard hit to all in-window records for that actor without `LIMIT`.
+ 10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores or distant customer home-area at ordinary cadence is remote shopping context; stable observed plus many distinct stores, cities, targets, or resources within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store/home distance alone.
+@@ -77,7 +77,7 @@
+ order by customer_id, payment_created_at;
+ ```
+ 
+-If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
++The `observed_l1 > 2.0` and `minutes between 0 and 15` literals are illustrative, not the gate. Score each consecutive hop by observed speed (displacement ÷ elapsed minutes): a sub-2.0 jump over well under a minute, or an over-2.0 jump a few minutes past the window, is still physically impossible and must not be dropped. When a hop fires, walk the actor's adjacent ordered payments and pull in every consecutive impossible-speed hop so the full travel chain is captured, not only the hops that sit inside the example box. If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
+ 
+ ### Stationary Single-Actor Burst Shape
+ 
+@@ -140,6 +140,7 @@
+ - hard-supported vs soft-only classification for each match set;
+ - missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
+ - validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
++- travel-chain completeness: for each impossible-travel hit, the cited cluster covers every consecutive impossible-speed hop for that actor in the burst, not only the hops that cleared the example distance/time literals;
+ - hard-hit union check: if multiple hard families have hits, every hard-supported cluster is represented in the final refs;
+ - exclusion reason for any hard hit left out; "different date" or "different MO" is not enough unless the user brief explicitly narrowed the scope;
+ - per-record evidence map for the final cohort;
+@@ -205,6 +206,7 @@
+ - Treating observed-vs-home distance as hard evidence by itself; home coordinates are coarse risk-fixture context.
+ - Treating a missing live basket file on an archived payment as a hard inconsistency before checking the archive flag and payment line snapshot.
+ - Computing impossible travel from store coordinates or other claimed target coordinates instead of observed coordinates.
++- Treating the example travel literals (`observed_l1 > 2.0`, `minutes <= 15`) as the hard gate, so a near-instant sub-threshold hop or a just-over-window long hop drops a true chain member; the gate is observed speed, and a fired hop must be expanded to the whole consecutive impossible-speed chain.
+ - Substituting a multi-customer same-store/co-location query for the stationary single-actor multi-target burst check.
+ - Treating `MAX(payment_created_at) - MIN(payment_created_at)` over an actor's whole history as a dense burst window.
+ - Treating a new device, high amount, or one actor's long busy timeline as fraud without a hard signal.

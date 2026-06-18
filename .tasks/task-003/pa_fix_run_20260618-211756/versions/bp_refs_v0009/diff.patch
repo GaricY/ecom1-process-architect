@@ -1,0 +1,30 @@
+--- bp_refs/v0008/content.md
++++ bp_refs/v0009/content.md
+@@ -33,7 +33,10 @@
+ - Files, attachments, pasted docs, receipt/OCR/report paths, or other input
+   artifacts the task explicitly told you to read.
+ - If any answer fact came from such an input, cite the absolute live input path
+-  unless a privacy rule forbids it.
++  unless a privacy rule forbids it. This is a shared invariant owned here, not a
++  per-topic rule: cite the input even when the answer compares it against
++  downstream records (catalogue rows, store rows, etc.) and the topic BP's
++  `refs_must_include` enumerates only those downstream records.
+ 
+ `policy_docs_applied`:
+ 
+@@ -217,8 +220,13 @@
+    passed, the employee action-target exception applies, or the path was
+    removed.
+ 4. Run the public-record sweep for stores and catalogue records.
+-5. If the task named or handed you an input file/document and any answer fact is
+-   derived from it, include that absolute live path unless privacy forbids it.
++5. Request-named-input backstop (apply even when the topic BP ledger never
++   classified an input): if the task named or handed you an input file/document
++   - an upload, receipt, OCR/report dump, or pasted doc path - and any answer
++   fact is derived from it, its absolute live path MUST be in final `refs`
++   unless a privacy rule forbids it. A comparison answer that reads the input
++   for one side and catalogue/records for the other still cites the input; the
++   downstream records it was compared against do not replace it.
+ 6. Remove decoy docs, local snapshot paths, unused policy docs, rejected
+    candidates, and unsafe foreign/private records.
+ 7. For discovery answers, verify `set(message_records) == set(ref_records)`.

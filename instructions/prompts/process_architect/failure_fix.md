@@ -17,6 +17,13 @@ materialises a new immutable version directory of any units you changed.
   work for unseen variants of the task class.
 - **Generalisable process changes only.** If your proposed rule depends
   on a value that only appears in this trial, it is the wrong rule.
+- **Classify the owning layer before editing.** Do not patch the first
+  unit where the symptom appeared. Pick the owner:
+  `domain_policy` (topic BP gates/status/workflow/tool/policy wording),
+  `topic_evidence` (which domain records/docs are evidence),
+  `refs_safety` (shared citation/privacy/live-path/decoy/dedup rules),
+  `terminal_protocol` (final message shape, post-state before OK, one
+  submit, stop rule), or `routing` (`bp_index`). Edit that owner.
 - **Dependency paths + rationale are mandatory** for every changed unit.
   Each dependency you declare must point at a file the orchestrator can
   actually find in the current trial dump (`vault/`, `bin-help/`, or a
@@ -36,6 +43,14 @@ materialises a new immutable version directory of any units you changed.
   content + the structured decision.
 - **No external commands, no MCP runtime, no web.** Reason from the
   artifacts in this directory.
+- **Small diff discipline.** Prefer one precise change in the owning
+  layer over broad "defense in depth" prose. Modify an existing rule
+  when possible. Do not add five safeguards when one class-level rule
+  fixes the failure.
+- **Concise final report.** After writing `pa-output`, keep your
+  conversational result short: root cause, owning layer, changed unit(s),
+  and preflight status. Do not paste a long postmortem; the durable
+  record is `pa-decision.json`, `content.md`, and the generated report.
 
 ## Tools
 
@@ -222,32 +237,65 @@ version-history/               # full revision tree (read-only mirror)
    process did not require the topic-policy doc in `refs` for an
    employee-actor denial, so the Executor dropped it and the grader
    flagged a missing reference".
-2. **Open `selected-instructions/units/bp_index/content.md` first** —
+2. Classify the root cause by owning layer before choosing files to
+   edit:
+   - `domain_policy`: the Executor used the wrong gate, status,
+     workflow, tool call, exact policy wording, or action branch. Owner:
+     the narrow topic BP.
+   - `topic_evidence`: the domain answer cohort, gate evidence, or
+     topic-specific records/docs were under- or over-specified. Owner:
+     the topic BP Evidence ledger.
+   - `refs_safety`: the shared refs model is wrong: privacy,
+     cross-boundary citation, live absolute paths, decoys, dedup, or the
+     request-named-input class. Owner: `bp_refs`.
+   - `terminal_protocol`: the domain verdict and refs were ready but the
+     final payload shape was wrong, a mutation OK lacked post-state, the
+     agent submitted more than once, or it kept working after submit.
+     Owner: `bp_submission_terminal`.
+   - `routing`: the wrong BP was selected or the index fails to point at
+     the right process. Owner: `bp_index`.
+
+   Missing/extra refs are not automatically `refs_safety`: first decide
+   whether the missing/extra item is a topic evidence rule or a shared
+   citation invariant. Wrong final yes/no/count/printf/message shape is
+   normally `terminal_protocol`, not a topic BP. Domain gate/status/tool
+   mistakes are normally `domain_policy`, not terminal.
+3. **Open `selected-instructions/units/bp_index/content.md` first** —
    it is the BP-system map and is cheap to read. Then walk every other
    `selected-instructions/units/<unit_id>/content.md` to see what the
    Executor was told and to check cross-unit consistency before you
    change one unit and break wording in another.
-3. **Read history before drafting a fix.** For each unit you intend to
+4. **Read history before drafting a fix.** For each unit you intend to
    edit, read `version-history/units/<unit_id>/<latest>/manifest.json`
    (the prior `rationale`) and `changes.md` of the last 1–2 versions.
    If a rule you are about to add was already tried and reverted, do
    not re-introduce it under a new wording — widen the rule
    differently. `version-history/units/<unit_id>/v*/diff.patch` is the
    fastest way to see what changed between versions.
-4. Write the new full content of every unit you change to
+5. **Check for PA regression before layering another fix.** If the
+   selected version or its recent parents were created by
+   `process_architect` for the same task family/unit, compare their
+   trigger score/rationale to the current failure. A worse current score
+   after a prior PA fix is strong evidence that the previous change was
+   over-broad or in the wrong layer. Prefer replacing or narrowing that
+   rule from its parent content over stacking another compensating rule.
+   Say this explicitly in the rationale.
+6. Write the new full content of every unit you change to
    `pa-output/units/<unit_id>/content.md`. The orchestrator will create
    a new version of that unit with this content; the older versions
    stay in the archive untouched. Do **not** include metadata, version
    markers, diff fences — just the prose.
-5. Keep edits surgical. Prefer modifying an existing rule over adding a
-   new one; keep the total length sane. Multiple units in
+7. Keep edits surgical. Prefer modifying an existing rule over adding a
+   new one; keep the total length sane. Avoid long explanatory essays,
+   duplicate anti-patterns, and redundant protections in sibling
+   sections. Multiple units in
    `changes[]` are allowed if the root cause truly spans them, but
    default to a single focused edit.
-6. Declare the dependency set the new version should track. If you are
+8. Declare the dependency set the new version should track. If you are
    adding a rule that quotes a specific policy doc, that doc should be
    in `dependencies`. If you are removing a rule that depended on a
    doc, drop it.
-7. Run the pre-submission preflight from the Hard rules section above
+9. Run the pre-submission preflight from the Hard rules section above
    (Read every dependency path; re-read siblings; re-read history
    changes.md).
 
@@ -259,6 +307,9 @@ version-history/               # full revision tree (read-only mirror)
   `no_semantic_change` is not allowed in failure-fix mode — a fail
   always means the process needs an update or you should not propose a
   change for that unit at all.
+- Each `rationale` names the owning layer and, when relevant, whether
+  this is replacing/narrowing a regressing PA-created rule rather than
+  stacking a new patch on top.
 - `base_version` per entry must match either
   `failure-fix-task.md` (the "Selected unit versions" list) or the
   `version.txt` content for that unit under
