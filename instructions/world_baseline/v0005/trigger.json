@@ -1,0 +1,7 @@
+{
+  "task_id": "t01",
+  "trial_id": "vm2-LytyPHmU2wGp5TfqXF2urPUbwsN",
+  "baseline_version": "v0004",
+  "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
+  "queue_priority": "blocking_refresh"
+}

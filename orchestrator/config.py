@@ -125,12 +125,12 @@ def load_config(env: dict[str, str | None] | None = None) -> Config:
         claude_bin=e.get("CLAUDE_BIN") or "claude",
         claude_model=e.get("CLAUDE_MODEL") or "claude-sonnet-4-6",
         claude_reasoning_effort=_coerce_effort(
-            e.get("CLAUDE_REASONING_EFFORT"), default="high"
+            e.get("CLAUDE_REASONING_EFFORT"), default="medium"
         ),
         claude_max_turns=_coerce_int(
             e.get("CLAUDE_MAX_TURNS"), 40, name="CLAUDE_MAX_TURNS"
         ),
-        pa_claude_model=e.get("PA_CLAUDE_MODEL") or "claude-opus-4-7",
+        pa_claude_model=e.get("PA_CLAUDE_MODEL") or "claude-opus-4-8",
         pa_claude_reasoning_effort=_coerce_effort(
             e.get("PA_CLAUDE_REASONING_EFFORT"), default="xhigh"
         ),
@@ -185,6 +185,6 @@ def load_config(env: dict[str, str | None] | None = None) -> Config:
         dump_sql_rows=_coerce_nonneg_int(
             e.get("DUMP_SQL_ROWS"), 0, name="DUMP_SQL_ROWS"
         ),
-        runs_root=e.get("RUNS_ROOT") or "../../.runs/ecom",
+        runs_root=e.get("RUNS_ROOT") or "../.runs/ecom",
         smoke_task=e.get("SMOKE_TASK") or "t01",
     )

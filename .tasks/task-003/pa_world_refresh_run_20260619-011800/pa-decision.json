@@ -1,0 +1,48 @@
+{
+  "mode": "world_refresh",
+  "advance_baseline": true,
+  "changes_refresh": [
+    {
+      "unit_id": "bp_index",
+      "base_version": "v0007",
+      "no_semantic_change": false,
+      "rationale": "A new mutating runtime tool (/bin/account-recovery) plus a new /docs/security.md customer-only account-recovery rule create a distinct domain that the process map did not route. Added a §1 routing row pointing at the new business_processes/account_recovery.md and a §9 cross-cutting note (customer-only; 'recovery' is authority bait). All other rows, principles, outcome tokens, and the mutation gate are unchanged.",
+      "rollback": "Retire this version to fall back to v0007: drop the account_recovery routing row and the §9 note.",
+      "dependencies": []
+    }
+  ],
+  "changes_new": [
+    {
+      "unit_id": "bp_account_recovery",
+      "render_to": "business_processes/account_recovery.md",
+      "kind": "business_process",
+      "registry_position": "at_end",
+      "rationale": "New mutating capability /bin/account-recovery (send-email-link <customer_id> <destination_email>) writes /run/actions/account-recovery-<customer_id>.json and is pinned by a new /docs/security.md rule making account recovery / email-change verification customer-only (link only to the account matching /bin/id). A mutating tool with its own gate, output file, and policy is a distinct atomic domain — separate from identity_and_auth (the general identity/ownership gate, which this BP applies via link) and from payments_3ds_recovery (payment recovery, not account recovery). The tool README states it 'does not enforce /docs/security.md', so a BP must.",
+      "rollback": "Remove bp_account_recovery from the registry and drop its bp_index routing row and §9 note; no other unit depends on it.",
+      "dependencies": [
+        {"kind": "workspace", "path": "/docs/security.md", "why": "Authoritative customer-only account-recovery / email-change rule and the matching-account requirement this BP enforces; also the source of the canonical denial incident pattern."},
+        {"kind": "bin_help", "path": "account-recovery.help.txt", "why": "Tool signature 'send-email-link <customer_id> <destination_email>' that the Process and Tools sections encode; a verb/arg change must trigger re-derivation."},
+        {"kind": "workspace", "path": "/run/actions/README.md", "why": "Defines the /run/actions/account-recovery-<customer_id>.json output convention used for the post-state re-read before OUTCOME_OK."},
+        {"kind": "sql_table", "path": "customer_accounts", "why": "customer_id / customer_email shape used to confirm the actor's own account; a new verification/email-change status column would change the state gate."}
+      ]
+    }
+  ],
+  "unchanged": [
+    {"unit_id": "bp_identity_and_auth", "why": "The general identity/ownership/cross-boundary rules it encodes from /docs/security.md are unchanged. The security.md edit only adds a customer-only account-recovery rule and a recovery-link incident pattern — both domain-owned by the new bp_account_recovery, which links back here for the shared gate. Keeping prose small: the narrow topic BP owns the new rule."},
+    {"unit_id": "bp_privacy_and_disclosure", "why": "Checked: the security.md edit does not touch personal-data disclosure semantics; the contact-data release rules this BP encodes are unchanged."},
+    {"unit_id": "bp_refs", "why": "Checked: no new identity-scoped record family or shared citation rule. The new /run/actions/account-recovery-*.json is only ever the owning customer's own authorized post-state record, already covered by the shared post_state_records bucket; no cross-boundary foreign-ref scenario for it."},
+    {"unit_id": "bp_submission_terminal", "why": "Checked: /AGENTS.MD and the terminal/answer-format protocol did not change; no terminal_protocol drift."},
+    {"unit_id": "bp_fraud_risk_review", "why": "Checked: no payments/risk schema, status, or doc change; account-recovery is not a fraud-cohort surface."},
+    {"unit_id": "bp_policy_update_scan", "why": "Checked: the shared dated-update scan helper is unchanged; the new BP simply invokes it. /bin/date help unchanged."},
+    {"unit_id": "bp_product_discovery", "why": "Checked: no catalogue/inventory/store schema or doc change in this dump."},
+    {"unit_id": "bp_basket_lifecycle", "why": "Checked: no basket schema or /proc/baskets change; account-recovery is unrelated to basket state."},
+    {"unit_id": "bp_checkout", "why": "Checked: /docs/checkout.md and checkout schema unchanged; the security.md edit is additive about a new domain and does not alter the identity gate this BP applies."},
+    {"unit_id": "bp_discount", "why": "Checked: /docs/discounts.md, /bin/discount, and discount schema unchanged."},
+    {"unit_id": "bp_payments_3ds_recovery", "why": "Checked: /docs/payments/3ds.md and /bin/payments unchanged. 'Recovery' wording now overlaps the new account-recovery BP, but a pay_* / 3DS request is still routed here; the index 'why' columns disambiguate. No semantic change."},
+    {"unit_id": "bp_returns", "why": "Checked: /docs/returns.md, /bin/payments refund verbs, and return schema unchanged; the security.md edit does not alter the identity prerequisite this BP applies."},
+    {"unit_id": "bp_date_and_time", "why": "Checked: /bin/date help and time semantics unchanged."},
+    {"unit_id": "bp_background_decoys", "why": "Checked: the operational-background decoy docs it pins (continuity, origin-story, store-associate, warehouse-migration, /docs/README.md) did not change; no new decoy surface."},
+    {"unit_id": "bp_os_tooling_incidents", "why": "Checked: /docs/os-and-tooling-incidents-and-workarounds.md and the id/claude/codex tool help are unchanged. The /bin/README.md edit only documents the new /bin/account-recovery tool and is not an OS-incident workaround surface."}
+  ],
+  "notes_for_human": "Single drift this refresh: a new mutating domain. New tool /bin/account-recovery (send-email-link <customer_id> <destination_email>) + /bin/README.md note + rewritten /run/actions/README.md (output file account-recovery-<customer_id>.json) + surgical /docs/security.md edit making account recovery / email-change verification customer-only and adding the recovery-link denial incident pattern. Owning-layer decision: domain_policy -> new narrow topic BP (bp_account_recovery), routed in bp_index; the general identity rule stays in identity_and_auth (linked, not duplicated). No drafts existed in processes/drafts (empty), so there were no ground/merge/prune decisions to make. relocations.json confirms the only added file is vault/bin/account-recovery and there are no renames/removals. Note: vault/bin/account-recovery is empty in the dump (binary/elided) — the BP is grounded on the tool --help, /bin/README.md, /run/actions/README.md, and /docs/security.md, per the contract to use bin-help as the tool-surface authority. Every world-changes.md row and every bin-help-diff.patch hunk is accounted for by these two units."
+}

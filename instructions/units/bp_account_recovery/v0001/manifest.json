@@ -1,0 +1,53 @@
+{
+  "unit_id": "bp_account_recovery",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-06-18T23:08:58+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LytyPHmU2wGp5TfqXF2urPUbwsN",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "The new mutating tool /bin/account-recovery send-email-link, the new /docs/security.md rule making account recovery / email-change verification a customer-only action gated on the /bin/id account match, the new account-recovery incident pattern, and the /run/actions/README.md control-file naming together ground a new atomic domain. It is a distinct customer-only workflow (its own tool, gates, post-state record, and unsupported cases), not an extension of any existing topic BP; identity/ownership and privacy stay delegated to their owning BPs via cross-links.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "sole authority making account recovery / email-change verification a customer-only action and gating the link on the /bin/id account match; also the source of the account-recovery incident pattern"
+    },
+    {
+      "kind": "workspace",
+      "path": "/run/actions/README.md",
+      "sha256": "369374ddfdd9bb4658ec32aa54dc83da46e52fdd666e94e758bc151e2631103e",
+      "why": "defines the account-recovery-<customer_id>.json control-file naming this BP re-reads for post-state confirmation"
+    },
+    {
+      "kind": "bin_help",
+      "path": "account-recovery.help.txt",
+      "sha256": "304e697b48dcb1668753dfb4d99ef8155766c5a7a6389e3e365c31fb549d4d97",
+      "why": "tool signature send-email-link <customer_id> <destination_email> and the policy-not-enforced disclaimer; send-email-link is the only supported verb"
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "/bin/id output drives the customer-actor and ownership gate (customer_id == /bin/id user)"
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "customer_id is the ownership link to /bin/id and customer_email is the private contact field the BP must not leak"
+    }
+  ],
+  "rollback": {
+    "strategy": "Delete business_processes/account_recovery.md from the registry and revert bp_index to v0007; no other unit references it."
+  },
+  "no_semantic_change": false
+}

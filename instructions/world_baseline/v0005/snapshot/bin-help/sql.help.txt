@@ -1,0 +1,36 @@
+# /bin/sql --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+# /bin/sql
+
+Run a read-only SQLite query over the ecommerce world.
+
+Send SQL on stdin, or pass SQL as arguments:
+
+  /bin/sql 'select product_sku, product_name, record_path from product_variants limit 5'
+
+Default output is CSV with a header row. Pass --json for JSON rows.
+
+SQLite exposes the schema through sqlite_schema:
+
+  /bin/sql 'select name, sql from sqlite_schema where sql is not null order by type, name;'
+
+Useful tables:
+
+- product_categories(product_category_id, product_category_name, product_department)
+- product_kinds(product_kind_id, product_category_id, product_kind_name)
+- product_families(product_family_id, product_category_id, product_kind_id, brand, series, model, product_family_name, properties)
+- product_variants(product_sku, record_path, product_category_id, product_kind_id, product_family_id, brand, series, model, product_name, price_cents, price_currency, properties)
+- product_variant_properties(product_sku, property_key, property_value_text, property_value_number)
+- stores(store_id, record_path, store_name, city, is_open, latitude, longitude)
+- store_inventory(store_id, product_sku, on_hand_quantity, reserved_quantity, available_today_quantity, incoming_quantity, next_arrival_in_days)
+- employee_accounts(employee_id, record_path, employee_display_name, employee_email, job_title, store_id)
+- employee_role_assignments(employee_id, role_code)
+- customer_accounts(customer_id, record_path, customer_display_name, customer_email, home_city, home_latitude, home_longitude)
+- shopping_baskets(basket_id, record_path, customer_id, store_id, basket_status, basket_created_at, discount_percent, discount_reason_code, discount_issuer_employee_id)
+- shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)
+- payment_transactions(payment_id, record_path, basket_id, is_archived_basket_reference, customer_id, store_id, payment_amount_cents, payment_currency, payment_status, payment_created_at, payment_method_fingerprint, device_fingerprint, observed_latitude, observed_longitude, three_ds_status, three_ds_failure_reason, three_ds_attempts, three_ds_max_attempts)
+- payment_transaction_items(payment_id, line_number, product_sku, purchased_quantity, item_unit_price_cents)
+- return_requests(return_id, record_path, basket_id, customer_id, payment_id, return_status, return_reason_code, return_created_at)

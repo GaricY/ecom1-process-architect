@@ -1,0 +1,191 @@
+# SQLite schema (warehouse DB) — query via /bin/sql
+# 15 tables, 28 indexes
+
+## SQL conventions (read me before the first query)
+
+Dialect: **SQLite**. No `ILIKE`, no `RETURNING`, no `::cast`, no `now()`.
+`LIKE` is case-insensitive for ASCII; for explicit case-fold use
+`LOWER(col) LIKE LOWER('…')`.
+`HAVING` requires `GROUP BY` (no MySQL/PG-style alias filter) — to
+filter on a computed expression, wrap as a subquery:
+`SELECT * FROM (SELECT …, x AS y FROM …) WHERE y > N`.
+
+## Foreign-key edges
+  employee_accounts.store_id             → stores.store_id
+  employee_role_assignments.employee_id  → employee_accounts.employee_id
+  payment_transaction_items.payment_id   → payment_transactions.payment_id
+  payment_transaction_items.product_sku  → product_variants.product_sku
+  payment_transactions.customer_id       → customer_accounts.customer_id
+  payment_transactions.store_id          → stores.store_id
+  return_requests.basket_id              → shopping_baskets.basket_id
+  return_requests.customer_id            → customer_accounts.customer_id
+  return_requests.payment_id             → payment_transactions.payment_id
+  shopping_basket_items.basket_id        → shopping_baskets.basket_id
+  shopping_basket_items.product_sku      → product_variants.product_sku
+  shopping_baskets.customer_id           → customer_accounts.customer_id
+  shopping_baskets.store_id              → stores.store_id
+  store_inventory.product_sku            → product_variants.product_sku
+  store_inventory.store_id               → stores.store_id
+
+## Tables (alphabetical)
+
+TABLE customer_accounts  PK(customer_id)
+  customer_id            TEXT  NOT NULL
+  record_path            TEXT  NOT NULL
+  customer_display_name  TEXT  NOT NULL
+  customer_email         TEXT  NOT NULL
+  home_city              TEXT  NOT NULL
+  home_latitude          REAL  NOT NULL
+  home_longitude         REAL  NOT NULL
+  INDEX customer_accounts_city_idx   (home_city)
+  INDEX customer_accounts_email_idx  (customer_email)
+
+TABLE employee_accounts  PK(employee_id)
+  employee_id            TEXT  NOT NULL
+  record_path            TEXT  NOT NULL
+  employee_display_name  TEXT  NOT NULL
+  employee_email         TEXT  NOT NULL
+  job_title              TEXT  NOT NULL
+  store_id               TEXT  NOT NULL  → stores.store_id
+  INDEX employee_accounts_email_idx  (employee_email)
+  INDEX employee_accounts_store_idx  (store_id)
+
+TABLE employee_role_assignments  PK(employee_id, role_code)
+  employee_id  TEXT  NOT NULL  → employee_accounts.employee_id
+  role_code    TEXT  NOT NULL
+  INDEX employee_role_assignments_role_idx  (role_code)
+
+TABLE payment_transaction_items  PK(payment_id, line_number)
+  payment_id             TEXT     NOT NULL  → payment_transactions.payment_id
+  line_number            INTEGER  NOT NULL
+  product_sku            TEXT     NOT NULL  → product_variants.product_sku
+  purchased_quantity     INTEGER  NOT NULL
+  item_unit_price_cents  INTEGER  NOT NULL
+  INDEX payment_transaction_items_sku_idx  (product_sku)
+
+TABLE payment_transactions  PK(payment_id)
+  payment_id                    TEXT     NOT NULL
+  record_path                   TEXT     NOT NULL
+  basket_id                     TEXT     NOT NULL
+  is_archived_basket_reference  INTEGER  NOT NULL
+  customer_id                   TEXT     NOT NULL  → customer_accounts.customer_id
+  store_id                      TEXT     NOT NULL  → stores.store_id
+  payment_amount_cents          INTEGER  NOT NULL
+  payment_currency              TEXT     NOT NULL
+  payment_status                TEXT     NOT NULL
+  payment_created_at            TEXT     NOT NULL
+  payment_method_fingerprint    TEXT     NOT NULL
+  device_fingerprint            TEXT     NOT NULL
+  observed_latitude             REAL     NOT NULL
+  observed_longitude            REAL     NOT NULL
+  three_ds_status               TEXT
+  three_ds_failure_reason       TEXT
+  three_ds_attempts             INTEGER
+  three_ds_max_attempts         INTEGER
+  INDEX payment_transactions_basket_idx              (basket_id)
+  INDEX payment_transactions_created_at_idx          (payment_created_at)
+  INDEX payment_transactions_customer_idx            (customer_id)
+  INDEX payment_transactions_device_fingerprint_idx  (device_fingerprint)
+  INDEX payment_transactions_method_fingerprint_idx  (payment_method_fingerprint)
+  INDEX payment_transactions_status_idx              (payment_status)
+  INDEX payment_transactions_store_idx               (store_id)
+
+TABLE product_categories  PK(product_category_id)
+  product_category_id    TEXT  NOT NULL
+  product_category_name  TEXT  NOT NULL
+  product_department     TEXT  NOT NULL
+
+TABLE product_families  PK(product_family_id)
+  product_family_id    TEXT  NOT NULL
+  product_category_id  TEXT  NOT NULL
+  product_kind_id      TEXT  NOT NULL
+  brand                TEXT  NOT NULL
+  series               TEXT  NOT NULL
+  model                TEXT  NOT NULL
+  product_family_name  TEXT  NOT NULL
+  properties           TEXT  NOT NULL
+
+TABLE product_kinds  PK(product_kind_id)
+  product_kind_id      TEXT  NOT NULL
+  product_category_id  TEXT  NOT NULL
+  product_kind_name    TEXT  NOT NULL
+
+TABLE product_variant_properties  PK(product_sku, property_key)
+  product_sku            TEXT  NOT NULL
+  property_key           TEXT  NOT NULL
+  property_value_text    TEXT  NOT NULL
+  property_value_number  REAL
+  INDEX product_variant_properties_key_text_idx  (property_key, property_value_text)
+
+TABLE product_variants  PK(product_sku)
+  product_sku          TEXT     NOT NULL
+  record_path          TEXT     NOT NULL
+  product_category_id  TEXT     NOT NULL
+  product_kind_id      TEXT     NOT NULL
+  product_family_id    TEXT     NOT NULL
+  brand                TEXT     NOT NULL
+  series               TEXT     NOT NULL
+  model                TEXT     NOT NULL
+  product_name         TEXT     NOT NULL
+  price_cents          INTEGER  NOT NULL
+  price_currency       TEXT     NOT NULL
+  properties           TEXT     NOT NULL
+  INDEX product_variants_brand_idx  (brand)
+  INDEX product_variants_kind_idx   (product_kind_id)
+
+TABLE return_requests  PK(return_id)
+  return_id           TEXT  NOT NULL
+  record_path         TEXT  NOT NULL
+  basket_id           TEXT  NOT NULL  → shopping_baskets.basket_id
+  customer_id         TEXT  NOT NULL  → customer_accounts.customer_id
+  payment_id          TEXT  NOT NULL  → payment_transactions.payment_id
+  return_status       TEXT  NOT NULL
+  return_reason_code  TEXT  NOT NULL
+  return_created_at   TEXT  NOT NULL
+  INDEX return_requests_basket_idx    (basket_id)
+  INDEX return_requests_customer_idx  (customer_id)
+  INDEX return_requests_payment_idx   (payment_id)
+  INDEX return_requests_status_idx    (return_status)
+
+TABLE shopping_basket_items  PK(basket_id, line_number)
+  basket_id           TEXT     NOT NULL  → shopping_baskets.basket_id
+  line_number         INTEGER  NOT NULL
+  product_sku         TEXT     NOT NULL  → product_variants.product_sku
+  requested_quantity  INTEGER  NOT NULL
+  INDEX shopping_basket_items_sku_idx  (product_sku)
+
+TABLE shopping_baskets  PK(basket_id)
+  basket_id                    TEXT     NOT NULL
+  record_path                  TEXT     NOT NULL
+  customer_id                  TEXT     NOT NULL  → customer_accounts.customer_id
+  store_id                     TEXT     NOT NULL  → stores.store_id
+  basket_status                TEXT     NOT NULL
+  basket_created_at            TEXT     NOT NULL
+  discount_percent             INTEGER
+  discount_reason_code         TEXT
+  discount_issuer_employee_id  TEXT
+  INDEX shopping_baskets_created_at_idx           (basket_created_at)
+  INDEX shopping_baskets_customer_created_at_idx  (customer_id, basket_created_at)
+  INDEX shopping_baskets_customer_idx             (customer_id)
+  INDEX shopping_baskets_store_idx                (store_id)
+
+TABLE store_inventory  PK(store_id, product_sku)
+  store_id                  TEXT     NOT NULL  → stores.store_id
+  product_sku               TEXT     NOT NULL  → product_variants.product_sku
+  on_hand_quantity          INTEGER  NOT NULL
+  reserved_quantity         INTEGER  NOT NULL
+  available_today_quantity  INTEGER  NOT NULL
+  incoming_quantity         INTEGER  NOT NULL
+  next_arrival_in_days      INTEGER
+  INDEX store_inventory_sku_idx    (product_sku)
+  INDEX store_inventory_store_idx  (store_id)
+
+TABLE stores  PK(store_id)
+  store_id     TEXT     NOT NULL
+  record_path  TEXT     NOT NULL
+  store_name   TEXT     NOT NULL
+  city         TEXT     NOT NULL
+  is_open      INTEGER  NOT NULL
+  latitude     REAL     NOT NULL
+  longitude    REAL     NOT NULL
+  INDEX stores_city_idx  (city)

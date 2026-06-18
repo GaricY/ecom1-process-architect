@@ -1,0 +1,6 @@
+TABLE shopping_basket_items  PK(basket_id, line_number)
+  basket_id           TEXT     NOT NULL  → shopping_baskets.basket_id
+  line_number         INTEGER  NOT NULL
+  product_sku         TEXT     NOT NULL  → product_variants.product_sku
+  requested_quantity  INTEGER  NOT NULL
+  INDEX shopping_basket_items_sku_idx  (product_sku)

@@ -1,0 +1,44 @@
+{
+  "unit_id": "bp_identity_and_auth",
+  "version": "v0007",
+  "parent": "v0006",
+  "status": "active",
+  "created_at": "2026-06-18T23:08:58+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LytyPHmU2wGp5TfqXF2urPUbwsN",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
+    "queue_priority": "blocking_refresh",
+    "restamp_unchanged": [
+      "/docs/security.md"
+    ]
+  },
+  "rationale": "world_refresh: PA reviewed this BP and recorded it as unchanged; orchestrator re-stamped drifted dependency hashes (/docs/security.md) so the unit re-matches the refreshed world instead of falling back stale. No content change.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Authoritative identity/ownership/cross-boundary policy this BP encodes."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Defines /bin/id output shape used for actor and role branching."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/employees/README.md",
+      "sha256": "b9c0c9ef90eb6444770c5fb4038b425d8afff5cf7d025c90fef9c05d5c22b9cd",
+      "why": "Fixed per-store roster shape and role bundles used for employee lookup/classification."
+    }
+  ],
+  "rollback": {
+    "strategy": "rollback to v0006 (content identical; only dependency hashes were re-stamped)"
+  },
+  "no_semantic_change": true
+}

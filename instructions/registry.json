@@ -84,6 +84,11 @@
       "id": "bp_os_tooling_incidents",
       "kind": "business_process",
       "render_to": "business_processes/os_tooling_incidents.md"
+    },
+    {
+      "id": "bp_account_recovery",
+      "kind": "business_process",
+      "render_to": "business_processes/account_recovery.md"
     }
   ]
 }

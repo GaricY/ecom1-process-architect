@@ -15,11 +15,13 @@
     {
       "kind": "workspace",
       "path": "/run/actions/README.md",
+      "affects_units": true,
       "why": "registered commerce-action control files (empty today; non-empty signals a new action domain)"
     },
     {
       "kind": "workspace",
       "path": "/bin/README.md",
+      "affects_units": true,
       "why": "/bin tool-surface guide: which /bin/* tools enforce nothing (discount→/docs/discounts.md, payments→/docs/payments/3ds.md, payments approve-refund/refund→/docs/returns.md) plus the canonical SQL entry+discovery queries and the 'SQL clock is broken — trust /bin/date' note. Cross-cutting (SQL + payments + discount + returns BPs lean on it), so world-owned like sqlite_schema.txt/sql.help.txt — affects_units left false. Lives at vault/bin/README.md (workspace), not bin-help/ (that dir is only /bin/<tool> --help dumps)."
     },
     {

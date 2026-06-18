@@ -651,6 +651,90 @@ def _read_base_content(
     return ref.content_path.read_text(encoding="utf-8")
 
 
+@dataclass
+class UnchangedRestamp:
+    """A unit PA recorded as `unchanged` whose per-unit dependency hashes
+    nonetheless drifted against the refreshed world, so the orchestrator
+    must re-stamp them (write a `no_semantic_change=True` version) or the
+    resolver will keep hitting `stale_latest_fallback` forever.
+
+    `latest_ref`/`manifest` are the current latest active version (PA
+    reviewed it and confirmed the *content* is fine); `drifted_paths` are
+    the required, non-world-layer dependency paths whose live sha differs
+    from the snapshot the manifest pinned.
+    """
+
+    unit_id: str
+    latest_ref: Any  # store.VersionRef — typed loose to avoid a cycle
+    manifest: Any  # store.Manifest
+    drifted_paths: list[str]
+
+
+def plan_unchanged_restamps(
+    *,
+    project_root: Path,
+    unchanged: list[dict[str, str]],
+    fp: FingerprintIndex,
+    world_sigs: set[tuple[str, str]],
+) -> list[UnchangedRestamp]:
+    """Which `unchanged[]` units need a dependency-hash re-stamp.
+
+    PA marking a unit `unchanged` in a world_refresh means "I reviewed it
+    against the new world and its *text* needs no edit" — the exact
+    semantics of a `no_semantic_change` refresh. But the orchestrator
+    skipped these units entirely, so any unit that pins a per-unit
+    dependency the world drifted (e.g. several BPs pin `/docs/security.md`)
+    keeps a stale snapshot hash and the resolver falls back stale on every
+    later trial. This recovers the missing re-stamp deterministically.
+
+    A unit is selected only when at least one required, non-world-layer
+    dependency drifted AND every such dependency currently resolves to a
+    present file — re-stamping a unit with a genuinely missing required
+    dependency would not clear the mismatch (the matcher compares against
+    `sha256 is None`), so we leave those for a real refresh/fix instead of
+    writing a churny version that stays stale. World-layer deps are skipped
+    here exactly as the resolver's matcher skips them (they are owned by
+    the baseline, not per-unit hashes).
+    """
+    plan: list[UnchangedRestamp] = []
+    for entry in unchanged:
+        uid = entry.get("unit_id") if isinstance(entry, dict) else None
+        if not uid:
+            continue
+        latest = _latest_active_version(project_root, uid)
+        if latest is None:
+            continue
+        ref = store.get_version(project_root, uid, latest)
+        if ref is None:
+            continue
+        try:
+            manifest = store.load_manifest(ref)
+        except Exception:
+            continue
+        drifted: list[str] = []
+        all_present = True
+        for dep in manifest.dependencies:
+            if not dep.required:
+                continue
+            if (dep.kind, normalize(dep.kind, dep.path)) in world_sigs:
+                continue
+            live = fp.get(dep.kind, dep.path).sha256
+            if live is None:
+                all_present = False
+            if live != dep.sha256:
+                drifted.append(dep.path)
+        if drifted and all_present:
+            plan.append(
+                UnchangedRestamp(
+                    unit_id=uid,
+                    latest_ref=ref,
+                    manifest=manifest,
+                    drifted_paths=sorted(set(drifted)),
+                )
+            )
+    return plan
+
+
 # ── world_refresh validation + apply ────────────────────────────────────
 
 
@@ -1236,6 +1320,79 @@ async def apply_world_refresh_decision(
                     print(
                         f"{label} [PA-wr] new unit {written.unit_id}/{written.version} "
                         f"render_to={nc.render_to} position={nc.registry_position}"
+                    )
+
+        # Re-stamp `unchanged[]` units whose per-unit dependency hashes
+        # drifted. PA reviewed these and confirmed no text edit is needed,
+        # but their pinned snapshot hashes still point at the pre-refresh
+        # world — without a new version the resolver keeps falling back
+        # stale and the world refresh never fully lands. A
+        # `no_semantic_change=True` bump keeps the content identical and
+        # re-pins the hashes to the live trial dump (same mechanism as a
+        # `refresh`-mode revalidation).
+        world_sigs = world_baseline.world_dep_signatures(world_files)
+        restamp_plan = plan_unchanged_restamps(
+            project_root=project_root,
+            unchanged=validated.unchanged,
+            fp=fp,
+            world_sigs=world_sigs,
+        )
+        for rs in restamp_plan:
+            unit_lock = await pa_queue.unit_write_lock(rs.unit_id)
+            async with unit_lock:
+                # Re-resolve latest under the unit lock: a concurrent write
+                # could have advanced it since planning. If so, skip — that
+                # newer version already carries fresh hashes.
+                current_latest = _latest_active_version(project_root, rs.unit_id)
+                if current_latest != rs.latest_ref.version:
+                    if label:
+                        print(
+                            f"{label} [PA-wr] skip re-stamp {rs.unit_id}: latest "
+                            f"moved {rs.latest_ref.version}→{current_latest}"
+                        )
+                    continue
+                deps_decl: list[dict[str, Any]] = []
+                for dep in rs.manifest.dependencies:
+                    rec: dict[str, Any] = {
+                        "kind": dep.kind,
+                        "path": dep.path,
+                        "why": dep.why,
+                    }
+                    if not dep.required:
+                        rec["required"] = False
+                    deps_decl.append(rec)
+                drift_list = ", ".join(rs.drifted_paths)
+                restamp_trigger = dict(trigger)
+                restamp_trigger["restamp_unchanged"] = rs.drifted_paths
+                new = versioning.NewVersionInput(
+                    unit_id=rs.unit_id,
+                    base_version=rs.latest_ref.version,
+                    content=rs.latest_ref.content_path.read_text(encoding="utf-8"),
+                    no_semantic_change=True,
+                    mode="world_refresh",
+                    created_by="process_architect",
+                    trigger=restamp_trigger,
+                    rationale=(
+                        "world_refresh: PA reviewed this BP and recorded it as "
+                        "unchanged; orchestrator re-stamped drifted dependency "
+                        f"hashes ({drift_list}) so the unit re-matches the "
+                        "refreshed world instead of falling back stale. No "
+                        "content change."
+                    ),
+                    dependencies=deps_decl,
+                    rollback_note=(
+                        f"rollback to {rs.latest_ref.version} (content identical; "
+                        "only dependency hashes were re-stamped)"
+                    ),
+                )
+                written = versioning.write_new_version(
+                    project_root=project_root, new=new, fp=fp
+                )
+                refreshed.append(written)
+                if label:
+                    print(
+                        f"{label} [PA-wr] re-stamped unchanged {written.unit_id}/"
+                        f"{written.version} (deps re-pinned: {drift_list})"
                     )
 
         vault_files = (

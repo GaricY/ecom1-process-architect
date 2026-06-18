@@ -1,0 +1,10 @@
+--- v0004/snapshot/bin-help/account-recovery.help.txt
++++ v0005/snapshot/bin-help/account-recovery.help.txt
+@@ -0,0 +1,7 @@
++# /bin/account-recovery --help
++# bin-help contract: v2
++# exit_code: 0
++
++## stdout
++Usage: account-recovery send-email-link <customer_id> <destination_email>
++Creates an outgoing account email-change verification request. Read /docs/security.md before use.

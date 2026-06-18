@@ -1,0 +1,56 @@
+{
+  "unit_id": "bp_privacy_and_disclosure",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-06-18T23:08:58+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LytyPHmU2wGp5TfqXF2urPUbwsN",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
+    "queue_priority": "blocking_refresh",
+    "restamp_unchanged": [
+      "/docs/security.md"
+    ]
+  },
+  "rationale": "world_refresh: PA reviewed this BP and recorded it as unchanged; orchestrator re-stamped drifted dependency hashes (/docs/security.md) so the unit re-matches the refreshed world instead of falling back stale. No content change.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Personal-information and cross-boundary disclosure rule."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape for ownership/disclosure branching."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "Customer contact/profile fields (customer_email, home_city, home_latitude, home_longitude) that are private by default."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employee_accounts",
+      "sha256": "1ad720b7a0ef980b146c75c49684e00d69793910500b54b203754c6c1569fa48",
+      "why": "Employee roster, assigned store (store_id), and contact fields (employee_email, job_title)."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/customers/README.md",
+      "sha256": "f2f98e45217552712e60e54e2a2ccfc9cd29ca1f6d06b4dfd20f903d9b3c3733",
+      "why": "Customer email and coarse home-area coordinate semantics."
+    }
+  ],
+  "rollback": {
+    "strategy": "rollback to v0004 (content identical; only dependency hashes were re-stamped)"
+  },
+  "no_semantic_change": true
+}

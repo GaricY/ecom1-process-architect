@@ -404,6 +404,8 @@ def _write_dry_run_summary(
     mode: str,
     validated: Any,
     project_root: Path,
+    fp: FingerprintIndex | None = None,
+    world_files: list[Any] | None = None,
 ) -> Path:
     """Write `dry-run-summary.md` describing what apply_decision *would* do.
 
@@ -498,6 +500,36 @@ def _write_dry_run_summary(
             if uid:
                 lines.append(f"- `{uid}` — {why or ''}")
         lines.append("")
+
+    # Among the unchanged units, those whose per-unit dependency hashes
+    # drifted would be re-stamped (no_semantic_change bump) on a real apply
+    # so they don't fall back stale next trial. Surface that preview.
+    if unchanged and fp is not None and world_files is not None:
+        world_sigs = world_baseline.world_dep_signatures(world_files)
+        restamp_plan = pa_decision.plan_unchanged_restamps(
+            project_root=project_root,
+            unchanged=unchanged,
+            fp=fp,
+            world_sigs=world_sigs,
+        )
+        if restamp_plan:
+            lines.append(f"## Would re-stamp unchanged ({len(restamp_plan)})")
+            lines.append("")
+            lines.append(
+                "These `unchanged` units pin a per-unit dependency the world "
+                "drifted; a real apply would bump them `no_semantic_change` to "
+                "re-pin hashes (content identical) so they stop falling back "
+                "stale."
+            )
+            lines.append("")
+            lines.append("| unit_id | next_version | drifted deps |")
+            lines.append("|---------|--------------|--------------|")
+            for rs in restamp_plan:
+                next_num = store.next_version_num(project_root, rs.unit_id)
+                next_ver = store.format_version(next_num)
+                drift_str = ", ".join(f"`{p}`" for p in rs.drifted_paths)
+                lines.append(f"| `{rs.unit_id}` | `{next_ver}` | {drift_str} |")
+            lines.append("")
 
     path = pa_dir / "dry-run-summary.md"
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -2137,6 +2169,8 @@ async def _ingest_world_refresh_output(
             mode=expected_mode,
             validated=validated,
             project_root=config.project_root,
+            fp=fp,
+            world_files=world_files,
         )
         print(
             f"{job.job_id} [PA] PA_APPLY=0 — dry-run; "

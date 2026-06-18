@@ -1,0 +1,115 @@
+{
+  "version": "v0005",
+  "parent": "v0004",
+  "created_at": "2026-06-18T23:08:58+00:00",
+  "created_by": "process_architect",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LytyPHmU2wGp5TfqXF2urPUbwsN",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "world_refresh advance from v0004",
+  "no_semantic_change": false,
+  "files": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "bytes": 2354,
+      "why": "top-level navigation: key locations, important tools, response shaping. affects_units: bp_refs (grounding-reference rules) and bp_submission_terminal (yes/no <YES>/<NO> token + answer-format) pin it as a per-unit dependency, so its drift must mark those BPs stale (per-unit refresh) on top of the global world-drift attention. Narrow fan-out (only the two BPs that pin it), unlike cross-cutting sqlite_schema/sql.help which stay world-only."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/README.md",
+      "sha256": "979477da9930204f8601cfbddacdce2def31f8374336449b65825bb6e78aaee0",
+      "bytes": 6068,
+      "why": "Document Families taxonomy (active policies vs operational background). affects_units: bp_product_discovery pins it as a per-unit dependency (catalogue reporting rule + dated-update folder list), so its drift must mark that BP stale (per-unit refresh) on top of the global world-drift attention. Narrow fan-out (only the BPs that pin it), unlike cross-cutting sqlite_schema/sql.help which stay world-only."
+    },
+    {
+      "kind": "workspace",
+      "path": "/run/actions/README.md",
+      "sha256": "369374ddfdd9bb4658ec32aa54dc83da46e52fdd666e94e758bc151e2631103e",
+      "bytes": 195,
+      "why": "registered commerce-action control files (empty today; non-empty signals a new action domain)"
+    },
+    {
+      "kind": "workspace",
+      "path": "/bin/README.md",
+      "sha256": "483a8835174d378e7b89ff0c3113103820d8349172ec09f5bbb1fe364ccfa8c6",
+      "bytes": 867,
+      "why": "/bin tool-surface guide: which /bin/* tools enforce nothing (discount\u2192/docs/discounts.md, payments\u2192/docs/payments/3ds.md, payments approve-refund/refund\u2192/docs/returns.md) plus the canonical SQL entry+discovery queries and the 'SQL clock is broken \u2014 trust /bin/date' note. Cross-cutting (SQL + payments + discount + returns BPs lean on it), so world-owned like sqlite_schema.txt/sql.help.txt \u2014 affects_units left false. Lives at vault/bin/README.md (workspace), not bin-help/ (that dir is only /bin/<tool> --help dumps)."
+    },
+    {
+      "kind": "bin_help",
+      "path": "sqlite_schema.txt",
+      "sha256": "da44f2b6d61bbc633043a25418e5cfac036c79ee04d694154ce44902c33a0cbd",
+      "bytes": 8664,
+      "why": "warehouse schema; cross-cutting reference for SQL conventions across BPs"
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "sha256": "65ef4279c83faf04c0c854f078421aad488f6059621f449ef6d9f54c6f4814ad",
+      "bytes": 101,
+      "why": "/bin/checkout tool surface; a new verb can enable a checkout workflow even without a docs/schema change. affects_units: narrowly scoped to the checkout BP \u2014 drift should refresh that unit per-unit, while still surfacing in world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "bytes": 81,
+      "why": "/bin/date tool surface; simulation-clock / dated-rule capability. affects_units: scoped to the date/time BP \u2014 per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "bytes": 234,
+      "why": "/bin/discount tool surface; a new verb can enable a discount workflow even without a docs/schema change. affects_units: scoped to the discount BP \u2014 per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "bytes": 131,
+      "why": "/bin/id tool surface; caller identity (guest/customer/employee) capability. affects_units: scoped to the identity/refs BPs \u2014 per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "be72833684356ee5588de72f46752a358606569e3480e2cc86647173f5b645b7",
+      "bytes": 356,
+      "why": "/bin/payments tool surface; new verbs (e.g. refund approval/finalization) signal a new payment-side workflow. affects_units: scoped to the payments BP \u2014 per-unit refresh + world-drift attention"
+    },
+    {
+      "kind": "bin_help",
+      "path": "sql.help.txt",
+      "sha256": "10f7bfefba7b8643b87828e91a89a1d972da5100d84b32ea14f5cec0fa2e95d3",
+      "bytes": 2428,
+      "why": "/bin/sql tool surface; read-only warehouse query capability and usage contract. Cross-cutting (most BPs query SQL) \u2014 left world-only (matcher skips, world_refresh owns) to avoid per-unit fan-out"
+    },
+    {
+      "kind": "bin_help",
+      "path": "account-recovery.help.txt",
+      "sha256": "304e697b48dcb1668753dfb4d99ef8155766c5a7a6389e3e365c31fb549d4d97",
+      "bytes": 253,
+      "why": "/bin tool surface (auto-tracked): every `bin-help/*.help.txt` is world-tracked so a new or changed `/bin/<tool>` surfaces in the executor world-drift ATTENTION and triggers world_refresh even when no world.json entry enumerates it. affects_units left implicitly True (absent from world_dep_signatures), so the matcher still flags an owning BP stale and a unit may pin this help as a dependency."
+    },
+    {
+      "kind": "bin_help",
+      "path": "claude.help.txt",
+      "sha256": "2785c400eed2ed15151daea978405086eb5bbc80564fa83debf6a0d4a11282d9",
+      "bytes": 369,
+      "why": "/bin tool surface (auto-tracked): every `bin-help/*.help.txt` is world-tracked so a new or changed `/bin/<tool>` surfaces in the executor world-drift ATTENTION and triggers world_refresh even when no world.json entry enumerates it. affects_units left implicitly True (absent from world_dep_signatures), so the matcher still flags an owning BP stale and a unit may pin this help as a dependency."
+    },
+    {
+      "kind": "bin_help",
+      "path": "codex.help.txt",
+      "sha256": "afd6f3872f2790eeb5c450ef94084ca3b0e352749befddf2b99d1f4ae5b84eb5",
+      "bytes": 368,
+      "why": "/bin tool surface (auto-tracked): every `bin-help/*.help.txt` is world-tracked so a new or changed `/bin/<tool>` surfaces in the executor world-drift ATTENTION and triggers world_refresh even when no world.json entry enumerates it. affects_units left implicitly True (absent from world_dep_signatures), so the matcher still flags an owning BP stale and a unit may pin this help as a dependency."
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "unit_id": "bp_payments_3ds_recovery",
+  "version": "v0011",
+  "parent": "v0010",
+  "status": "active",
+  "created_at": "2026-06-18T23:08:58+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LytyPHmU2wGp5TfqXF2urPUbwsN",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
+    "queue_priority": "blocking_refresh",
+    "restamp_unchanged": [
+      "/docs/security.md"
+    ]
+  },
+  "rationale": "world_refresh: PA reviewed this BP and recorded it as unchanged; orchestrator re-stamped drifted dependency hashes (/docs/security.md) so the unit re-matches the refreshed world instead of falling back stale. No content change.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "3bd139117a62033269296913a839f6b061bf291de8dad76be0dd26bd229baa1d",
+      "why": "Full gate set, legacy 3DS status table, forbidden actions, and the prerequisite line naming /docs/security.md and /docs/checkout.md."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "9878a1bde6855567e4c371201870e337483c0f8697507a1f1c24ee1305599204",
+      "why": "Prerequisite policy that 3DS recovery defers to; part of the ownership-matched three-doc refs bundle."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Identity / cross-boundary rule named alongside checkout in the 3DS prerequisite line; cited on both the cross-boundary denial and the ownership-matched bundle."
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "be72833684356ee5588de72f46752a358606569e3480e2cc86647173f5b645b7",
+      "why": "Tool signature; this BP authorises recover-3ds only and excludes approve-refund/refund."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/payments/README.md",
+      "sha256": "278fc0d64459f7aa0a282f75a78ea451c5a5317ad2033f615bf66854ecc80cfc",
+      "why": "Payment record status/3DS field semantics and archived-payment context."
+    }
+  ],
+  "rollback": {
+    "strategy": "rollback to v0010 (content identical; only dependency hashes were re-stamped)"
+  },
+  "no_semantic_change": true
+}

@@ -1,0 +1,6 @@
+# /bin/checkout --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: checkout <basket_id>

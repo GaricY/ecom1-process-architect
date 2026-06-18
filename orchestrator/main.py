@@ -45,7 +45,7 @@ from .report import (
 )
 from .task_dir import PreparedTaskDir, materialize
 
-RUN_NAME = "@GaricY Process Architect"
+RUN_NAME = "@GaricY Process Architect postmortem"
 ERR_INTERNAL_OUTCOME = "OUTCOME_ERR_INTERNAL"
 
 

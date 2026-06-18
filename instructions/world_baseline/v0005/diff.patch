@@ -1,0 +1,31 @@
+--- v0004/snapshot/world_base/run/actions/README.md
++++ v0005/snapshot/world_base/run/actions/README.md
+@@ -1,3 +1,6 @@
+ # Actions
+ 
+-No commerce action control files are registered yet.
++Commerce action control files created by runtime tools live here.
++
++Account recovery verification requests created by `/bin/account-recovery` use
++`account-recovery-<customer_id>.json`.
+--- v0004/snapshot/world_base/bin/README.md
++++ v0005/snapshot/world_base/bin/README.md
+@@ -3,6 +3,8 @@
+ Runtime tools live here. Run any tool with `--help` to read its usage.
+ 
+ `/bin/discount` applies the requested basket discount mechanically. It does not enforce `/docs/discounts.md`.
++
++`/bin/account-recovery` creates outgoing account email-change verification requests mechanically. It does not enforce `/docs/security.md`.
+ 
+ `/bin/payments` applies payment workflow actions mechanically. It does not enforce `/docs/payments/3ds.md`.
+ 
+--- v0004/snapshot/bin-help/account-recovery.help.txt
++++ v0005/snapshot/bin-help/account-recovery.help.txt
+@@ -0,0 +1,7 @@
++# /bin/account-recovery --help
++# bin-help contract: v2
++# exit_code: 0
++
++## stdout
++Usage: account-recovery send-email-link <customer_id> <destination_email>
++Creates an outgoing account email-change verification request. Read /docs/security.md before use.

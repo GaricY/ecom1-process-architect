@@ -1,0 +1,41 @@
+{
+  "unit_id": "bp_account_recovery",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-06-18T22:24:20+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t01",
+    "trial_id": "vm2-LytsXNjnYw2VdsQ498f45ZY7TcC",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-011800/0001-t01-vm2-LytsXNjnYw2VdsQ498f45ZY7TcC-process-architect-world-refresh-v0004",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "New mutating capability /bin/account-recovery (send-email-link <customer_id> <destination_email>) writes /run/actions/account-recovery-<customer_id>.json and is pinned by a new /docs/security.md rule making account recovery / email-change verification customer-only (link only to the account matching /bin/id). A mutating tool with its own gate, output file, and policy is a distinct atomic domain \u2014 separate from identity_and_auth (the general identity/ownership gate, which this BP applies via link) and from payments_3ds_recovery (payment recovery, not account recovery). The tool README states it 'does not enforce /docs/security.md', so a BP must.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Authoritative customer-only account-recovery / email-change rule and the matching-account requirement this BP enforces; also the source of the canonical denial incident pattern."
+    },
+    {
+      "kind": "bin_help",
+      "path": "account-recovery.help.txt",
+      "sha256": "304e697b48dcb1668753dfb4d99ef8155766c5a7a6389e3e365c31fb549d4d97",
+      "why": "Tool signature 'send-email-link <customer_id> <destination_email>' that the Process and Tools sections encode; a verb/arg change must trigger re-derivation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "customer_id / customer_email shape used to confirm the actor's own account; a new verification/email-change status column would change the state gate."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove bp_account_recovery from the registry and drop its bp_index routing row and \u00a79 note; no other unit depends on it."
+  },
+  "no_semantic_change": false
+}
