@@ -1,0 +1,63 @@
+--- bp_fraud_risk_review/v0007/content.md
++++ bp_fraud_risk_review/v0008/content.md
+@@ -30,11 +30,12 @@
+ 6. Finding one hard-supported cluster is not enough to submit. Continue the mandatory hard sweep until every family above has a recorded result and trustworthy query shape.
+ 7. Classify candidate match sets before building the final cohort:
+    - hard-supported: exact identifier collision across actors, impossible observed travel, stationary single-actor multi-target burst, workflow-state invariant, or record/table invariant;
+-   - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, or any smooth threshold band with no structural confirmation.
++   - soft-only: one new device or payment fingerprint for one actor, high amount, high purchase count, distant observed-vs-store or observed-vs-home band, long busy timeline, a single isolated observed-travel band crossing with no surrounding burst, or any smooth threshold band with no structural confirmation.
+ 8. Only hard-supported records may enter the final cohort. Soft-only records are excluded by default, even when they look suspicious, are high value, or sit near a true incident window.
+ 9. For location/target signals, keep the query shapes separate:
+    - impossible observed travel is an observed-to-observed check across all actors in scope: partition by actor/customer, order by event time, compare consecutive observed coordinates, and compute elapsed time;
+    - do not compute impossible travel from store, customer home-area, or other claimed target coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
++   - an impossible-travel hit is hard only when the same actor shows a connected sequence of repeated impossible hops — a teleport burst of several events in a tight window. A single isolated two-event crossing of the distance band, with no surrounding chain of impossible hops by that actor and no other hard signal on that actor (collision, workflow-state, record invariant), is a threshold-only band: classify it soft and exclude it by default. When a teleport burst is confirmed, expand the cohort to every event by that actor inside the burst window — not only the consecutive pairs whose observed jump individually crossed the band — exactly as for the stationary burst below; intra-burst hops that fall at or under the band still belong to the actor's burst;
+    - stationary single-actor burst is grouped by one actor/customer, not by one store and not by multiple customers. The window is a dense sub-window from each event, not `MAX(payment_created_at) - MIN(payment_created_at)` over the actor's whole history. Count events, distinct stores/targets/resources, and distinct cities when joined; confirm observed-coordinate spread inside the window is small; expand a hard hit to all in-window records for that actor without `LIMIT`.
+ 10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores or distant customer home-area at ordinary cadence is remote shopping context; stable observed plus many distinct stores, cities, targets, or resources within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store/home distance alone.
+ 11. When a mandatory hard family returns zero, validate the negative. Record the top max-metric for that family, not only `zero`: for travel, the largest same-actor observed speed or observed jump in scope; for burst, the largest same-actor short-window distinct-target count and observed spread. If the max-metric contradicts the zero result, fix the query before trusting the ledger.
+@@ -77,7 +78,7 @@
+ order by customer_id, payment_created_at;
+ ```
+ 
+-If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
++The `observed_l1 > 2.0` / `minutes between 0 and 15` cutoffs are a discovery filter to surface candidate actors, not the hard gate. The hard unit is the actor's connected teleport burst: confirm several consecutive impossible hops for one actor in a tight window, then expand the cohort to every one of that actor's events inside that burst window (including hops whose `observed_l1` fell at or below the band, and the burst's first/last event), not only the rows that the pairwise filter returned. A lone actor with a single isolated band crossing and no surrounding chain of impossible hops is soft unless another hard signal corroborates that actor. If this shape returns zero, record the largest same-actor observed jump/speed in the same scope before trusting the zero.
+ 
+ ### Stationary Single-Actor Burst Shape
+ 
+@@ -114,7 +115,7 @@
+ order by distinct_stores desc, payment_count desc, start_ts;
+ ```
+ 
+-If this shape returns a hard hit, expand the final cluster to all in-window records for that actor. If it returns zero, record the top short-window `distinct_stores`, `payment_count`, and `observed_spread_l1` from the same sliding-window shape.
++If this shape returns a hard hit, expand the final cluster to all in-window records for that actor. If it returns zero, record the top short-window `distinct_stores`, `payment_count`, and `observed_spread_l1` from the same sliding-window shape. A burst that rotates through distinct stores in minutes but whose observed coordinates also jump (large `observed_spread_l1`) is not stationary — it is a teleport burst, caught by the Observed Travel Shape above and expanded the same way to the actor's full in-window event set.
+ 
+ ### General Risk Primitives
+ 
+@@ -140,6 +141,7 @@
+ - hard-supported vs soft-only classification for each match set;
+ - missing-MO guard: if only one location hard family has hits, re-run the other location family with the canonical query shape before submit;
+ - validated-zero guard: if a hard family returns zero, include the top max-metric from that same query shape;
++- impossible-travel burst membership: for each confirmed teleport burst, the actor's full in-window event set is included (not only the consecutive pairs that crossed the distance band), and any isolated single-pair band crossing left out is recorded as soft with its reason;
+ - hard-hit union check: if multiple hard families have hits, every hard-supported cluster is represented in the final refs;
+ - exclusion reason for any hard hit left out; "different date" or "different MO" is not enough unless the user brief explicitly narrowed the scope;
+ - per-record evidence map for the final cohort;
+@@ -176,8 +178,9 @@
+ 
+ `considered_not_cited`:
+ 
+-- Soft-only candidates, threshold-only bands, rejected hard-family candidates,
+-  false leads, and candidate clusters outside the final hard-supported union.
++- Soft-only candidates, threshold-only bands, isolated single-pair travel
++  crossings, rejected hard-family candidates, false leads, and candidate
++  clusters outside the final hard-supported union.
+ - Private contact/profile fields read for risk context but not allowed in the
+   answer.
+ 
+@@ -202,6 +205,8 @@
+ - Recording `zero` for a hard family without a max-metric from the same query shape.
+ - Searching only PMF/DFP/distance columns and skipping workflow-state columns.
+ - Submitting a threshold-only distance band with no discrete or structural confirmation.
++- Treating a single isolated observed-travel band crossing (one consecutive pair, no surrounding chain of impossible hops by that actor) as hard fraud; a lone crossing is soft unless the actor shows a connected teleport burst or another hard signal.
++- Citing only the consecutive pairs that crossed the observed-travel band while dropping the same actor's other events inside the confirmed burst window whose individual hop fell at or below the band.
+ - Treating observed-vs-home distance as hard evidence by itself; home coordinates are coarse risk-fixture context.
+ - Treating a missing live basket file on an archived payment as a hard inconsistency before checking the archive flag and payment line snapshot.
+ - Computing impossible travel from store coordinates or other claimed target coordinates instead of observed coordinates.

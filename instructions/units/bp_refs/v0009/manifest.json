@@ -1,0 +1,81 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-06-18T08:01:43+00:00",
+  "created_by": "human",
+  "mode": "failure_fix",
+  "trigger": {
+    "task": "task-001",
+    "source_run": "20260618-034209",
+    "purpose": "complete Evidence ledger refactor without dev-task overfit"
+  },
+  "rationale": "Completes the shared Evidence ledger model: request_named_inputs remains mandatory even when a topic BP omits it, and authorized safe gate records cannot be weakened into optional refs. Injection/message-safety behavior is deliberately left out for a separate task.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Authority for cross-boundary and personal-information citation boundaries."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape used for customer/employee/guest citation branches."
+    },
+    {
+      "kind": "sql_table",
+      "path": "shopping_baskets",
+      "sha256": "6dee12f346caa9a21b873979a9ce5129623bbc7d25e7edf50944fdc1dd02cf1e",
+      "why": "Basket ownership, store pointer, status, and canonical record_path for basket refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_transactions",
+      "sha256": "19104e8b96a076bde97c0f841c2b9ac35f781199842368b2f8d866b2299848c1",
+      "why": "Payment ownership, basket/store pointers, status, and canonical record_path for payment refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_requests",
+      "sha256": "1f62b186328a837536425904e8789daaf26b56fcf44eb0b75b2762e4cc2f2e3c",
+      "why": "Return ownership, basket/payment pointers, status, and canonical record_path for return refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "customer_accounts",
+      "sha256": "965fc569cbf16e55079833b4819385dedca6bf820d47034105ab8378b5a4d815",
+      "why": "Customer identity and contact fields that are private by default."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employee_accounts",
+      "sha256": "1ad720b7a0ef980b146c75c49684e00d69793910500b54b203754c6c1569fa48",
+      "why": "Employee roster/contact fields and assigned-store scope determine private vs operational refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "5534ef82ac9061b4b75e4345736bc1190d6edb0ce8f1e92a882677cf96308528",
+      "why": "Public store record_path and location fields are required public-record refs."
+    },
+    {
+      "kind": "sql_table",
+      "path": "product_variants",
+      "sha256": "b9c596171b61a39391c8c23143e0ce394ccbc760450c0bb66a217a75ede8c88b",
+      "why": "Public catalogue record_path and SKU fields are required public-record refs."
+    },
+    {
+      "kind": "workspace",
+      "path": "/proc/README.md",
+      "sha256": "a4596510fa44dbe6dc3f2ab4d37405c418a7638b394a47c44a6449a3818d3d90",
+      "why": "Source-of-truth manifest for /proc record families and live path roots."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from the parent content if this refactor-completion wording over-constrains executor behavior."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,35 @@
+{
+  "refs": [
+    "/docs/security.md",
+    "/docs/returns.md",
+    "/proc/returns/ret_011.json"
+  ],
+  "business_process": {
+    "primary": "returns.md",
+    "reason": "Request to approve refund for ret_011 triggers the employee refund-approval workflow (Process B)."
+  },
+  "evidence_ledger": {
+    "read_set": [
+      "/proc/returns/ret_011.json"
+    ],
+    "decision_set": {
+      "return_status": "replacement_pending",
+      "required_status_for_approval": "approved",
+      "gate_failed": "state gate \u2014 return.status must be 'approved', got 'replacement_pending'",
+      "identity": "emp_036 has refund_manager (role gate passes)",
+      "conclusion": "OUTCOME_NONE_UNSUPPORTED \u2014 role authorized but workflow state does not permit refund approval"
+    },
+    "refs_must_include": [
+      "/docs/security.md",
+      "/docs/returns.md",
+      "/proc/returns/ret_011.json"
+    ],
+    "refs_must_not_include": [
+      "vault/",
+      "bin-help/"
+    ]
+  },
+  "answer": "Cannot approve the refund for ret_011. The refund approval workflow requires the return to be in 'approved' status, but ret_011 is currently in 'replacement_pending' status. No /bin/payments subcommand advances a return from replacement_pending through the refund path; this request is unsupported.",
+  "message": "Cannot approve the refund for ret_011. The refund approval workflow requires the return to be in 'approved' status, but ret_011 is currently in 'replacement_pending' status. No /bin/payments subcommand advances a return from replacement_pending through the refund path; this request is unsupported.",
+  "outcome": "OUTCOME_NONE_UNSUPPORTED"
+}

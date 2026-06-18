@@ -1,0 +1,62 @@
+--- executor_core/v0014/content.md
++++ executor_core/v0015/content.md
+@@ -111,11 +111,10 @@
+ 4. Returns `{exit_code, stdout, stderr, snippet_path, scratchpad_excerpt,
+    answer_submitted}`.
+ 
+-Keep three sets separate while working: `read_set` is everything opened
+-or queried, `decision_set` is what shaped the outcome/message/mutation,
+-and final `refs` is the safe live-path citation projection from the
+-decision evidence. Topic BPs name the domain records that belong in each
+-Evidence ledger bucket; `refs.md` owns the shared safety projection.
++Do not treat runtime output as automatic final `refs`. Evidence
++classification and citation projection are governed by
++`business_processes/refs.md` plus the selected topic BP; keep only the
++scratchpad audit notes needed to explain that classification.
+ 
+ Do not merge unresolved investigation into the terminal call. If a
+ `ws.read`, `ws.list`, `ws.tree`, `ws.sql_rows`, `/bin/*`, or helper
+@@ -250,31 +249,19 @@
+ The final terminal protocol lives in
+ [`business_processes/submission_terminal.md`](business_processes/submission_terminal.md).
+ 
+-Before submission, keep a readable Evidence ledger in scratchpad. A literal JSON
+-shape is optional, but the reasoning must clearly separate:
++Before submission, make the evidence path auditable in scratchpad, but keep
++this core-level contract intentionally thin:
+ 
+-- `read_set`: everything opened, listed, searched, queried, or returned by a
+-  tool.
+-- `decision_set`: evidence that actually shaped the message, outcome, mutation
+-  or no-mutation, count, scope, or denial.
+-- final `refs`: the safe live-path citation projection from `decision_set`.
+-
+-Use the topic BP's `Evidence ledger` section to classify domain records into
+-applied policies, action targets, answer records, post-state records,
+-considered-not-cited evidence, `refs_must_include`, and
+-`refs_must_not_include`. Then use `refs.md` to project the final `refs` list.
+-
+-Brief projection summary:
+-
+-- Refs are absolute live paths only (`/proc/...`, `/docs/...`, request-named
+-  live input paths).
+-- Never cite local `vault/`, local `bin-help/`, dependency-snapshot, stale, or
+-  decoy paths.
+-- Customer cross-boundary denials can use foreign records internally for the
+-  denial decision, but final refs are policy-only for that boundary.
+-- Owned customer targets, employee action targets, and public store/catalogue
+-  records stay citeable when the topic BP's branch requires them.
+-- Deduplicate. The prelude does this on `submit_and_exit`.
++- distinguish investigation from evidence that shaped the decision;
++- place domain records and policies through the selected topic BP;
++- apply `refs.md` for the shared ledger buckets, safety rules, and final
++  citation projection;
++- treat final `refs` as the safe projection required by those processes, not as
++  a dump of opened files.
++
++Do not copy bucket semantics or branch-specific citation rules into this file.
++If the shared citation model changes, update `refs.md`; if a domain placement
++rule changes, update the relevant topic BP.
+ 
+ Read `refs.md` before projecting any non-trivial final `refs` list, then read
+ `submission_terminal.md` before the terminal call.

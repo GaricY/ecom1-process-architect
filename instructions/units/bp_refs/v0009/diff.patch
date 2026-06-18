@@ -1,0 +1,85 @@
+--- bp_refs/v0008/content.md
++++ bp_refs/v0009/content.md
+@@ -32,8 +32,14 @@
+ 
+ - Files, attachments, pasted docs, receipt/OCR/report paths, or other input
+   artifacts the task explicitly told you to read.
+-- If any answer fact came from such an input, cite the absolute live input path
+-  unless a privacy rule forbids it.
++- This bucket is shared and always active. If the topic BP does not spell out a
++  local `request_named_inputs` section, still classify any such input here; the
++  topic BP may add domain examples but must not drop the shared rule.
++- If any answer fact, comparison baseline, scope, or requested output literal
++  came from such an input, put the absolute live input path in
++  `refs_must_include` and final `refs` unless a privacy/cross-boundary rule
++  forbids it. Pasted text inside `task.md` has no live workspace path; keep it
++  in scratchpad and do not fabricate a ref.
+ 
+ `policy_docs_applied`:
+ 
+@@ -65,6 +71,10 @@
+   status, eligibility, or unsupported result.
+ - For list/count/cohort tasks, this is the answer cohort or aggregate evidence,
+   not arbitrary examples.
++- For workflow tasks, safe records required by the selected branch's gate set are
++  answer evidence even when a different non-security gate fails. If the topic BP
++  says a linked record proves a required precondition, do not make that record
++  optional with `when read` wording on the same authorized branch.
+ 
+ `post_state_records`:
+ 
+@@ -176,6 +186,23 @@
+ `product_variants.record_path` resolves to `/proc/catalog/<sku>.json`, not
+ `/proc/products/<sku>.json`.
+ 
++## Required Gate Evidence
++
++When a policy or topic BP defines a set of workflow gates for the selected
++branch, distinguish security stops from non-security unsupported results:
++
++- If identity, ownership, or cross-boundary policy blocks the actor before a
++  foreign/private record may be inspected, stop there and project policy-only
++  refs for that boundary.
++- Once the actor is allowed to evaluate the requested target (owned customer
++  target or employee action target), every safe record the topic BP names as a
++  required gate input is decision evidence. A later status, amount, attempt, or
++  capability gate failure can select `OUTCOME_NONE_UNSUPPORTED`, but it does not
++  remove already-required safe gate records from `refs_must_include`.
++- If a derived gate record is missing, record the attempted live path and the
++  missing-record reason in scratchpad; cite only safe existing records and
++  applied policies.
++
+ ## Final refs projection
+ 
+ Project final `refs` only after the topic BP ledger has identified
+@@ -183,7 +210,9 @@
+ 
+ Include:
+ 
+-- Safe request-named input artifacts that the answer used.
++- Safe request-named input artifacts that the answer used, including when the
++  requirement comes only from this shared model and not from a local topic-BP
++  subsection.
+ - Applied policy docs and matched policy updates.
+ - Safe action targets, answer records, public records, and post-state records
+   required by the topic BP.
+@@ -218,7 +247,9 @@
+    removed.
+ 4. Run the public-record sweep for stores and catalogue records.
+ 5. If the task named or handed you an input file/document and any answer fact is
+-   derived from it, include that absolute live path unless privacy forbids it.
++   derived from it, include that absolute live path unless privacy forbids it;
++   this shared rule still applies when the topic BP omitted a local
++   `request_named_inputs` section.
+ 6. Remove decoy docs, local snapshot paths, unused policy docs, rejected
+    candidates, and unsafe foreign/private records.
+ 7. For discovery answers, verify `set(message_records) == set(ref_records)`.
+@@ -248,6 +279,8 @@
+ - Citing a foreign identity-scoped record because SQL returned `record_path`.
+ - Answering from a request-named input artifact while citing only downstream
+   records compared against it.
++- Letting a topic BP's local ledger omit the shared `request_named_inputs` rule
++  or weaken a required safe gate record into an optional `when read` citation.
+ - Routing a refund refs decision through the 3DS topic doc because both use
+   `/bin/payments`.
+ - Padding refs with decoy docs, local `vault/` paths, local `bin-help/` paths,

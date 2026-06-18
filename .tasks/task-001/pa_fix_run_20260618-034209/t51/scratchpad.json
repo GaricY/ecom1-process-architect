@@ -1,0 +1,59 @@
+{
+  "refs": [
+    "/proc/catalog/Schneider Electric/ELC-2UKGDA7Y.json",
+    "/proc/catalog/3M/SFE-2PLXTQAV.json",
+    "/proc/catalog/Mellerud/CLN-3Q19VP4J.json",
+    "/proc/catalog/Wiha/HND-285R47SD.json"
+  ],
+  "business_process": {
+    "primary": "product_discovery.md",
+    "reason": "Price lookup for specific SKUs from an old receipt to compare current vs old total (excl VAT)"
+  },
+  "evidence_ledger": {
+    "read_set": [
+      "/uploads/receipt_ocr_5QRtEw6Y.txt",
+      "SQL: product_variants WHERE product_sku IN (ELC-2UKGDA7Y, SFE-2PLXTQAV, CLN-3Q19VP4J, HND-285R47SD)"
+    ],
+    "decision_set": {
+      "old_subtotal_excl_vat": 342.97,
+      "new_subtotal_excl_vat": 343.0,
+      "difference_eur": 0.03,
+      "within_2_eur": true,
+      "items": [
+        {
+          "sku": "ELC-2UKGDA7Y",
+          "qty": 2,
+          "old_unit": 116.99,
+          "new_unit": 117.0
+        },
+        {
+          "sku": "SFE-2PLXTQAV",
+          "qty": 1,
+          "old_unit": 12.99,
+          "new_unit": 13.0
+        },
+        {
+          "sku": "CLN-3Q19VP4J",
+          "qty": 3,
+          "old_unit": 24.0,
+          "new_unit": 24.0
+        },
+        {
+          "sku": "HND-285R47SD",
+          "qty": 3,
+          "old_unit": 8.0,
+          "new_unit": 8.0
+        }
+      ]
+    },
+    "refs_must_include": [
+      "/proc/catalog/Schneider Electric/ELC-2UKGDA7Y.json",
+      "/proc/catalog/3M/SFE-2PLXTQAV.json",
+      "/proc/catalog/Mellerud/CLN-3Q19VP4J.json",
+      "/proc/catalog/Wiha/HND-285R47SD.json"
+    ]
+  },
+  "answer": "<YES> The old receipt subtotal (excl. VAT) was 342.97 EUR. Selling the same items at today's prices gives 343.00 EUR \u2014 a difference of 0.03 EUR, which is within 2 EUR.",
+  "message": "<YES> The old receipt subtotal (excl. VAT) was 342.97 EUR. Selling the same items at today's prices gives 343.00 EUR \u2014 a difference of 0.03 EUR, which is within 2 EUR.",
+  "outcome": "OUTCOME_OK"
+}

@@ -1,0 +1,70 @@
+--- bp_product_discovery/v0018/content.md
++++ bp_product_discovery/v0019/content.md
+@@ -2,7 +2,7 @@
+ 
+ ## When this process applies
+ 
+-A question about catalogue, product properties, store list, store hours, or "is X available today at Y?" / "how many products of kind Z?". Also covers **catalogue claim-verification** questions where a support note / message / brief attributes a set of properties to a specific product line and asks the actor to confirm or deny the claim against the live catalogue. Information-only — never mutates. If the request is "my basket / order / payment", route through [identity_and_auth](identity_and_auth.md) and the relevant action BP; this file is for the public catalogue and inventory projection.
++A question about catalogue, product properties, store list, store hours, or "is X available today at Y?" / "how many products of kind Z?". Also covers **catalogue claim-verification** questions where a support note / message / brief attributes a set of properties to a specific product line and asks the actor to confirm or deny the claim against the live catalogue. Also covers **catalogue comparison-against-an-input** questions where the task hands you an input artifact — an old receipt, an uploaded OCR/scan, an invoice, a report, an attached document — and asks you to compare today's catalogue prices or properties against it (for example, "if we sold these items today, would the total stay within X of the old receipt?"). The baseline / "old" / "claimed" side of such a comparison comes from that input file, so the input file is part of the answer's evidence, not just an audit-trail read. Information-only — never mutates. If the request is "my basket / order / payment", route through [identity_and_auth](identity_and_auth.md) and the relevant action BP; this file is for the public catalogue and inventory projection.
+ 
+ ## Inputs
+ 
+@@ -12,6 +12,7 @@
+   - `/proc/stores/README.md` — source for natural-language branch nuance in cities with multiple stores; read it live before choosing between branches.
+   - `/docs/README.md` — defines the "today's catalogue reporting rule" and where dated overrides may live.
+   - `/AGENTS.MD` — the merchant-wide reply-shaping rule that pure availability answers reference only what **is** available; step 7 separates that rule from non-pure catalogue identity/match claims.
++  - Request-named input artifacts — any file the task explicitly points you to and compares the catalogue against (a receipt, OCR/scan, invoice, report, attached document, typically under `/uploads/...`). Read the file live and copy its absolute live path verbatim; do not paraphrase the path or cite a `vault/` mirror.
+ - Tools: `/bin/sql` — the only source of catalogue and inventory truth. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt). Tables: `product_variants`, `product_variant_properties`, `product_categories`, `product_families`, `product_kinds`, `store_inventory`, `stores`. Every public table carries a `record_path TEXT NOT NULL` column whose value is the on-disk `/proc/...` cite path. `/bin/date` — the only trusted source of the simulation's "today"; see [date_and_time](date_and_time.md).
+ 
+ ## Process
+@@ -39,6 +40,16 @@
+    - Do not cite products merely considered and rejected if the final answer does not identify them. Keep disqualified or rejected candidates in `scratchpad["decision"]` (sku, why it failed) so the audit trail is preserved.
+    - Count questions over the catalogue at large (step 4) cite `/docs/README.md` and the applicable dated update, not per-product paths.
+ 
++## Comparison against a handed-in input document
++
++Some briefs hand you an input artifact and ask you to compare the live catalogue against it: an old receipt, an uploaded OCR/scan, an invoice, a report, or an attached document (typically under `/uploads/...`). Examples: "look at the old receipt and tell me whether selling these items today stays within a small tolerance of the old total", or "the attached report lists these prices — are they still current?". This is still information-only catalogue discovery, but the answer depends on **two** sides: the baseline / "old" / "claimed" facts read from the input file, and the current facts read from `/bin/sql`.
++
++Run this when the brief has that shape:
++
++1. **Read the input artifact live** and derive its baseline facts (old prices, quantities, listed SKUs, claimed totals) from its content. Keep its absolute live path (the path the task named, e.g. under `/uploads/...`).
++2. **Map each line/SKU to the live catalogue** via SQL on `product_variants` (and related tables) and copy each matched product's `product_variants.record_path` verbatim. Compute the comparison from the input's baseline values against the current SQL values.
++3. **The input artifact's own live path is a required ref.** The answer's baseline / "old" / "claimed" side came directly from it, so it is load-bearing answer evidence — not a mere audit-trail read. Cite the absolute live input path (e.g. the named `/uploads/...` path) in final `refs`, alongside the catalogue records you compared against, unless [privacy_and_disclosure](privacy_and_disclosure.md) forbids citing that input. Citing only the downstream `/proc/catalog/...` records and dropping the input file is the failure mode the grader rejects with `answer missing required reference '<input path>'`.
++
+ ## Catalogue claim verification
+ 
+ Some briefs read like "a support note / message / colleague claims we stock <product line> with <property set A>, and also has <property B>; check the actual catalogue item, cite the exact product record, and if the base product exists but that extra catalogue claim is absent, answer `<NO>` and include the checked SKU". This is a **single-record verification** task: the question is whether **one** catalogue row carries **all** the claimed properties, not whether the brand / model line contains rows that — between them — cover every claim.
+@@ -65,6 +76,14 @@
+ ## Evidence ledger
+ 
+ Local placement for catalogue/inventory evidence:
++
++`request_named_inputs`:
++
++- Any input artifact the task explicitly handed you to compare the catalogue
++  against — a receipt, uploaded OCR/scan, invoice, report, or attached document
++  (typically under `/uploads/...`). When the answer's baseline / "old" /
++  "claimed" facts came from it, its absolute live path is load-bearing answer
++  evidence, not just a `read_set` entry.
+ 
+ `policy_docs_applied`:
+ 
+@@ -105,6 +124,10 @@
+   product record printed or otherwise identified in the final answer.
+ - Claim-verification tasks: the base SKU's `product_variants.record_path`, not a
+   sibling SKU.
++- Comparison-against-an-input answers: the absolute live path of the
++  request-named input artifact whose facts the answer compared against, in
++  addition to the matched `product_variants.record_path` for each catalogue item
++  the comparison used.
+ - `/docs/README.md` and matched update docs when a reporting/update rule shaped
+   the answer.
+ 
+@@ -124,6 +147,7 @@
+ - Listing unavailable products in an availability answer (forbidden by `/AGENTS.MD`).
+ - **Citing a SKU with no `store_inventory` row or with observed `available_today_quantity = 0` in `refs`** on a pure availability question. The "do not reference unavailable products" rule in `/AGENTS.MD` is not only about the answer text — it governs `refs` when availability defines the answer set. A SKU with no row is not stocked or observed at the queried store, and an observed `0` is still not positively available; both can satisfy a "less than / fewer than K" or "out of stock" count, but neither is citeable product availability evidence. Copying either product's `record_path` into `refs` is exactly what the grader rejects with `answer contains invalid reference '/proc/catalog/...json'`. Keep such SKUs in `scratchpad["decision"]` as the audit trail instead.
+ - **Dropping a public product ref from a non-pure availability answer because that product failed the stock predicate.** If the final answer identifies the product as a catalogue record in its own right, the ref grounds that identity/match claim unless a stronger policy forbids citing it.
++- **Comparing live catalogue data against a handed-in input document (old receipt, uploaded OCR/scan, invoice, report) and citing only the catalogue records, dropping the input file's own live path.** The input supplied the baseline / "old" / "claimed" side of the comparison, so it is load-bearing evidence the answer depends on — not a discardable `read_set` entry. The grader rejects this with `answer missing required reference '<input path>'`. Copy the absolute live input path (the path the task named, e.g. under `/uploads/...`) into `refs` unless [privacy_and_disclosure](privacy_and_disclosure.md) forbids it, alongside the `/proc/catalog/...` records you compared against.
+ - **Dropping the selected store ref from a store-scoped availability/count answer because unavailable product refs are forbidden.** The selected store row is public location evidence for the inventory query. The restriction is against unavailable products and rejected/non-selected stores, not against the store actually queried.
+ - Skipping the catalogue reporting rule check on count questions when the live `/docs` tree exposes dated update candidates.
+ - **Declaring a dated update stale without calling `/bin/date` in this trial.** Wall-clock reasoning, the harness date, CLAUDE.md's "today", and the system clock are not the simulation's clock. If `/bin/date` has not been called, the operating-day comparison is not valid — and a dated update that names the requested workflow / kind / city must not be dropped from refs based on that invalid comparison.

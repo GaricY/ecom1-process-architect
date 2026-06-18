@@ -1,0 +1,79 @@
+{
+  "mode": "failure_fix",
+  "changes": [
+    {
+      "unit_id": "bp_fraud_risk_review",
+      "base_version": "v0007",
+      "no_semantic_change": false,
+      "rationale": "The trial's true fraud cohort is structured as dense same-actor teleport bursts (many impossibly-far events in a tight window) plus cross-actor device-fingerprint collisions. The Executor applied the canonical 'impossible observed travel' query (observed_l1 > 2.0 within 15 min) as a HARD signal at the level of individual consecutive pairs, then unioned only the rows that crossed the band. This produced both grader complaints at once: (1) >10 false positives, because isolated two-event band crossings (one actor, one lone jump, no surrounding burst) were admitted as fraud even though the BP elsewhere calls a threshold-only band soft; and (2) ~10% of the fraud amount missed, because within real bursts the pair-only union dropped in-window events whose individual hop fell at/below the band. The BP's 'expand a hard hit to all in-window records' rule existed only for the stationary-burst family, never for the impossible-travel family, and the travel SQL presented a raw fixed threshold as the hard gate. This edit makes impossible travel hard ONLY as a connected multi-hop teleport burst (a lone isolated crossing is soft unless corroborated by another hard signal), and requires expanding a confirmed teleport burst to the actor's full in-window event set rather than only the threshold-crossing pairs. It changes no fixed numeric thresholds and adds no trial literals; it is a structural-confirmation rule that generalises to any archived-payment/risk variant.",
+      "dependencies": [
+        {
+          "kind": "workspace",
+          "path": "/docs/payments/3ds.md",
+          "why": "Defines the legitimate 3DS workflow-state transitions used by the workflow-state-invariant hard family this BP still scans."
+        },
+        {
+          "kind": "sql_table",
+          "path": "payment_transactions",
+          "why": "Primary risk record; the observed_latitude/observed_longitude, payment_created_at, customer_id and is_archived_basket_reference columns are exactly what the edited teleport-burst (observed-travel) logic reads."
+        },
+        {
+          "kind": "sql_table",
+          "path": "customer_accounts",
+          "why": "Supplies the home-coordinate context used to distinguish remote shopping from observed-location fraud, which underpins the soft-vs-hard discrimination in this BP."
+        },
+        {
+          "kind": "sql_table",
+          "path": "stores",
+          "why": "Store branch location axis; the BP explicitly forbids computing travel from store coordinates, so a store-schema change can make that distinction text stale."
+        },
+        {
+          "kind": "sql_table",
+          "path": "shopping_baskets",
+          "why": "Basket/customer/store join and archive context referenced by the record/table-invariant hard family."
+        },
+        {
+          "kind": "sql_table",
+          "path": "shopping_basket_items",
+          "why": "Basket resource lines (requested_quantity) used by the resource/quantity reconciliation invariant."
+        },
+        {
+          "kind": "sql_table",
+          "path": "payment_transaction_items",
+          "why": "Line-level amount reconciliation (purchased_quantity, item_unit_price_cents) for the amount-vs-lines record invariant, including archived payments' line snapshots."
+        },
+        {
+          "kind": "sql_table",
+          "path": "product_variants",
+          "why": "Catalogue price join used in amount/line anomaly checks."
+        },
+        {
+          "kind": "sql_table",
+          "path": "store_inventory",
+          "why": "Reserve/availability arithmetic and store/SKU resource axis cited as a current example primitive in this BP."
+        },
+        {
+          "kind": "sql_table",
+          "path": "return_requests",
+          "why": "Return/payment/basket/customer join cited as a current example primitive in this BP."
+        },
+        {
+          "kind": "workspace",
+          "path": "/proc/payments/README.md",
+          "why": "Defines that observed coordinates are checkout-time risk-log coordinates (not addresses) and that archived payments carry a line snapshot; this semantics is the basis for treating a lone observed jump as soft until a burst confirms it."
+        },
+        {
+          "kind": "workspace",
+          "path": "/proc/customers/README.md",
+          "why": "Defines coarse home-area coordinate semantics used by risk fixtures, load-bearing for the remote-shopping-vs-fraud distinction."
+        },
+        {
+          "kind": "workspace",
+          "path": "/proc/stores/README.md",
+          "why": "Defines store branch coordinate semantics used for distance checks, relevant to the store-vs-observed coordinate separation this BP enforces."
+        }
+      ],
+      "rollback": "Create a new version from v0007 content if the connected-burst requirement drops genuine isolated single-pair fraud or the burst-expansion over-collects in-window legitimate events."
+    }
+  ]
+}

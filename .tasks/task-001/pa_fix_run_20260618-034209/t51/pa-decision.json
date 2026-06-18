@@ -1,0 +1,59 @@
+{
+  "mode": "failure_fix",
+  "changes": [
+    {
+      "unit_id": "bp_product_discovery",
+      "base_version": "v0018",
+      "no_semantic_change": false,
+      "rationale": "The trial scored 0% with the verdict 'answer missing required reference <input path>': the Executor compared an old uploaded receipt against today's catalogue prices, computed the right answer, but cited only the four /proc/catalog/<sku>.json records it compared against and dropped the /uploads/ receipt that supplied the 'old' baseline. The Executor anchored on product_discovery as its primary BP. refs.md does carry a general request_named_inputs rule, but product_discovery's typed Evidence ledger (added in the v0018 refactor) enumerates refs_must_include for stores/products/docs only and has no placement for a handed-in input artifact. That incomplete-but-authoritative topic ledger overrode the general rule. This edit adds to product_discovery a 'Comparison against a handed-in input document' task shape, a request_named_inputs ledger bucket, a refs_must_include line, an Inputs entry, and a matching anti-pattern, all requiring the request-named input artifact's absolute live path in refs when the answer's baseline/old/claimed facts came from it. Generalises to any receipt/OCR/invoice/report/attachment comparison, not this trial's specific upload.",
+      "dependencies": [
+        {
+          "kind": "bin_help",
+          "path": "date.help.txt",
+          "why": "Trusted date provider used when product count/update handling invokes policy_update_scan."
+        },
+        {
+          "kind": "bin_help",
+          "path": "id.help.txt",
+          "why": "Actor identity pulled at session start (drives 'my' handling)."
+        },
+        {
+          "kind": "sql_table",
+          "path": "product_variants",
+          "why": "Public product facts, properties JSON, and the canonical catalogue record_path cited for each item in a catalogue comparison or claim-verification answer."
+        },
+        {
+          "kind": "sql_table",
+          "path": "product_variant_properties",
+          "why": "Per-SKU property rows (product_sku, property_key, property_value_*) used for claim verification."
+        },
+        {
+          "kind": "sql_table",
+          "path": "product_families",
+          "why": "Family/brand/model grouping used to identify products."
+        },
+        {
+          "kind": "sql_table",
+          "path": "product_kinds",
+          "why": "product_kind_id and product-kind scope for count questions."
+        },
+        {
+          "kind": "sql_table",
+          "path": "store_inventory",
+          "why": "Store/SKU availability source: available_today_quantity keyed by (store_id, product_sku)."
+        },
+        {
+          "kind": "sql_table",
+          "path": "stores",
+          "why": "Public store ids, record_path cite paths, city nuance targets, and open status."
+        },
+        {
+          "kind": "workspace",
+          "path": "/proc/stores/README.md",
+          "why": "Natural-language branch nuance used to choose between multiple stores in one city."
+        }
+      ],
+      "rollback": "Create a new version from v0018 content if requiring the request-named input artifact's path in refs causes over-citation on catalogue answers that did not actually derive a baseline fact from a handed-in document."
+    }
+  ]
+}

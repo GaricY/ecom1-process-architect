@@ -1,0 +1,7 @@
+# /bin/id --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: id
+Command returns list of roles associated with user id

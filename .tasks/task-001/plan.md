@@ -20,9 +20,9 @@
 6. Publish changes only as new immutable `instructions/units/<id>/vNNNN/`
    versions. Do not edit existing versions in place and do not commit.
 7. Run `PA_fix` against the refactored process set as a validation pass,
-   archive its proposed fixes under `.tasks/task-001/pa_1/`, and use the
-   failures to identify systemic refactor gaps rather than fitting to
-   dev-world tasks.
+   archive its proposed fixes under
+   `.tasks/task-001/pa_fix_run_20260618-034209/`, and use the failures to
+   identify systemic refactor gaps rather than fitting to dev-world tasks.
 8. Apply only systemic refactor-completion fixes from that analysis, such as
    shared request-named input evidence and required safe gate evidence that a
    topic BP failed to inherit. Keep task-specific overfit out of the active

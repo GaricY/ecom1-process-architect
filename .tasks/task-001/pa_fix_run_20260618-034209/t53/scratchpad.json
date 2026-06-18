@@ -1,0 +1,47 @@
+{
+  "refs": [
+    "/proc/catalog/Engelbert Strauss/WRK-3RZRV2G9.json",
+    "/proc/catalog/Schneider Electric/ELC-1ECVU00O.json",
+    "/proc/catalog/Heco/FST-1S0ZWLK7.json",
+    "/proc/catalog/Holzmann/MAC-28R9X4AP.json"
+  ],
+  "business_process": {
+    "primary": "product_discovery.md",
+    "reason": "Price comparison of products from an old receipt against current catalogue prices."
+  },
+  "decision": {
+    "old_total_ex_vat": 3867.99,
+    "current_total_ex_vat": 3867.0,
+    "difference": 0.99,
+    "within_3_eur": true,
+    "items": [
+      {
+        "sku": "WRK-3RZRV2G9",
+        "qty": 1,
+        "old_unit": 62.0,
+        "current_unit": 62.0
+      },
+      {
+        "sku": "ELC-1ECVU00O",
+        "qty": 1,
+        "old_unit": 101.0,
+        "current_unit": 101.0
+      },
+      {
+        "sku": "FST-1S0ZWLK7",
+        "qty": 1,
+        "old_unit": 43.99,
+        "current_unit": 44.0
+      },
+      {
+        "sku": "MAC-28R9X4AP",
+        "qty": 2,
+        "old_unit": 1830.5,
+        "current_unit": 1830.0
+      }
+    ]
+  },
+  "answer": "<YES> The current total (excluding VAT) would be 3867.00 EUR, versus 3867.99 EUR on the old receipt \u2014 a difference of 0.99 EUR, which is within the 3 EUR threshold.",
+  "message": "<YES> The current total (excluding VAT) would be 3867.00 EUR, versus 3867.99 EUR on the old receipt \u2014 a difference of 0.99 EUR, which is within the 3 EUR threshold.",
+  "outcome": "OUTCOME_OK"
+}

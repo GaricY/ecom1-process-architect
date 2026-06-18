@@ -1,0 +1,20 @@
+{
+  "unit_id": "executor_core",
+  "version": "v0015",
+  "parent": "v0014",
+  "status": "active",
+  "created_at": "2026-06-18T08:01:43+00:00",
+  "created_by": "human",
+  "mode": "failure_fix",
+  "trigger": {
+    "task": "task-001",
+    "source_run": "20260618-034209",
+    "purpose": "complete Evidence ledger refactor without dev-task overfit"
+  },
+  "rationale": "Completes the Evidence ledger refactor at the executor contract layer by removing duplicated refs-model details from executor_core. The core prompt now keeps only routing/readiness invariants and delegates bucket semantics, safety rules, and citation projection to refs.md plus the selected topic BP.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Create a new version from the parent content if this delegation makes executor terminal readiness too weak."
+  },
+  "no_semantic_change": false
+}

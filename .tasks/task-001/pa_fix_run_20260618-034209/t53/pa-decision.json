@@ -1,0 +1,12 @@
+{
+  "mode": "failure_fix",
+  "changes": [],
+  "subsumed": [
+    {
+      "unit_id": "bp_product_discovery",
+      "your_original_base": "v0018",
+      "current_latest": "v0019",
+      "rationale": "v0019 already fixes the exact failure my draft targeted (answer dropped the /uploads/ receipt that supplied the comparison baseline, failing with 'answer missing required reference <input path>'). Its new 'Comparison against a handed-in input document' section step 3 states the input artifact's own live path is a required ref and names the same grader rejection; its `refs_must_include` line 'Comparison-against-an-input answers: the absolute live path of the request-named input artifact ... in addition to the matched product_variants.record_path' plus the new `request_named_inputs` ledger bucket and the 'citing only the catalogue records, dropping the input file' anti-pattern reproduce my edit point-for-point. My only distinctive element (a note to respect the excluding-VAT unit basis when computing the total) addresses a computation concern that was not this failure — the Executor's total was correct and the outcome was OUTCOME_OK; only the reference was missing — so adding it would be scope creep, and v0019's privacy_and_disclosure caveat makes its refs handling more complete than my draft."
+    }
+  ]
+}
