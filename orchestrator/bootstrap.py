@@ -43,6 +43,7 @@ from bitgn.vm.ecom.ecom_pb2 import (
     NODE_KIND_FILE,
     ExecRequest,
     FindRequest,
+    ListRequest,
     ReadRequest,
     TreeRequest,
 )
@@ -50,7 +51,8 @@ from connectrpc.code import Code
 from connectrpc.errors import ConnectError
 from google.protobuf.json_format import MessageToDict
 
-from .sql_schema import format_from_csv
+from .proc_schema import build_recovered_schema_doc
+from .sql_schema import format_from_csv, parse_csv_rows
 
 READ_WORKERS = 10
 EXEC_WORKERS = 10
@@ -312,6 +314,16 @@ SQLITE_SCHEMA_QUERY = (
     "where sql is not null order by type, name;"
 )
 SQLITE_SCHEMA_FILE = "sqlite_schema.txt"
+
+# Fallback for when `/bin/sql` is unavailable: the warehouse is still exposed
+# as file-shaped JSON under `/proc`, so bootstrap samples records per family
+# and renders a structure-only schema document from those records.
+PROC_SCHEMA_RECOVERY_NOTE = (
+    "Recovered from live /proc JSON records because /bin/sql is unavailable "
+    "in this runtime."
+)
+PROC_SCHEMA_SAMPLE_PER_FAMILY = 60
+PROC_SCHEMA_FIND_LIMIT = 10000
 
 # Subdirectory inside every per-trial task_dir where stream/audit/manifest
 # artifacts live. Working docs (scratchpad/state/answer/result) and inputs
@@ -827,21 +839,110 @@ def _format_help_doc(*, tool: str, exit_code: int, stdout: str, stderr: str) -> 
     return f"{header}{body_stdout}{body_stderr}"
 
 
-def _build_sqlite_schema_doc(harness_url: str) -> str:
-    """Run the sqlite_schema discovery query and format the result.
+def _list_proc_families(vm) -> list[str]:
+    """Live `/proc` family directory names. They may vary by runtime."""
+    try:
+        res = vm.list(ListRequest(path="/proc"))
+    except Exception:
+        return []
+    d = MessageToDict(res, preserving_proto_field_name=True)
+    return [
+        name
+        for e in d.get("entries", [])
+        if e.get("kind") == "NODE_KIND_DIR"
+        and (name := (e.get("name") or "").strip("/"))
+    ]
 
-    On any failure (transport, /bin/sql exit≠0, parse error producing empty
-    output) writes a placeholder noting the failure with the raw stdout/
-    stderr — bootstrap stays robust and the agent can still re-run the
-    discovery query itself.
+
+def _sample_proc_family(vm, harness_url: str, family: str) -> dict | None:
+    """Find and read a representative JSON-record sample for one `/proc` family."""
+    root = f"/proc/{family}"
+    try:
+        found = vm.find(
+            FindRequest(
+                root=root,
+                name="",
+                kind=NODE_KIND_FILE,
+                limit=PROC_SCHEMA_FIND_LIMIT,
+            )
+        )
+    except Exception:
+        return None
+    fd = MessageToDict(found, preserving_proto_field_name=True)
+    paths = sorted(
+        p
+        for p in fd.get("paths", [])
+        if p.endswith(".json") and not p.rsplit("/", 1)[-1].startswith("__")
+    )
+    if not paths:
+        return None
+    total = len(paths)
+    truncated = bool(fd.get("truncated"))
+    if total > PROC_SCHEMA_SAMPLE_PER_FAMILY:
+        step = total / PROC_SCHEMA_SAMPLE_PER_FAMILY
+        idx = sorted({int(i * step) for i in range(PROC_SCHEMA_SAMPLE_PER_FAMILY)})
+        sample_paths = [paths[i] for i in idx if i < total]
+    else:
+        sample_paths = paths
+
+    fetched = _read_paths_parallel(harness_url, sample_paths, workers=READ_WORKERS)
+    records: list[dict] = []
+    for p in sample_paths:
+        r = fetched.get(p)
+        if r is None:
+            continue
+        content_bytes, _sha = r
+        try:
+            obj = json.loads(content_bytes.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if isinstance(obj, dict):
+            records.append(obj)
+    if not records:
+        return None
+    return {
+        "records": records,
+        "total": total,
+        "sampled": len(records),
+        "truncated": truncated,
+    }
+
+
+def _recover_schema_from_proc(harness_url: str) -> str | None:
+    """Reconstruct the warehouse schema doc from the live `/proc` projection."""
+    vm = make_vm(harness_url)
+    families = _list_proc_families(vm)
+    if not families:
+        return None
+    samples: dict[str, dict] = {}
+    for fam in families:
+        sample = _sample_proc_family(vm, harness_url, fam)
+        if sample:
+            samples[fam] = sample
+    if not samples:
+        return None
+    return build_recovered_schema_doc(samples, note=PROC_SCHEMA_RECOVERY_NOTE)
+
+
+def _build_sqlite_schema_doc(harness_url: str) -> str:
+    """Build `bin-help/sqlite_schema.txt`.
+
+    Primary path: `/bin/sql` sqlite_schema discovery query. If `/bin/sql`
+    fails or returns no schema rows, recover a structure-only schema from
+    live `/proc` JSON records. Only if both paths fail do we write a diagnostic
+    placeholder.
     """
     vm = make_vm(harness_url)
     try:
         res = vm.exec(ExecRequest(path="/bin/sql", args=[SQLITE_SCHEMA_QUERY]))
     except Exception as exc:
+        recovered = _recover_schema_from_proc(harness_url)
+        if recovered:
+            return recovered
         return (
             "# SQLite schema (warehouse DB) — query via /bin/sql\n"
             f"# [sqlite_schema fetch failed: {exc}]\n"
+            "# [/proc recovery unavailable]\n"
             f"# Re-run: /bin/sql '{SQLITE_SCHEMA_QUERY}'\n"
         )
 
@@ -849,12 +950,20 @@ def _build_sqlite_schema_doc(harness_url: str) -> str:
     stdout = res.stdout or ""
     stderr = res.stderr or ""
     if exit_code != 0:
+        recovered = _recover_schema_from_proc(harness_url)
+        if recovered:
+            return recovered
         return (
             "# SQLite schema (warehouse DB) — query via /bin/sql\n"
             f"# [sqlite_schema query exit_code={exit_code}]\n"
             f"# stderr: {stderr.strip()}\n"
+            "# [/proc recovery unavailable]\n"
             f"# Re-run: /bin/sql '{SQLITE_SCHEMA_QUERY}'\n"
         )
+    if not parse_csv_rows(stdout):
+        recovered = _recover_schema_from_proc(harness_url)
+        if recovered:
+            return recovered
     return format_from_csv(stdout)
 
 

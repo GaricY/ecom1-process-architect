@@ -45,7 +45,6 @@ from .report import (
 )
 from .task_dir import PreparedTaskDir, materialize
 
-RUN_NAME = "@GaricY Process Architect postmortem"
 ERR_INTERNAL_OUTCOME = "OUTCOME_ERR_INTERNAL"
 
 
@@ -212,6 +211,7 @@ def parse_args(cfg: Config) -> argparse.Namespace:
     p.add_argument("--bitgn-api-key", default=cfg.bitgn_api_key)
     p.add_argument("--host", default=cfg.benchmark_host)
     p.add_argument("--benchmark", default=cfg.benchmark_id)
+    p.add_argument("--run-name", default=cfg.run_name)
     p.add_argument("--claude-bin", default=cfg.claude_bin)
     p.add_argument("--model", default=cfg.claude_model)
     p.add_argument(
@@ -1123,7 +1123,7 @@ async def amain() -> int:
             file=sys.stderr,
         )
 
-    print(f"Run name:               {RUN_NAME}")
+    print(f"Run name:               {opts.run_name}")
     print(f"Run dir:                {run_dir}")
     print(f"Benchmark:              {opts.benchmark}")
     print(f"Host:                   {opts.host}")
@@ -1202,7 +1202,7 @@ async def amain() -> int:
     print()
 
     print(
-        f"Run mode: {RUN_NAME}"
+        f"Run mode: {opts.run_name}"
         f"{' (with API key)' if opts.bitgn_api_key else ' (anonymous)'}"
         f"{' [will submit]' if opts.submit else ' [no submit]'}"
     )
@@ -1210,7 +1210,7 @@ async def amain() -> int:
         run_id_str, trial_ids = harness.start_run(
             opts.host,
             benchmark_id=opts.benchmark,
-            name=RUN_NAME,
+            name=opts.run_name,
             api_key=opts.bitgn_api_key or "",
         )
     except Exception as exc:
@@ -1230,7 +1230,7 @@ async def amain() -> int:
                     "harness_run_id": run_id_str,  # real BitGN run id
                     "benchmark": opts.benchmark,
                     "host": opts.host,
-                    "run_name": RUN_NAME,
+                    "run_name": opts.run_name,
                     "trial_ids": list(trial_ids),
                 },
                 indent=2,
@@ -1250,7 +1250,7 @@ async def amain() -> int:
         run_id=run_id,
         harness_run_id=run_id_str,
         benchmark=opts.benchmark,
-        run_name=RUN_NAME,
+        run_name=opts.run_name,
         model=opts.model,
         effort=opts.effort,
         concurrency=opts.concurrency,

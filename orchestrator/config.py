@@ -15,6 +15,7 @@ class Config:
     bitgn_api_key: str
     benchmark_host: str
     benchmark_id: str
+    run_name: str
 
     claude_bin: str
     claude_model: str
@@ -122,6 +123,7 @@ def load_config(env: dict[str, str | None] | None = None) -> Config:
         benchmark_id=(
             e.get("BENCHMARK_ID") or e.get("BENCH_ID") or "bitgn/ecom1-dev"
         ),
+        run_name=e.get("RUN_NAME") or "@GaricY Process Architect postmortem",
         claude_bin=e.get("CLAUDE_BIN") or "claude",
         claude_model=e.get("CLAUDE_MODEL") or "claude-sonnet-4-6",
         claude_reasoning_effort=_coerce_effort(

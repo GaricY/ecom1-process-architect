@@ -113,6 +113,23 @@ CONCURRENCY=1 uv run python -m orchestrator.main t01 --no-submit
 передавайте `--no-submit`. `make run` гонит весь бенчмарк; `make task
 TASKS="t01 t05"` и `make limit N=5` — подмножества.
 
+## Порядок prod postmortem-прогона
+
+Для чистого postmortem-прогона dev → prod используйте подробный план в
+[.tasks/task-005/plan.md](.tasks/task-005/plan.md). Коротко:
+
+1. Держать prod `executor_core` как подготовленный артефакт
+   (`.tasks/task-005/executor_core_prod/`), а не как активную dev-версию.
+2. Запустить один prod-прогон-носитель с отправкой результата, `world_refresh` и
+   `--stale-resolution wait_for_refresh`.
+3. После refresh пометить старые BP-версии как stale/retired, но сохранить
+   историю; resolver не должен откатываться на исторические active-версии.
+4. Проверить короткое prod-подмножество с отправкой результата и
+   `--pa-llm-concurrency 0`.
+5. Полные prod-submit запускать на замороженном состоянии:
+   `--pa-llm-concurrency 0
+   --no-world-refresh --no-refresh --no-pa-fix`, concurrency `15`.
+
 ## Конфигурация
 
 Задаётся через переменную окружения или соответствующий CLI-флаг.
@@ -122,6 +139,7 @@ TASKS="t01 t05"` и `make limit N=5` — подмножества.
 | `BITGN_API_KEY` | — | Нужна для `start_run` (анонимным прогонам тоже). Лежит в `.env`. |
 | `BITGN_HOST` / `BENCHMARK_HOST` | `https://api.bitgn.com` | URL харнеса. |
 | `BENCHMARK_ID` / `BENCH_ID` | `bitgn/ecom1-dev` | Какой бенчмарк гонять (`…-dev` / `…-prod`). |
+| `RUN_NAME` / `--run-name` | `@GaricY Process Architect postmortem` | Имя, которое уходит в `start_run` и показывается в отчётах/лидерборде. |
 | `CONCURRENCY` | `1` | Параллельные trial-воркеры; он же бьёт fan-out `start_trial` и bootstrap. |
 | `CLAUDE_MODEL` / `--model` | `claude-sonnet-4-6` | Модель Executor'а. |
 | `CLAUDE_REASONING_EFFORT` / `--effort` | `high` | Effort Executor'а (`low`/`medium`/`high`/`xhigh`/`max`). |

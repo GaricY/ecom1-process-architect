@@ -111,6 +111,21 @@ The default benchmark is `bitgn/ecom1-dev` (open, scored). A subset run still
 should not be published. `make run` runs the whole benchmark; `make task
 TASKS="t01 t05"` and `make limit N=5` cover subsets.
 
+## Postmortem prod runbook
+
+For a clean dev → prod postmortem run, use the detailed plan in
+[.tasks/task-005/plan.md](.tasks/task-005/plan.md). In short:
+
+1. Keep the prod `executor_core` prompt as a prepared artifact
+   (`.tasks/task-005/executor_core_prod/`), not as an active dev unit.
+2. Run one submitted prod `world_refresh` carrier with
+   `--stale-resolution wait_for_refresh`.
+3. After the refresh, mark old BP versions stale/retired but keep their history;
+   the resolver must not fall back to historical active versions.
+4. Validate a short submitted prod subset with `--pa-llm-concurrency 0`.
+5. Run full prod submits frozen: `--pa-llm-concurrency 0 --no-world-refresh
+   --no-refresh --no-pa-fix`, concurrency `15`.
+
 ## Configuration
 
 Set via environment or the matching CLI flag.
@@ -120,6 +135,7 @@ Set via environment or the matching CLI flag.
 | `BITGN_API_KEY` | — | Required for `start_run` (anonymous runs need it too). Lives in `.env`. |
 | `BITGN_HOST` / `BENCHMARK_HOST` | `https://api.bitgn.com` | Harness URL. |
 | `BENCHMARK_ID` / `BENCH_ID` | `bitgn/ecom1-dev` | Benchmark to run (`…-dev` / `…-prod`). |
+| `RUN_NAME` / `--run-name` | `@GaricY Process Architect postmortem` | Name sent to `start_run` and shown in reports/leaderboard. |
 | `CONCURRENCY` | `1` | Parallel trial workers; also bounds `start_trial` fan-out and bootstrap. |
 | `CLAUDE_MODEL` / `--model` | `claude-sonnet-4-6` | Executor model. |
 | `CLAUDE_REASONING_EFFORT` / `--effort` | `high` | Executor effort (`low`/`medium`/`high`/`xhigh`/`max`). |
