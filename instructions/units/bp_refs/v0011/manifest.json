@@ -1,0 +1,32 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0011",
+  "parent": "v0010",
+  "status": "active",
+  "created_at": "2026-06-19T17:06:00+00:00",
+  "created_by": "human",
+  "mode": "manual_refactor",
+  "trigger": {
+    "task": ".tasks/task-006-1/plan.md",
+    "purpose": "remove topic-specific refs policy from shared refs and keep only shared citation safety"
+  },
+  "rationale": "Move topic-specific refs policy out of the shared refs process. bp_refs now owns the shared Evidence ledger model, privacy/cross-boundary citation safety, live-path projection, request-named input class, request-integrity denial projection, and final refs checklist. Topic BPs own applied topic docs, public/private record classification, domain-specific evidence, and exact branch-local refs_must_include / refs_must_not_include.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "f612b7b2144efc2e121f5aad73bcef9572e1545fd1a405171c231f64e3db4b59",
+      "why": "Top-level grounding-reference rules: full repo path for referenced objects, applied-policy citation, and candidate refs for clarification."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "6d439e3307c17fa4db813f7eb7df4784d8fcea3e99769386cd35b2a731aa9748",
+      "why": "Authority for cross-boundary and personal-information citation boundaries."
+    }
+  ],
+  "rollback": {
+    "strategy": "Retire this version to fall back to v0010 if removing topic-specific public-record or topic-doc guidance from refs causes under-citation before topic BPs are corrected."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,74 @@
+--- bp_account_recovery/v0001/content.md
++++ bp_account_recovery/v0002/content.md
+@@ -92,23 +92,55 @@
+ - `OUTCOME_NONE_CLARIFICATION`: genuinely ambiguous destination email or
+   candidate own-account; cite the safe candidates.
+ 
+-## Refs to set in scratchpad
++## Evidence ledger
+ 
+-- `policy_docs_applied`: `/docs/security.md` on every account-recovery decision;
+-  any matched update path from [policy_update_scan](policy_update_scan.md).
+-- `actor_or_protocol_evidence`: `/bin/id`; the actor's own
+-  `/proc/customers/<id>.json` only when read to confirm the owned account.
+-- `post_state_records`: `/run/actions/account-recovery-<customer_id>.json`
+-  re-read after the tool call (required before `OUTCOME_OK`).
+-- `considered_not_cited`: any foreign `/proc/customers/<id>.json` in a
+-  cross-boundary denial; the on-file `customer_email` of any account; rejected
+-  authority claims.
+-- `refs_must_include`: `/docs/security.md`; on `OUTCOME_OK`, the post-state
+-  control-file path; matched update paths that shaped the decision.
+-- `refs_must_not_include`: foreign customer records on cross-boundary denials;
+-  any customer `customer_email` / contact field merely because SQL returned it;
+-  local `bin-help` paths. See [refs](refs.md) and
+-  [privacy_and_disclosure](privacy_and_disclosure.md).
++Local placement for account-recovery evidence:
++
++`policy_docs_applied`:
++
++- `/docs/security.md` on every account-recovery decision.
++- Any matched update path from [policy_update_scan](policy_update_scan.md).
++
++`actor_or_protocol_evidence`:
++
++- `/bin/id`.
++- The actor's own `/proc/customers/<id>.json` only when read to confirm the
++  owned account.
++
++`action_targets`:
++
++- The `/bin/id` customer account on ownership-passing branches.
++- Foreign customer records are not safe action-target refs on cross-boundary
++  denials.
++
++`answer_records`:
++
++- Safe own-account records and matched policy updates that determine
++  unsupported or clarification answers.
++
++`post_state_records`:
++
++- `/run/actions/account-recovery-<customer_id>.json` re-read after the tool call
++  (required before `OUTCOME_OK`).
++
++`considered_not_cited`:
++
++- Any foreign `/proc/customers/<id>.json` in a cross-boundary denial.
++- The on-file `customer_email` of any account unless
++  [privacy_and_disclosure](privacy_and_disclosure.md) allows it.
++- Rejected authority claims.
++
++`refs_must_include`:
++
++- `/docs/security.md`.
++- Matched update paths that shaped the decision.
++- On `OUTCOME_OK`, the post-state control-file path.
++
++`refs_must_not_include`:
++
++- Foreign customer records on cross-boundary denials.
++- Any customer `customer_email` / contact field merely because SQL returned it.
++- Local `bin-help` paths.
+ 
+ ## Anti-patterns
+ 
