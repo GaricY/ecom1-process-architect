@@ -34,7 +34,7 @@ import difflib
 import json
 import re
 import shutil
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -1044,62 +1044,6 @@ def merge_relocation_reports(
         added=sorted(added),
         renamed_changed=renamed_changed,
     )
-
-
-def prune_unreferenced_added(
-    report: RelocationReport,
-    *,
-    current_trees: Iterable[tuple[Path | None, str]],
-    always_keep_basenames: tuple[str, ...] = ("AGENTS.MD", "README.md"),
-) -> RelocationReport:
-    """Drop `added` paths that nothing in the current world references.
-
-    The `added` bucket otherwise force-surfaces EVERY new file as "read it live,
-    source of truth" — including dated scoped-update distractor docs (e.g.
-    `/docs/policy-updates/<dated>.md`) that the world documents as
-    discover-by-rule, not by link. The baseline snapshot is a selective dump
-    that never captures those, so they show up as `added` on every trial.
-
-    A new file is kept only if it is **reachable**: some OTHER current-world file
-    mentions its path (workspace-absolute `/docs/...` or its basename) — i.e. it
-    is "derivable from README/AGENTS" and the rest of the doc graph. Index files
-    themselves (`README.md` / `AGENTS.MD`) are always kept. Only `added` is
-    pruned; moved/renamed/removed are genuine baseline deltas.
-
-    `current_trees` is `[(root, rel_prefix), ...]` for the live trees (vault +
-    bin-help), so a reference from any of them counts.
-    """
-    if not report.added:
-        return report
-    corpus: dict[str, str] = {}
-    for root, rp in current_trees:
-        if root is None or not root.is_dir():
-            continue
-        pfx = rp.rstrip("/")
-        pfx = pfx + "/" if pfx else ""
-        for p in root.rglob("*"):
-            if not p.is_file() or p.name == "__sample__.json":
-                continue
-            try:
-                corpus[pfx + p.relative_to(root).as_posix()] = _decode(p.read_bytes())
-            except OSError:
-                continue
-    kept: list[str] = []
-    for ap in report.added:
-        base = ap.rsplit("/", 1)[-1]
-        if base in always_keep_basenames:
-            kept.append(ap)
-            continue
-        disp = display_path(ap)
-        if any(
-            (disp in text or base in text)
-            for other, text in corpus.items()
-            if other != ap
-        ):
-            kept.append(ap)
-    if len(kept) == len(report.added):
-        return report
-    return replace(report, added=kept)
 
 
 def relocations_payload(report: RelocationReport) -> dict[str, Any]:

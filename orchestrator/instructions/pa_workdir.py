@@ -1811,19 +1811,6 @@ def _materialise_world_refresh_workdir(
     binhelp_reloc = world_baseline.detect_relocations(
         bl_bin_help, task_dir / "bin-help", rel_prefix="bin-help/"
     )
-    # Drop `added` files that nothing references (e.g. dated policy-update
-    # distractors discovered by rule, not by link) so they aren't surfaced as
-    # "new files" to the PA either — same reachability rule as the executor.
-    current_trees = [
-        (task_dir / "vault", "vault/"),
-        (task_dir / "bin-help", "bin-help/"),
-    ]
-    vault_reloc = world_baseline.prune_unreferenced_added(
-        vault_reloc, current_trees=current_trees
-    )
-    binhelp_reloc = world_baseline.prune_unreferenced_added(
-        binhelp_reloc, current_trees=current_trees
-    )
     reloc_report = world_baseline.merge_relocation_reports(
         [vault_reloc, binhelp_reloc]
     )

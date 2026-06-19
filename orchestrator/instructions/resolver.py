@@ -474,17 +474,6 @@ def _write_executor_attention(
                 ),
             ]
         )
-        # Drop `added` files that nothing references — a dated scoped-update
-        # distractor (`/docs/policy-updates/<dated>.md`, discovered by rule not
-        # by link) is never in the selective baseline, so it would otherwise be
-        # force-surfaced to the executor as a "new file" every trial.
-        reloc_report = world_baseline.prune_unreferenced_added(
-            reloc_report,
-            current_trees=[
-                (task_dir / "vault", "vault/"),
-                (task_dir / "bin-help", "bin-help/"),
-            ],
-        )
     reloc_has = reloc_report is not None and reloc_report.has_content
 
     if not world_drift and not stale_units and not reloc_has:
