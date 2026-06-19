@@ -379,18 +379,22 @@ def compute_drift(
         entry = fp.get(wf.kind, wf.path)
         current_sha = entry.sha256
         if baseline_sha is None and current_sha is None:
-            # File missing both at baseline time and now — log as missing
-            # so an operator can spot a world.json typo.
-            out.append(
-                DriftEntry(
-                    kind=wf.kind,
-                    path=wf.path,
-                    why=wf.why,
-                    baseline_sha256=None,
-                    current_sha256=None,
-                    status="missing_in_current",
+            # With no accepted baseline yet, surface missing world.json
+            # entries so seed/preflight failures are visible. Once a
+            # baseline exists, "missing on both sides" means a prior
+            # baseline accepted this deletion; do not keep re-drifting on
+            # explicit world.json paths that the upstream world removed.
+            if baseline is None:
+                out.append(
+                    DriftEntry(
+                        kind=wf.kind,
+                        path=wf.path,
+                        why=wf.why,
+                        baseline_sha256=None,
+                        current_sha256=None,
+                        status="missing_in_current",
+                    )
                 )
-            )
             continue
         if baseline_sha is None:
             out.append(
@@ -495,11 +499,15 @@ def write_new_baseline(
         sha = entry.sha256
         content = entry.content
         if sha is None or content is None:
-            raise FileNotFoundError(
-                f"world file missing at hash time: {wf.kind}:{wf.path}. "
-                "Cannot seed/advance baseline against an incomplete trial "
-                "dump."
-            )
+            # The upstream world can legitimately delete a file tracked by
+            # the previous baseline or by an explicit world.json entry.
+            # Advance the baseline by omitting it from the new snapshot;
+            # _build_baseline_diff still sees this world_files entry and
+            # records the deletion against the parent snapshot when one
+            # existed. Seed/preflight keeps rejecting missing files via
+            # init_baseline_from_task_dir(), where there is no parent
+            # deletion to accept.
+            continue
         snap_target = tmp_dir / "snapshot" / snapshot_rel(wf.kind, wf.path)
         snap_target.parent.mkdir(parents=True, exist_ok=True)
         snap_target.write_bytes(content)
