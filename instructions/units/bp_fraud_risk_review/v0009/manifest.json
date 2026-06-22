@@ -2,7 +2,7 @@
   "unit_id": "bp_fraud_risk_review",
   "version": "v0009",
   "parent": "v0008",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-22T07:03:13+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -37,5 +37,7 @@
   "rollback": {
     "strategy": "Create a new version from v0008 content if the narrowed timestamp rule or the impossible-travel run-expansion proves wrong (v0008 keeps identical-created_at as a hard collision and pairwise travel membership)."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T11:41:56+00:00",
+  "retired_reason": "superseded by prod PA-fix v0010; prevent hash-mismatch fallback to intermediate PA-fix process version while keeping version history"
 }

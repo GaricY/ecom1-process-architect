@@ -2,7 +2,7 @@
   "unit_id": "bp_index",
   "version": "v0010",
   "parent": "v0009",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-22T08:03:27+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -30,5 +30,7 @@
   "rollback": {
     "strategy": "Create a new version from bp_index v0009 content to drop the filesystem/OS housekeeping routing trigger and revert rule 9 to the plain 'no runtime tool -> OUTCOME_NONE_UNSUPPORTED' wording."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T11:41:56+00:00",
+  "retired_reason": "superseded by prod PA-fix v0011; prevent hash-mismatch fallback to intermediate PA-fix process version while keeping version history"
 }

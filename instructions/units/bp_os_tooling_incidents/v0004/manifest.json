@@ -2,7 +2,7 @@
   "unit_id": "bp_os_tooling_incidents",
   "version": "v0004",
   "parent": "v0003",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-22T00:02:07+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -31,5 +31,7 @@
   "rollback": {
     "strategy": "Restore bp_os_tooling_incidents v0003 content with the os-and-tooling-incidents doc and claude/codex 'Embrace AI' dependencies and re-add its index route."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T11:41:56+00:00",
+  "retired_reason": "superseded by prod PA-fix versions; prevent hash-mismatch fallback to world-refresh process version while keeping version history"
 }

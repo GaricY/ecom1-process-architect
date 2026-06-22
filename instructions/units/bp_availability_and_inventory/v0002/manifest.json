@@ -2,7 +2,7 @@
   "unit_id": "bp_availability_and_inventory",
   "version": "v0002",
   "parent": "v0001",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-22T06:32:42+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -48,5 +48,7 @@
   "rollback": {
     "strategy": "Create a new version from v0001 content if requiring a catalogue ref for every request-named SKU over-cites (e.g. cites 0-availability SKUs the grader does not want)."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T11:41:56+00:00",
+  "retired_reason": "superseded by prod PA-fix v0003; prevent hash-mismatch fallback to intermediate PA-fix process version while keeping version history"
 }

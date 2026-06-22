@@ -2,7 +2,7 @@
   "unit_id": "bp_index",
   "version": "v0009",
   "parent": "v0008",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-22T00:02:07+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -18,5 +18,7 @@
   "rollback": {
     "strategy": "Restore bp_index v0008 content; the old routing table, the SQL-based product_discovery row, the account-recovery and os-tooling rows, and the /bin/payments refund routes return."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T11:41:56+00:00",
+  "retired_reason": "superseded by prod PA-fix versions; prevent hash-mismatch fallback to world-refresh process version while keeping version history"
 }
