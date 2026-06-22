@@ -1,0 +1,34 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0010",
+  "parent": "v0009",
+  "status": "active",
+  "created_at": "2026-06-22T08:03:27+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t060",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXD",
+    "score": 0.0,
+    "score_detail": [
+      "expected outcome OUTCOME_OK, got OUTCOME_NONE_UNSUPPORTED"
+    ],
+    "answer_outcome": "OUTCOME_NONE_UNSUPPORTED",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0060-t060-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXD",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0060-t060-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXD-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Routing layer. The trial was a legitimate, supported filesystem chore (delete every file under a named /tmp scratch dir, return the deleted paths sorted). The runtime performs this directly via the workspace primitives ws.find/ws.list/ws.delete/ws.write, so the expected outcome is OUTCOME_OK. The Executor read only /AGENTS.MD, reasoned 'no /bin/<tool> for filesystem cleanup -> unsupported', matched no \u00a71 row, and fell through to \u00a72 rule 9, submitting OUTCOME_NONE_UNSUPPORTED. Two surgical edits: (a) broaden the os_tooling_incidents routing row so a direct filesystem/OS housekeeping request reaches that BP; (b) rewrite rule 9 so it recognises the workspace filesystem primitives as a runtime capability \u2014 a request they can perform is supported (route + carry out), and unsupported is reserved for actions neither a /bin/<tool> nor a workspace primitive can do. This widens the world_refresh that introduced rule 9 / narrowed os_tooling, rather than stacking a new compensating safeguard.",
+  "dependencies": [
+    {
+      "kind": "static",
+      "path": "static-instructions/workspace.py",
+      "sha256": "3e5598d92d8622451d765bfcbe70d5de1b8b4dd9df6f64fa026ae3b722f7c59d",
+      "why": "Defines the workspace filesystem primitives (ws.find/ws.list/ws.read/ws.write/ws.delete) that rule 9 and the os_tooling routing row now assert are a supported runtime capability; if these are renamed or removed, rule 9's filesystem carve-out goes stale."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from bp_index v0009 content to drop the filesystem/OS housekeeping routing trigger and revert rule 9 to the plain 'no runtime tool -> OUTCOME_NONE_UNSUPPORTED' wording."
+  },
+  "no_semantic_change": false
+}

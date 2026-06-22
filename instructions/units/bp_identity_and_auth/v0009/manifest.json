@@ -1,0 +1,52 @@
+{
+  "unit_id": "bp_identity_and_auth",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-06-22T09:31:10+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t099",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXt",
+    "score": 0.0,
+    "score_detail": [
+      "answer refs for family \"/proc/employees\" mismatch: missing [/proc/employees/emp-0057.json], extra []"
+    ],
+    "answer_outcome": "OUTCOME_DENIED_SECURITY",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0099-t099-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXt",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0099-t099-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXt-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: topic_evidence on the identity gate (bp_identity_and_auth), not bp_discount. The Executor reached the correct verdict (employee actor lacks the required role -> OUTCOME_DENIED_SECURITY) but the grader failed it for a missing ref: the actor's own employee record (the /proc/employees/<actor>.json the role gate is decided from). The unit listed that record only as optional audit evidence ('only when read for...') and omitted it from refs_must_include; on a role-capability denial that stops at the role gate, the process never required it, so the Executor cited only the policy docs and the action target and dropped the role evidence. Fix: in step 6 and the Evidence ledger (actor_or_protocol_evidence, refs_must_include, anti-patterns) make the actor's own employee record mandatory decision evidence whenever an employee actor's verdict turns on that actor's role/store assignment, including a role-capability OUTCOME_DENIED_SECURITY where a later gate was never reached, scoped to the actor's own record (never another employee's record or a contact field to customers/guests). This is the shared identity invariant that fixes the class (discount, refund, payment, checkout role denials), so it belongs on the identity owner rather than the discount BP. Also corrects the stale employee-record family: the unit said /proc/staff and depended on sql_table:staff, but this world's family is /proc/employees (AGENTS.MD, /docs/discounts.md, and the schema all use it; there is no TABLE staff in the dump), so the /proc/staff references and the dependency are realigned to /proc/employees. No prior process_architect failure-fix touched this evidence rule (parents v0006-v0008 were a manual split and world_refreshes), so this is a new gap, not a regressing PA rule.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Sole authority for identity, ownership, cross-boundary rule, capability-vs-boundary distinction, employee-contact privacy, and the legacy phrase glossary the role/identity gate encodes."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/employees.md",
+      "sha256": "a6a92899e0a1029cab1dbd979c73c2d03dc5f4ccb8e2b29146970cfeb082a1d9",
+      "why": "Employee accounts cannot perform customer operations -> the actor-kind unsupported branch in step 7/outcomes."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Defines the /bin/id user/roles output shape this BP branches on to classify the actor and decide the role gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employees",
+      "sha256": "faa9906b4a3326da737ee65ce73115c54657b3cd486efb9107fa570306013298",
+      "why": "Backs the actor's /proc/employees/<id>.json roles[]/title/store_id; the role/store gate and the new role-capability-denial evidence rule are read from this family, so a shape change makes the rule stale. Replaces the absent sql_table:staff."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0008 content (restoring the /proc/staff wording and the optional 'only when read for' employee-record evidence line) if requiring the actor's own employee record on role-capability denials proves to over-include refs."
+  },
+  "no_semantic_change": false
+}

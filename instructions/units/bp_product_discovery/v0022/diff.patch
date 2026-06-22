@@ -1,0 +1,72 @@
+--- bp_product_discovery/v0021/content.md
++++ bp_product_discovery/v0022/content.md
+@@ -2,7 +2,7 @@
+ 
+ ## When this process applies
+ 
+-A catalogue question: "which product / which SKU is this?", product properties, brand/model/family identity, fulfillment type, return policy, or a **catalogue claim-verification** ("a note claims product P has properties A and also B — check the catalogue and cite the exact record"). Also **comparison-against-an-input**: the task hands you a receipt / OCR / invoice / report and asks you to compare today's catalogue prices or properties against it. Information-only — never mutates. For "is X available today at Y" / stock-count / inventory, route to [availability_and_inventory](availability_and_inventory.md). For "my basket / order / payment", route through [identity_and_auth](identity_and_auth.md) and the relevant action BP.
++A catalogue question: "which product / which SKU is this?", product properties, brand/model/family identity, fulfillment type, return policy, a **product existence / match query** ("does a product matching <all these specs> exist?", "is there a product that …?" — a yes/no verdict over the whole requested spec), or a **catalogue claim-verification** ("a note claims product P has properties A and also B — check the catalogue and cite the exact record"). Also **comparison-against-an-input**: the task hands you a receipt / OCR / invoice / report and asks you to compare today's catalogue prices or properties against it. Information-only — never mutates. For "is X available today at Y" / stock-count / inventory, route to [availability_and_inventory](availability_and_inventory.md). For "my basket / order / payment", route through [identity_and_auth](identity_and_auth.md) and the relevant action BP.
+ 
+ ## Inputs
+ 
+@@ -21,9 +21,17 @@
+ 3. **SKU lookup answer rule (`/AGENTS.MD`).** Answer `OUTCOME_OK` with the SKU only when **exactly one** product matches. If the request is ambiguous, answer `OUTCOME_NONE_CLARIFICATION`, ask which product is meant, and cite **every** candidate product record. From `/docs/catalogue-lookup.md`: "When user talks about products - quote all matches and relevant references, mentioned SKUs."
+ 4. Record the domain verdict and any required identifier/path payload; [submission_terminal](submission_terminal.md) owns the final answer formatting (bare SKU, yes/no `TRUE(1)`/`FALSE(0)`, prose).
+ 
++### Product existence / match query
++
++"Does such a product exist?", "is there a product that matches <all these specs>?", "do we sell a <full spec>?" — a yes/no verdict over the **whole** requested description treated as one conjunction. The brief does **not** pre-name one product to cite; every descriptor (brand, kind, kit, and each property such as a `battery_platform`) is part of the search filter, not a separate "base product + extra claim".
++
++1. Narrow `/proc/catalog` candidates and read them. A record is a **match** only when its own fields/`properties` satisfy **every** requested spec at once.
++2. Verdict: some record matches all specs → exists; no record matches all specs → does not exist. A record that matches most descriptors but fails even one requested property (e.g. the right kit but a different `battery_platform`) is a **rejected near-miss**, not a match. [submission_terminal](submission_terminal.md) shapes the yes/no token.
++3. Refs: cite a `/proc/catalog` record only when it is a full match. On a "does not exist" answer **cite nothing** — the near-misses you read to disprove existence stay in `scratchpad` as `considered_not_cited`, exactly as a disqualified product is never cited on availability. Do not promote a near-miss to a ref because it carried most of the requested specs.
++
+ ### Catalogue claim verification
+ 
+-A single-record verification: does **one** catalogue row carry **all** the claimed properties?
++A single-record verification of a **pre-identified** product: a note names product P (and asks you to "cite the exact record") and you check whether that **one** catalogue row carries **all** the claimed properties. An open "does such a product exist / which product matches all of <spec>" question is instead a *Product existence / match query* (above), where a near-miss is not cited.
+ 
+ 1. Identify the base SKU — the `/proc/catalog` row matching the primary identifying claims (narrow by brand / series / model / `kind_id`, then by the identifying `properties`). There should be exactly one; if several match and you cannot narrow, treat as ambiguous (clarification).
+ 2. The "extra claim" is a property attributed to the **same** base SKU. Each catalog record has one `properties` object — one value per key. A claim that the base SKU has two values for one property (e.g. pack count 500 and also 100) cannot be true.
+@@ -40,7 +48,7 @@
+ 
+ ## Outcomes
+ 
+-- `OUTCOME_OK`: the catalogue question is answered with the right shape (exactly-one SKU, claim verdict, comparison result).
++- `OUTCOME_OK`: the catalogue question is answered with the right shape (exactly-one SKU, existence yes/no, claim verdict, comparison result).
+ - `OUTCOME_NONE_CLARIFICATION`: the request matches several SKUs and cannot be narrowed; cite every candidate.
+ - `OUTCOME_NONE_UNSUPPORTED`: the question needs data not present in the catalogue (rare), or asks for a mutation this BP does not own.
+ - `OUTCOME_DENIED_SECURITY`: only if a "discovery" question was actually a customer-scoped action disguised as discovery — route to the actor-specific BP.
+@@ -59,20 +67,24 @@
+ `answer_records`:
+ 
+ - `/proc/catalog` records that determine the answer; copy the live read path verbatim.
++- On an existence/match query, only a `/proc/catalog` record that satisfies **every** requested spec; a "does not exist" verdict has no answer record.
+ 
+ `considered_not_cited`:
+ 
+ - Products considered and rejected when the final answer does not identify them; sibling SKUs read only to disprove an extra claim.
++- Near-miss records that fail one or more requested specs on an existence/match query.
+ 
+ `refs_must_include`:
+ 
+ - The matched base SKU's `/proc/catalog/...json` on claim verification.
++- On a TRUE existence/match query, the single full-match `/proc/catalog/...json`.
+ - Every candidate `/proc/catalog/...json` on `OUTCOME_NONE_CLARIFICATION`.
+ - The request-named input artifact path on comparison answers, plus the catalogue records compared against.
+ 
+ `refs_must_not_include`:
+ 
+ - Sibling SKUs that only served audit; rejected candidates; synthesised paths.
++- Near-miss `/proc/catalog` records that fail a requested spec on an existence/match query (a "does not exist" verdict cites no catalogue record).
+ 
+ `post_state_records`:
+ 
+@@ -81,6 +93,7 @@
+ ## Anti-patterns
+ 
+ - Answering `OUTCOME_OK` with a SKU when more than one product matches — `/AGENTS.MD` requires exactly one match; otherwise clarify and cite candidates.
++- Citing a near-miss `/proc/catalog` record on a "does such a product exist?" query that resolves to no match. When no record satisfies **every** requested spec, no catalogue record is cited; the near-miss read to disprove existence stays in scratchpad. This differs from claim verification, where the brief pre-names one product and tells you to cite that exact record.
+ - Synthesising a `/proc/catalog/<sku>.json` path from a SKU instead of copying the live read path.
+ - Treating a sibling SKU in the same brand/series/model as proof the base SKU carries an extra-claim property.
+ - Putting a SKU/path/id the brief told you to include only in `refs`, not in `message`.

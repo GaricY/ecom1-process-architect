@@ -1,0 +1,58 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0022",
+  "parent": "v0021",
+  "status": "active",
+  "created_at": "2026-06-22T06:38:20+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t006",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWH",
+    "score": 0.0,
+    "score_detail": [
+      "answer refs for family \"/proc/catalog\" mismatch: missing [], extra [/proc/catalog/Bosch Home and Garden/PT-HDG-BOS-UHC18-50-25.json]"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0006-t006-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWH",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0006-t006-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWH-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "The trial was a product existence query (\"Customer wants '<full spec incl. battery platform Stihl AK>'. Does such product exist?\"). The whole description is one conjunctive search filter; no catalogue record satisfies all specs (the only matching kit is on battery_platform 'Bosch 18V Power for All', not the requested platform), so the verdict is FALSE and no record is a match. The grader expected empty /proc/catalog refs but the Executor cited the near-miss record (extra ref \u2192 0.0%). Root cause is topic_evidence: the BP only had a claim-verification branch, which cites the pre-identified base SKU even on a negative verdict, and the Executor over-applied it to an existence query. Fix (owning layer bp_product_discovery): add a distinct 'Product existence / match query' branch that cites a /proc/catalog record only when it satisfies every requested spec and cites nothing on a 'does not exist' verdict (near-misses stay considered_not_cited, mirroring the existing availability rule), plus a guard distinguishing it from claim verification, and matching Evidence-ledger / anti-pattern entries. This adds a missing branch rather than re-introducing a reverted rule; the claim-verification cite-the-base-SKU rule from v0019/v0020 is preserved and now scoped to pre-identified products.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/catalogue-lookup.md",
+      "sha256": "f8dda622bdc22e308b6593947a11fbf8df31c5b1c1cff0627c5dbfe1327ced86",
+      "why": "Defines how a catalogue request resolves to candidate records (name/hierarchy/brand/price/properties) and the clarify-and-cite rule the match-narrowing in the existence branch relies on."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "Source for the /uploads input root and cross-check-against-canonical-records rule that the comparison-against-an-input branch (retained in this unit) depends on."
+    },
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "961e2ea2f3dbc22cd0ab0b11c4b9fd857d5f096a3c6a1d72e469868a034083a8",
+      "why": "Source of the exactly-one-match SKU-lookup rule and the TRUE(1)/FALSE(0) yes/no token used for the existence verdict shape."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "The record fields/properties (e.g. battery_platform) are what decide whether a record satisfies every requested spec; a schema change to catalog could invalidate the match/near-miss rule."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start (drives 'my' handling); contract change affects step 1 of the process."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0021 content (drops the 'Product existence / match query' branch and its ledger/anti-pattern lines) if the new branch wrongly suppresses needed refs on existence answers."
+  },
+  "no_semantic_change": false
+}

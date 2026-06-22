@@ -1,0 +1,44 @@
+{
+  "unit_id": "bp_dispatch_planning",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-06-22T06:28:56+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t004",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWF",
+    "score": 0.8215740919113159,
+    "score_detail": [
+      "dispatch packages delivered avg 10.0 of 10",
+      "dispatch money made avg EUR 368.98 delivered margin",
+      "dispatch packages missed avg 0.0; late avg 1.3",
+      "dispatch costs/penalties avg EUR 42.58 transport; EUR 22.48 late; EUR 0.00 missed; EUR 0.00 invalid",
+      "dispatch resulting gain avg EUR 303.92; max EUR 313.40; efficiency 82.2%"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0004-t004-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWF",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0004-t004-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWF-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "domain_policy failure. The Executor delivered all 10 packages (0 missed, 0 invalid) but scored only 82.2% efficiency, bleeding EUR 22.48 in late penalties (~1.3 packages late on average). Root cause: it ranked routes by NOMINAL net (margin - cost at face-value ETA) and used delay_hint only as a weak tertiary tie-breaker, so it repeatedly took cheaper multi-hop hub routes for trivial cost savings while sacrificing schedule buffer and compounding delay risk across more lanes (e.g. a high-margin package routed three hops to save a couple hundred cents, and a thin-buffer package routed through a 'delays likely' lane). v0001 said 'maximize expected net profit' and 'use delay_hint' but gave no concrete rule for pricing the late penalty into route choice, so the Executor defaulted to nominal-net maximization. The fix rewrites Process step 6 into an explicit expected-net selection rule (score routes by nominal_net minus expected_late_penalty; never trade schedule buffer or extra hops for small cost savings, especially on high-margin packages; minimize expected lateness when no on-time route exists) and adds one anti-pattern naming the nominal-net mistake. This is the unit's first failure (v0001, world_refresh) so it is not stacking on a regressing PA rule. The terminal payload shape was accepted (OUTCOME_OK, valid JSON), so this is not a terminal_protocol or refs_safety issue.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/dispatch.md",
+      "sha256": "721ed4506208401d7a28a01c0ed858bff503b048da326d314d0eeffb6d02635c",
+      "why": "Source of the wave/package/lane model, the expected-net-profit objective, the per-delay/per-missed penalty model, and the delay_hint semantics that the new route-selection rule operationalizes."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "Defines /uploads as the upload root cited in the Inputs section for the request-named wave and TSV files."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0001 content if the expected-net selection rule over-constrains route choice or harms scores; the only behavioural change is in Process step 6 plus one anti-pattern line."
+  },
+  "no_semantic_change": false
+}

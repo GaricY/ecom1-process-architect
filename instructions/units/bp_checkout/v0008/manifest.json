@@ -1,0 +1,70 @@
+{
+  "unit_id": "bp_checkout",
+  "version": "v0008",
+  "parent": "v0007",
+  "status": "active",
+  "created_at": "2026-06-22T06:46:57+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t009",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWL",
+    "score": 0.0,
+    "score_detail": [
+      "expected outcome OUTCOME_OK, got OUTCOME_NONE_UNSUPPORTED"
+    ],
+    "answer_outcome": "OUTCOME_NONE_UNSUPPORTED",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0009-t009-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWL",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0009-t009-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWL-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: domain_policy (bp_checkout). The Executor was asked to check out a basket whose only line was a digitally-fulfilled SKU. It applied the checkout same-day-availability gate to that line, read /bin/availability = 0, and answered OUTCOME_NONE_UNSUPPORTED; the basket was actually eligible (expected OUTCOME_OK). Root cause: the v0007 world_refresh copied the availability gate from /docs/checkout.md but dropped that doc's carve-out ('Digital products are fulfilled by access/download', i.e. never stocked). This narrows the gate rather than stacking a new safeguard: the same-day availability gate now applies to physically-fulfilled lines only; the Executor must read each line's /proc/catalog fulfillment_type and exempt digital lines (a 0 from /bin/availability for a digital SKU is expected, not a stock failure), so a digital-only basket checks out without a store-inventory query. Outcomes, the evidence ledger, and anti-patterns are aligned to the physical-only scope.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "Item-edit rules, checkout gate set, the same-day availability formula, the digital-fulfilment carve-out ('Digital products are fulfilled by access/download'), and the customer-only scope."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/ownership gate applied via identity_and_auth before the line gate."
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "sha256": "65ef4279c83faf04c0c854f078421aad488f6059621f449ef6d9f54c6f4814ad",
+      "why": "/bin/checkout tool signature."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability tool used for the physically-fulfilled per-line checkout gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "701e7e5e5c6f4fea9501ca31fb8714601efc33ac1fce250545854bc4ab3d5acb",
+      "why": "Ownership, status, store pointer, and lines."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "e012cad9a04636c2d4b01364e3fcaa4ee0e07fbc2148f2d30a0e61c179e0ee68",
+      "why": "Store inventory (on_hand/reserved) for the availability gate on physical lines."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "SKU resolution for item edits and the fulfillment_type that classifies each checkout line as physical (gate applies) or digital (exempt)."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0007 content to drop the digital-fulfilment carve-out and restore the availability gate over every basket line if the physical/digital split proves wrong."
+  },
+  "no_semantic_change": false
+}

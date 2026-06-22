@@ -1,0 +1,42 @@
+--- bp_fraud_risk_review/v0008/content.md
++++ bp_fraud_risk_review/v0009/content.md
+@@ -18,7 +18,7 @@
+ 2. The analysis scope is the user's predicate, not a suspect found mid-analysis. A customer, day, store, device, or identifier surfaced by one family is a candidate cluster only; it must not narrow the remaining hard-family scans.
+ 3. Read the full field list for the in-scope family from the schema. Do not look only at fields whose names sound like "fraud". Identify the actor, event-time, observed-location, claimed-target, exact-identifier, resource, and workflow-state fields that exist.
+ 4. Run the **mandatory hard sweep** and record each family as `zero`, `hard hit`, or `not applicable` (required field absent):
+-   - cross-actor exact-identifier collisions: same `payment_method_fingerprint`, same `device_fingerprint`, repeated `basket_id`/`order_id`, or identical `created_at` across different `customer_id`s;
++   - cross-actor exact-identifier collisions: the same `payment_method_fingerprint`, the same `device_fingerprint`, or a repeated `basket_id`/`order_id` shared across different `customer_id`s. A shared `created_at` is **not** an identity: coincident event timestamps across actors that share no other exact identifier are a coincidence, not a collision — never count a timestamp-only match as a hard hit (treat it under the soft list);
+    - workflow-state invariants: `status == paid` rows carrying a failed/pending `three_ds`, exhausted attempts, or impossible transitions under `/docs/payments/3ds.md`;
+    - record invariants: `amount_cents` vs `Σ(lines.quantity × unit_price_cents)`, `archived` flag consistency, payment↔cart↔return joins, inventory/reserve arithmetic (`locations.inventory` `on_hand`/`reserved`), duplicate payments. A missing live cart file on an `archived` payment is not a hard mismatch by itself — use the payment's `lines` snapshot;
+    - impossible observed travel: consecutive events by the same `customer_id` whose `observed_lat`/`observed_lon` move impossibly far for the elapsed time;
+@@ -27,10 +27,10 @@
+ 6. Finding one hard cluster is not enough. Continue until every family above has a recorded result and trustworthy scan shape.
+ 7. Classify candidate matches before building the cohort:
+    - hard-supported: exact-identifier collision across actors, impossible observed travel, stationary single-actor multi-target burst, workflow-state invariant, or record invariant;
+-   - soft-only: one new device/payment fingerprint for one actor, high amount, high purchase count, a distant observed-vs-store band, a long busy timeline, or any smooth threshold band with no structural confirmation.
++   - soft-only: one new device/payment fingerprint for one actor, high amount, high purchase count, a distant observed-vs-store band, a long busy timeline, a `created_at` shared across actors that have no other exact-identifier link, or any smooth threshold band with no structural confirmation.
+ 8. Only hard-supported records enter the final cohort. Soft-only records are excluded by default, even when they look suspicious or sit near a true incident window.
+ 9. Location/target scan shapes stay separate:
+-   - impossible observed travel is observed-to-observed across all actors in scope: group by `customer_id`, order by `created_at`, compare consecutive `observed_lat`/`observed_lon`, compute elapsed minutes;
++   - impossible observed travel is observed-to-observed across all actors in scope: group by `customer_id`, order by `created_at`, compare consecutive `observed_lat`/`observed_lon`, compute elapsed minutes. When an actor's ordered sequence contains an impossible hop, the incident is the whole contiguous rapid run, not just the two rows bracketing each over-threshold hop: expand the cluster to every event inside that dense time window for the actor — including a leading/trailing event that lands near its immediate neighbour and so trips no per-pair speed threshold on its own. Cut the run only at a genuine gap back to the actor's ordinary cadence;
+    - do not compute impossible travel from store coordinates. Fast rotation through distant stores with stable observed coordinates is a burst/tempo anomaly, not observed travel;
+    - stationary single-actor burst is grouped by one `customer_id` (not by store, not across customers). The window is a dense sub-window from each event, not `MAX(created_at) - MIN(created_at)` over the actor's whole history. Count events and distinct `store_id`s; confirm the observed-coordinate spread inside the window is small; expand a hit to all in-window records for that actor.
+ 10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores at ordinary cadence is remote-shopping context; stable observed plus many distinct stores/targets within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store distance.
+@@ -56,7 +56,7 @@
+ 
+ ## Coverage check before ledger/submission
+ 
+-Scratchpad must show: scope predicate + universe size; full field list considered; the mandatory hard-sweep ledger (each family `zero`/`hard hit`/`not applicable`); per family the scan scope, actor/time/coordinate/target axis, window, and max-metric; match counts; hard-vs-soft classification; missing-MO guard (if only one location family hit, re-run the other); validated-zero guard (top max-metric on zeros); hard-hit union check; exclusion reason for any hard hit left out; per-record evidence map; disjoint sub-cluster count + temporal span; confirmation no final record is soft-only; final cohort count with no truncation. The message records and `refs` records must be the same pruned hard-supported union.
++Scratchpad must show: scope predicate + universe size; full field list considered; the mandatory hard-sweep ledger (each family `zero`/`hard hit`/`not applicable`); per family the scan scope, actor/time/coordinate/target axis, window, and max-metric; match counts; hard-vs-soft classification; missing-MO guard (if only one location family hit, re-run the other); validated-zero guard (top max-metric on zeros); hard-hit union check; exclusion reason for any hard hit left out; per-record evidence map; disjoint sub-cluster count + temporal span; confirmation no final record is soft-only (a timestamp-only cross-actor match is soft); for every impossible-travel cluster, confirmation that the whole contiguous rapid run was included, not only the rows on either side of each over-threshold hop; final cohort count with no truncation. The message records and `refs` records must be the same pruned hard-supported union.
+ 
+ ## Outcomes
+ 
+@@ -98,6 +98,8 @@
+ - Submitting after the first hard cluster without completing the sweep.
+ - Recording `zero` without a max-metric from the same scan shape.
+ - Searching only fingerprint columns and skipping workflow-state fields.
++- Treating a `created_at` shared by otherwise-unrelated actors (different device/payment fingerprint, basket, and store) as a hard cross-actor identity collision.
++- Citing only the rows on either side of an over-threshold travel hop while dropping other events of the same actor's rapid multi-stop run because each sits near its immediate neighbour.
+ - Computing impossible travel from store coordinates instead of `observed_lat`/`observed_lon`.
+ - Treating a missing live cart file on an `archived` payment as a hard inconsistency before checking the flag and the payment `lines` snapshot.
+ - Substituting a multi-customer same-store query for the stationary single-actor multi-target burst check, or using whole-history `MAX-MIN(created_at)` as a dense burst window.

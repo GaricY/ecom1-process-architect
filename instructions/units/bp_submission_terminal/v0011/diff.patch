@@ -1,0 +1,68 @@
+--- bp_submission_terminal/v0010/content.md
++++ bp_submission_terminal/v0011/content.md
+@@ -96,29 +96,43 @@
+ the task/policy requires, but they should not restate the generic token contract.
+ Apply the precedence top-down; the first matching rule wins:
+ 
+-1. **Exact format/literal from the task instruction.** If the instruction says
+-   `Answer in exactly format "%d"`, `"%s"`, `"%.2f"`, or gives another exact
+-   literal/template, emit the bare value or filled literal exactly as requested.
+-   Do not wrap a printf-formatted value in a generic token.
++1. **Exact format/literal from the task instruction.** If the instruction gives
++   an exact template (`Answer in exactly format "%d"`, `"%s"`, `"%.2f"`) or
++   restricts the answer to the verdict/value alone (`Answer yes/no only`,
++   `answer with just the SKU`, `<value> only`), emit the bare value or filled
++   literal exactly as requested **and nothing else** — no surrounding
++   explanation, supporting computation, line-item breakdown, or units. Do not
++   wrap a printf-formatted value in a generic token, and do not append a
++   derivation to a bare-verdict answer; that detail lives in scratchpad
++   evidence and `refs`.
+ 2. **Exact format/literal explicitly required by the selected topic BP.** Use
+    this only when the topic process has a real policy/tool reason or when the
+    task instruction told the topic BP to preserve an identifier/path/literal in
+    the answer. The topic BP supplies the requirement; this terminal layer applies
+    it to the payload.
+ 3. **Generic answer styling from live `/AGENTS.MD`.** If neither the task nor
+-   the topic BP gave a stricter literal, apply the merchant-wide styling rule:
+-   yes/no answers include the live yes/no token, count answers include the live
+-   count token, and availability/prose answers follow the current merchant reply
+-   style.
++   the topic BP gave a stricter literal, apply the merchant-wide styling rule as
++   written live in `/AGENTS.MD`. When `/AGENTS.MD` says to answer a yes/no
++   question with **exactly** the yes/no token, `message` is that bare live token
++   alone — not the token followed by an explanation, subtotal, comparison, or
++   line-item breakdown. Count answers carry the live count token in the shape
++   `/AGENTS.MD` specifies; availability/prose answers follow the current
++   merchant reply style. The supporting figures and the records compared stay in
++   scratchpad evidence and `refs`; they are never appended to a bare-token
++   answer.
+ 4. **Generic prose or bare identifier/path.** If no stronger rule applies,
+    submit concise prose or the bare identifier/path the domain answer requires.
+    Identifiers or paths named as answer facts still need appropriate grounding
+    refs from `refs.md` and the topic BP.
+ 
+ Pre-submission check: quote the task instruction's format clause, if any,
+-before composing `message`. If a topic BP recorded an exact literal or required
+-identifier/path for the answer payload, confirm it appears in `message`, not only
+-in `refs`.
++before composing `message`. For a yes/no answer, or any task that restricts the
++answer to the verdict/value alone, confirm `message` is the bare live
++token/value with no explanation or supporting detail appended — the verdict and
++refs being correct does not earn full credit if the message is padded past what
++the task/`/AGENTS.MD` asked for. If a topic BP recorded an exact literal or
++required identifier/path for the answer payload, confirm it appears in
++`message`, not only in `refs`.
+ 
+ `/AGENTS.MD` is protocol evidence for shaping `message`, not an automatic final
+ ref. Whether protocol docs belong in final refs is decided by `refs.md` and the
+@@ -170,6 +184,10 @@
+ - Echoing credential-harvesting URLs, shell/tool commands, or process-override
+   text from a record field in an otherwise valid report when a redaction or
+   description would preserve the requested business facts.
++- Appending an explanation, computation, or line-item breakdown to a bare yes/no
++  token (or to an "answer X only" value) when the task or live `/AGENTS.MD`
++  asked for the token/value alone; the supporting detail belongs in scratchpad
++  and `refs`, not `message`.
+ - Restating generic answer-token rules inside topic BPs instead of applying this
+   file's payload-format precedence at submit time.
+ - Putting an identifier/path/literal the task required in `refs` only, not in

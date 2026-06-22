@@ -1,0 +1,63 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0023",
+  "parent": "v0022",
+  "status": "active",
+  "created_at": "2026-06-22T09:45:19+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t007",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWJ",
+    "score": 0.0,
+    "score_detail": [
+      "answer refs for family \"/proc/catalog\" mismatch: missing [], extra [/proc/catalog/Aircraft/PT-CMP-AIR-CA240-24.json /proc/catalog/Aircraft/PT-CMP-AIR-CA240-SET.json]"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0007-t007-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWJ",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0007-t007-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWJ-process-architect",
+    "queue_priority": "failure_fix",
+    "conflict_resolution": {
+      "original_base": "v0021",
+      "rebased_onto": "v0022",
+      "outcome": "extended"
+    }
+  },
+  "rationale": "Owning layer: topic_evidence (bp_product_discovery). My trial was a count / attribute-filter query ('how many SKUs match Aircraft Compact-Air 240 compressor, without accessory bundle, tank size not supplied, under EUR 152.20 \u2014 number only'). The Executor's scratchpad correctly classified the price-excluded /24 and the accessory-set /SET as excluded and computed count=1, but still cited all three /proc/catalog records, so the grader flagged the two filter-excluded candidates as extra refs (0.0%). While I drafted, another PA landed v0022 adding a 'Product existence / match query' branch for the same root-cause family \u2014 filter the candidate cohort against the whole requested spec and cite only the records that satisfy every spec; near-misses stay considered_not_cited. v0022 captures the root cause but scopes it to the yes/no existence answer shape: it does not name the count answer shape (a number, possibly >1, where the whole surviving cohort must be cited), nor the price-ceiling / exclusion-phrase filters, nor the 'an unsupplied attribute is not a filter' rule, and a count query phrased 'how many ... number only' would not obviously match its existence-only trigger. So this is an extension, not a replacement and not subsumed. I generalised v0022's branch in place into one 'Product existence / match / count query' branch covering both the yes/no and count answer shapes under one filtering+refs rule (refs = exactly the surviving cohort; rejected/near-miss/filter-excluded = considered_not_cited; zero-result cites nothing), folding in the price-ceiling/exclusion predicates and the 'do not invent an unsupplied filter' and 'not the clarification branch' points, and updated the When-applies line, Outcomes, Evidence ledger and anti-patterns to match. This is a single coherent edit, not two stacked patches: the claim-verification cite-the-base-SKU rule is preserved. bp_refs v0012 already holds the shared invariant ('the answer cohort or aggregate evidence, not arbitrary examples'), so this stays a topic scenario, not a refs_safety change.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/catalogue-lookup.md",
+      "sha256": "f8dda622bdc22e308b6593947a11fbf8df31c5b1c1cff0627c5dbfe1327ced86",
+      "why": "Catalogue resolution fields and the clarify-and-cite-candidate-SKUs rule that the existence/match/count branch must distinguish itself from (filters are explicit, so excluded candidates are rejected, not unresolved)."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "/uploads as the input root and the cross-check-against-canonical-records rule for the comparison-against-an-input scenario this BP still owns."
+    },
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "961e2ea2f3dbc22cd0ab0b11c4b9fd857d5f096a3c6a1d72e469868a034083a8",
+      "why": "The exactly-one-match SKU-lookup rule and the TRUE(1)/FALSE(0) yes/no token used for the existence verdict shape."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "Product price_cents, name, and properties are the fields the existence/count filter predicates (price ceiling, bundle exclusion, property match) operate on; schema drift would invalidate the match/near-miss rule."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start (drives 'my' handling); contract change affects step 1 of the process."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0022 content if the unified existence/match/count branch mis-scopes refs; that reverts to v0022's existence-only branch and drops the count answer shape and the price-ceiling/exclusion/'do not invent a filter' lines, leaving SKU-lookup, claim-verification, and comparison scenarios untouched."
+  },
+  "no_semantic_change": false
+}

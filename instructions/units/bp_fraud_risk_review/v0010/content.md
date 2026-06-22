@@ -1,0 +1,121 @@
+# Fraud Risk Review
+
+## When this process applies
+
+Read this process for fraud, risk, anomaly, archived-payment review, "identify the fraudulent records", "mark every suspicious payment", or any plural task that asks for a complete risk cohort. It is an information/discovery BP. It does not authorize payment mutation and does not own final refs projection or submission. After finding the cohort, classify the Evidence ledger and use [refs](refs.md) and [submission_terminal](submission_terminal.md).
+
+## Inputs
+
+- `bin-help/sqlite_schema.txt` — the reconstructed `/proc` projection: family/field map and foreign-key edges. SQL is **unavailable** (`/bin/sql` reports the PROD cluster is down); read `/proc` JSON records directly. The same family/field map also describes flat archive exports (e.g. a standalone `.tsv`) whose columns mirror these fields.
+- Live workspace paths: primarily `/proc/payment-ledger/`, plus `/proc/carts/`, `/proc/locations/`, `/proc/return-workflows/`, `/proc/prod/` for joins.
+- `/docs/payments/3ds.md` — legitimate 3DS state transitions for workflow-state invariants.
+
+**Record shape.** `payment-ledger` carries `id`, `order_id`, `basket_id`, `customer_id`, `store_id`, `amount_cents`, `currency`, `status`, `created_at` (event time), `payment_method_fingerprint`, `device_fingerprint`, `observed_lat` / `observed_lon` (checkout-time risk-log coordinates, not a customer address), `lines[]` (`sku`, `quantity`, `unit_price_cents`), `three_ds` (`status`, `attempts`, `max_attempts`, `retry_after`, `failure_reason`), and `archived` (boolean). There is **no** customer-account record and no customer home coordinate in this world — distance-from-home is not an available axis. `locations` carries branch `lat`/`lon` for store-distance context. Read the current field list from the schema before composing a scan.
+
+## Process
+
+1. Define the task scope first: archived payments only, one store, one day, one customer, one campaign, or whatever the brief names. Record the scope predicate and universe size in scratchpad. Load the in-scope records once with `ws.find`/`ws.read` into `state` and aggregate in Python.
+2. The analysis scope is the user's predicate, not a suspect found mid-analysis. A customer, day, store, device, or identifier surfaced by one family is a candidate cluster only; it must not narrow the remaining hard-family scans.
+3. Read the full field list for the in-scope family from the schema. Do not look only at fields whose names sound like "fraud". Identify the actor, event-time, observed-location, claimed-target, exact-identifier, resource, and workflow-state fields that exist.
+4. Run the **mandatory hard sweep** and record each family as `zero`, `hard hit`, or `not applicable` (required field absent):
+   - cross-actor exact-identifier collisions: the same `payment_method_fingerprint`, the same `device_fingerprint`, or a repeated `basket_id`/`order_id` shared across different `customer_id`s. A shared `created_at` is **not** an identity: coincident event timestamps across actors that share no other exact identifier are a coincidence, not a collision — never count a timestamp-only match as a hard hit (treat it under the soft list);
+   - workflow-state invariants: `status == paid` rows carrying a failed/pending `three_ds`, exhausted attempts, or impossible transitions under `/docs/payments/3ds.md`;
+   - record invariants: `amount_cents` vs `Σ(lines.quantity × unit_price_cents)`, `archived` flag consistency, payment↔cart↔return joins, inventory/reserve arithmetic (`locations.inventory` `on_hand`/`reserved`), duplicate payments. A missing live cart file on an `archived` payment is not a hard mismatch by itself — use the payment's `lines` snapshot;
+   - impossible observed travel: consecutive events by the same `customer_id` whose `observed_lat`/`observed_lon` move impossibly far for the elapsed time — hard **only when the observed axis is independent**, not a copy of the event's `store_id` branch coordinate (see step 9);
+   - single-actor multi-target burst: one `customer_id` with many events at many distinct `store_id`s (or targets/resources) inside a dense window; the hard test is the distinct-target count, **not** observed-coordinate spread (see step 9).
+5. For every family, the ledger records the scan shape, not just the result: scan scope, actor axis, time axis, coordinate/target axis, window definition, and the max-metric used to validate a zero.
+6. Finding one hard cluster is not enough. Continue until every family above has a recorded result and trustworthy scan shape.
+7. Classify candidate matches before building the cohort:
+   - hard-supported: exact-identifier collision across actors, impossible observed travel (independent axis), single-actor multi-target burst, workflow-state invariant, or record invariant;
+   - soft-only: one new device/payment fingerprint for one actor, high amount, high purchase count, a distant observed-vs-store band, a long busy timeline, a lone two-event store-to-store jump, a `created_at` shared across actors that have no other exact-identifier link, or any smooth threshold band with no structural confirmation.
+8. Only hard-supported records enter the final cohort. Soft-only records are excluded by default, even when they look suspicious or sit near a true incident window.
+9. Location/target scan shapes stay separate:
+   - first decide whether the observed axis is independent. Observed coordinates are **store-pinned** when records sharing a `store_id` all carry the same observed point (matching the `locations` branch `lat`/`lon` when joinable). A store-pinned observed axis carries no travel signal of its own — it only restates where each store is;
+   - on an **independent** observed axis, impossible observed travel is observed-to-observed across all actors in scope: group by `customer_id`, order by `created_at`, compare consecutive `observed_lat`/`observed_lon`, compute elapsed minutes. When the ordered sequence contains an impossible hop, the incident is the whole contiguous rapid run, not just the two rows bracketing each over-threshold hop: expand the cluster to every event inside that dense time window for the actor — including a leading/trailing event that lands near its immediate neighbour and so trips no per-pair speed threshold on its own. Cut the run only at a genuine gap back to the actor's ordinary cadence;
+   - do not compute impossible travel from store coordinates, and treat a store-pinned observed axis identically: a distant consecutive jump on a store-pinned axis — or fast rotation through distant stores whose observed point only restates the store — is store-to-store rotation, not travel; route it to the burst test, do not cite it as travel. A lone two-event jump between two stores is neither travel nor a burst — it is soft-only unless the actor clears the distinct-target burst bar below;
+   - single-actor burst is grouped by one `customer_id` (not by store, not across customers). The window is a dense sub-window from each event, not `MAX(created_at) - MIN(created_at)` over the actor's whole history. The hard test is the count of distinct `store_id`s/targets in the window clearing the burst bar (several distinct targets within minutes, well above a two-event pair); observed-spread is confirmation only on an independent axis and must not disqualify a store-pinned burst. Expand a hit to every same-actor event in the contiguous run, including individually slow hops between adjacent same-cadence events.
+10. Stable observed coordinates are not automatically soft. Stable observed plus distant stores at ordinary cadence is remote-shopping context; stable observed plus many distinct stores/targets within minutes is a hard tempo anomaly. The discriminator is short-window target rotation, not observed-to-store distance.
+11. When a hard family returns zero, validate the negative: record the top max-metric for that family (largest same-actor observed jump/speed for travel; largest same-actor short-window distinct-target count and observed spread for burst). If the max-metric contradicts the zero, fix the scan.
+12. For high-count fuzzy signals, regroup by `(customer_id, short_time_window)` before discarding as noise — a broad legitimate tail can hide a dense hard-supported burst, but the broad tail is cited only if it passes the hard gate.
+13. Include every member of inseparable hard evidence groups. If a hard signal flags a pair or duplicate group and the data does not identify the sole offender, both members belong in the cohort.
+14. The final cohort is the union of every hard-supported cluster in scope. Different hard families may identify different sub-clusters; do not submit only the first/largest/cleanest while another hard family has nonzero matches.
+15. Interpret "one hit" / "one incident" as one evidence-connected campaign, not one pure date window. Different date or MO is not enough to exclude a hard-supported cluster unless the brief narrows scope.
+16. Build a per-record evidence map before refs: each cited record has a path, hard-signal name, condition, and cluster id. Remove any record justified only by narrative, a threshold, or temporal proximity.
+17. Run the final cohort enumeration without truncation and confirm it is complete.
+
+## Risk primitives (compute over `/proc`, not SQL)
+
+For new risk angles (delivery, reservation, refund, inventory, non-3DS payment), first map the schema into these axes, then apply the hard primitives:
+
+- actor axis: `customer_id`, `device_fingerprint`, `payment_method_fingerprint`;
+- claimed-target axis: `store_id`, basket/order, inventory store, or other named resource owner;
+- event-time axis: `created_at` (payment), return/created times, or workflow-transition time;
+- resource axis: `sku`, basket, payment, return, inventory row;
+- invariant axis: amount/lines, payment↔cart↔return joins, inventory/reserve arithmetic, and workflow state under `/docs/payments/3ds.md`.
+
+Hard primitives: impossible observed movement for one actor (independent observed axis only); too many claimed targets/resources in a short sub-window for one actor; exact-identifier collision across actors; ledger reconciliation across families; policy/workflow-state invariant. Compute travel and burst with per-actor sequencing/sliding windows in Python over the loaded records.
+
+## Coverage check before ledger/submission
+
+Scratchpad must show: scope predicate + universe size; full field list considered; the mandatory hard-sweep ledger (each family `zero`/`hard hit`/`not applicable`); per family the scan scope, actor/time/coordinate/target axis, window, and max-metric; whether the observed axis is independent or store-pinned; match counts; hard-vs-soft classification; missing-MO guard (if only one location family hit, re-run the other); validated-zero guard (top max-metric on zeros); hard-hit union check; exclusion reason for any hard hit left out; per-record evidence map; disjoint sub-cluster count + temporal span; confirmation no final record is soft-only (a timestamp-only cross-actor match is soft; a lone two-event store-to-store jump is soft); for every impossible-travel or burst cluster, confirmation that the whole contiguous rapid run was included, not only the rows on either side of each over-threshold hop; final cohort count with no truncation. The message records and `refs` records must be the same pruned hard-supported union.
+
+## Outcomes
+
+- `OUTCOME_OK`: complete hard-supported cohort or requested risk answer found and cited.
+- `OUTCOME_NONE_CLARIFICATION`: the brief does not define enough scope to choose between plausible hard-supported cohorts.
+- `OUTCOME_NONE_UNSUPPORTED`: the requested risk action needs a mutation or policy not present in the runtime.
+- `OUTCOME_DENIED_SECURITY`: only when the task asks to expose private contact data outside the allowed boundary.
+
+## Evidence ledger
+
+`policy_docs_applied`:
+
+- `/docs/payments/3ds.md` only when a 3DS workflow-state invariant shaped a hard signal.
+
+`answer_records`:
+
+- The final hard-supported `/proc/...` cohort, one live path per record marked or identified.
+- Public store/catalogue records only when the evidence explanation relies on them.
+
+`considered_not_cited`:
+
+- Soft-only candidates, threshold bands, rejected hard-family candidates, false leads, and clusters outside the final union.
+
+`refs_must_include`:
+
+- Every `/proc/...` record in the final message cohort, and any policy doc whose invariant shaped a hard signal.
+
+`refs_must_not_include`:
+
+- Soft-only records, rejected candidates, staff contact records, or rows used only to validate a zero.
+
+`post_state_records`:
+
+- none; this BP never mutates.
+
+## Anti-patterns
+
+- Narrowing remaining hard-family scans to a customer/day/store/device found by an earlier family when the brief did not narrow scope.
+- Submitting after the first hard cluster without completing the sweep.
+- Recording `zero` without a max-metric from the same scan shape.
+- Searching only fingerprint columns and skipping workflow-state fields.
+- Treating a `created_at` shared by otherwise-unrelated actors (different device/payment fingerprint, basket, and store) as a hard cross-actor identity collision.
+- Citing only the rows on either side of an over-threshold travel hop while dropping other events of the same actor's rapid multi-stop run because each sits near its immediate neighbour.
+- Computing impossible travel from store coordinates, or scoring a store-pinned observed axis (observed coordinates that track each event's `store_id` branch) as impossible observed travel; citing a lone two-event store-to-store jump as a hard travel signal; or rejecting a real single-actor multi-target burst because its store-pinned observed spread is large.
+- Treating a missing live cart file on an `archived` payment as a hard inconsistency before checking the flag and the payment `lines` snapshot.
+- Substituting a multi-customer same-store query for the single-actor multi-target burst check, or using whole-history `MAX-MIN(created_at)` as a dense burst window.
+- Treating a new device, high amount, or long busy timeline as fraud without a hard signal.
+- Inventing a distance-from-customer-home axis — no customer home coordinate exists in this world.
+- Dropping a nonzero hard-supported cluster because another is cleaner/larger, or dropping smaller hard sub-clusters of the same incident.
+- Truncating the final cohort enumeration.
+
+## Dependencies
+
+> If any of these dependencies change, this BP file may have become stale and must be re-derived.
+
+- `/docs/payments/3ds.md` — legitimate 3DS workflow-state transitions used for payment invariant checks.
+- `payment-ledger` (`/proc/payment-ledger`) — primary risk record: fingerprints, `created_at`, `status`, `observed_lat`/`observed_lon`, `amount_cents`, `lines`, `three_ds`, `archived`, and the `customer_id`/`store_id`/`basket_id` join keys.
+- `carts` (`/proc/carts`) — basket/customer/store joins and archive context.
+- `locations` (`/proc/locations`) — branch `lat`/`lon` (for the store-pinned-observed test) and `inventory` (`on_hand`/`reserved`) for store-distance and reserve arithmetic.
+- `return-workflows` (`/proc/return-workflows`) — return/payment workflow joins.
+- `prod` (`/proc/prod`) — `price_cents` for amount/line reconciliation.

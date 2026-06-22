@@ -1,0 +1,87 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0014",
+  "parent": "v0013",
+  "status": "active",
+  "created_at": "2026-06-22T11:09:43+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t097",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXr",
+    "score": 0.0,
+    "score_detail": [
+      "answer missing required reference '/docs/checkout.md'"
+    ],
+    "answer_outcome": "OUTCOME_NONE_UNSUPPORTED",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0097-t097-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXr",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0097-t097-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXr-process-architect",
+    "queue_priority": "failure_fix",
+    "conflict_resolution": {
+      "original_base": "v0012",
+      "rebased_onto": "v0013",
+      "outcome": "extended"
+    }
+  },
+  "rationale": "Owning layer: topic_evidence (bp_discount). Failure was purely a missing required ref: the Executor correctly denied a directly-named 12% price_match discount on an authorized discount_manager basket (high-tier subtotal, percent over cap -> OUTCOME_NONE_UNSUPPORTED) but omitted /docs/checkout.md from refs and scored 0.0%. /docs/checkout.md is a named member of the discount gate set ('Every basket line is checkoutable under /docs/checkout.md'); because the basket was named directly (no target selection) and the percent gate denied before the step-7 line check, the Executor concluded checkout.md 'was not applied' and dropped it. The conflicting v0013 fixed an orthogonal gap (per-line catalogue price records missing from refs) but left the checkout.md trigger at v0012's evaluation-order-dependent wording, so it does not address this failure -- hence extended, not subsumed: I keep all of v0013's catalogue-records rules verbatim (step-5 clause, refs_must_include/refs_must_not_include bullets, anti-pattern, catalog dependency note) and only widen the five checkout.md clauses (step 7, policy_docs_applied, refs_must_include, refs_must_not_include, anti-pattern) to require /docs/checkout.md on every authorized-actor decision (OUTCOME_OK / OUTCOME_NONE_UNSUPPORTED) regardless of which gate denied, excluding it only on the identity-stop OUTCOME_DENIED_SECURITY. This is a monotonic widening of the v0009->v0010 checkout.md trigger (not a reverted rule re-added) and aligns bp_discount with the shared bp_refs 'Required gate evidence' invariant and the already-shipped sibling bp_payments_3ds_recovery, which both keep a named gate input/prerequisite in refs across authorized-actor outcomes and drop it only on the identity stop.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "637193c66f3b133318ddb8641c6bd4c7fa34d0410e4c945336411d39feb8ced6",
+      "why": "Defines the discount gate set including the 'Every basket line is checkoutable under /docs/checkout.md' bridge, the subtotal/percent tiers that make the catalogue price records load-bearing, and the security-vs-non-security outcome split that decides when /docs/checkout.md is a required ref."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "The line-eligibility gate doc that is the cited policy; it is the named gate member whose required/forbidden ref placement this version governs."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Defines the identity/issuer/authority boundary; OUTCOME_DENIED_SECURITY is the only branch where /docs/checkout.md and the catalogue price records are excluded from refs."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Tool signature /bin/discount <basket_id> <percent> <reason_code> <issuer_id> and the 'no policy checks' disclaimer quoted in the Process/Inputs."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability max(on_hand - reserved, 0) used by the step-7 per-line checkout-eligibility check."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "e1690fd85e514f2d1207879e46867eed19c84ce2f60d46b02074db358a0d8520",
+      "why": "Cart store_id, status, existing discount object, and lines read by the gate set and summed for the subtotal."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "price_cents per line SKU summed for the subtotal/percent-tier gate; these catalogue records are required in refs whenever the subtotal was computed."
+    },
+    {
+      "kind": "sql_table",
+      "path": "staff",
+      "sha256": "f3d8cb0912a014b86627e20d4a8f448654d9763e7d194886479618d98dc7b09c",
+      "why": "The /bin/id employee's roles[] (discount_manager capability) and assigned store_id for the manager-store gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "stores",
+      "sha256": "b8a67767b8d27acc3a09c5424a6c7851d441454ddfdf59e06546585e994fece8",
+      "why": "Store inventory (on_hand/reserved) for the step-7 line-eligibility check and the store record for the manager-store gate."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0013 content (restoring the 'when the line-eligibility gate was applied' / 'when checkout/line rules were applied' wording in step 7, policy_docs_applied, and refs_must_include, plus the 'identity-only denials where line rules were never applied' exclusion) if requiring /docs/checkout.md on every authorized-actor discount decision proves to over-cite it; this leaves v0013's catalogue-records rules intact."
+  },
+  "no_semantic_change": false
+}

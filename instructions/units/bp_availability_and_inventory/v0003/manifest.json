@@ -1,0 +1,57 @@
+{
+  "unit_id": "bp_availability_and_inventory",
+  "version": "v0003",
+  "parent": "v0002",
+  "status": "active",
+  "created_at": "2026-06-22T10:43:08+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t063",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXG",
+    "score": 0.0,
+    "score_detail": [
+      "Answer should be \"ja\""
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0063-t063-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXG",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0063-t063-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXG-process-architect",
+    "queue_priority": "failure_fix",
+    "conflict_resolution": {
+      "original_base": "v0001",
+      "rebased_onto": "v0002",
+      "outcome": "extended"
+    }
+  },
+  "rationale": "Owning layer: terminal_protocol leak into the topic BP. This is the topic BP the Executor selected; its reply-shaping step told it directly to 'use the TRUE(1)/FALSE(0) token' for yes/no \u2014 the proximate instruction that produced the wrong literal instead of live `/AGENTS.MD`'s `ja`/`nein`. The conflicting v0002 fixed an unrelated topic_evidence failure (requiring a catalogue record in refs for every request-named SKU) and merely renumbered the stale reply-shaping rule from step 6 to step 7, leaving the `TRUE(1)/FALSE(0)` literal intact \u2014 so my concern is not subsumed; I extend v0002. I keep all of v0002's catalogue-citation cohort rules and only change step 7 so reply shaping records the boolean verdict / integer and defers the final token to bp_submission_terminal (which emits the live `/AGENTS.MD` yes/no/count token), plus one anti-pattern against hard-coding the literal. No new literal is introduced, so the rule cannot drift again when the live token changes; this is consistent with bp_submission_terminal's anti-pattern forbidding topic BPs from restating the token. Dependency set is unchanged from v0002.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/availability-checks.md",
+      "sha256": "64056696a13636249d1d5f48db85f9d5b24332cefcbdfad83d2820b080f68080",
+      "why": "Same-day availability formula (max(on_hand-reserved,0)), incoming/due-within rules, read-only constraint, and the inventory-export schema this BP applies."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "The /bin/availability tool and its max(on_hand-reserved,0) / missing-SKU-0 same-day contract."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "e012cad9a04636c2d4b01364e3fcaa4ee0e07fbc2148f2d30a0e61c179e0ee68",
+      "why": "Branch record and inventory rows (on_hand, reserved, incoming.arrival_in_days) used to compute availability."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "Per-SKU catalogue record (/proc/catalog/<brand>/<sku>.json) used to resolve requested products, cite request-named SKUs, and build family exports."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0002 content (restores 'for yes/no use the TRUE(1)/FALSE(0) token' in step 7) if deferring the token to submission_terminal proves insufficient."
+  },
+  "no_semantic_change": false
+}

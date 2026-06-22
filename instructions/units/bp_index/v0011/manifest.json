@@ -1,0 +1,39 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0011",
+  "parent": "v0010",
+  "status": "active",
+  "created_at": "2026-06-22T10:43:08+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t063",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXG",
+    "score": 0.0,
+    "score_detail": [
+      "Answer should be \"ja\""
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0063-t063-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXG",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0063-t063-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXG-process-architect",
+    "queue_priority": "failure_fix",
+    "conflict_resolution": {
+      "original_base": "v0009",
+      "rebased_onto": "v0010",
+      "outcome": "extended"
+    }
+  },
+  "rationale": "Owning layer: terminal_protocol leak into the routing index. The trial failed because the Executor emitted the literal `TRUE(1)` for a yes/no question while live `/AGENTS.MD` requires `ja`/`nein` (grader: answer should be `ja`). The answer-token owner bp_submission_terminal already reads the token live from `/AGENTS.MD` and its anti-patterns forbid topic/index files from restating it, but bp_index \u00a73 still hard-codes a `(... including the TRUE(1)/FALSE(0) yes/no token)` parenthetical \u2014 a v0009 world_refresh regression that replaced v0008's explicit 'this index does not restate it'. The conflicting v0010 fixed an unrelated filesystem-routing failure (\u00a71 os_tooling row + \u00a72 rule 9) and left this stale \u00a73 literal untouched, so my concern is not subsumed; I extend v0010 rather than stack a patch. I keep all of v0010's filesystem-routing changes verbatim and only restore \u00a73 so the index no longer restates any literal token, warning that the yes/no token is locale-specific and read live from `/AGENTS.MD`. This generalises to every yes/no task class regardless of the live locale token.",
+  "dependencies": [
+    {
+      "kind": "static",
+      "path": "static-instructions/workspace.py",
+      "sha256": "3e5598d92d8622451d765bfcbe70d5de1b8b4dd9df6f64fa026ae3b722f7c59d",
+      "why": "Defines the workspace filesystem primitives (ws.find/ws.list/ws.read/ws.write/ws.delete) that the \u00a71 os_tooling routing row and \u00a72 rule 9 \u2014 inherited unchanged from v0010 \u2014 assert are a supported runtime capability; if these are renamed or removed, that routing carve-out goes stale."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from bp_index v0010 content (re-adds the `TRUE(1)`/`FALSE(0)` parenthetical in \u00a73) if removing the hard-coded yes/no token causes Executors to omit a yes/no answer entirely."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,88 @@
+# Dispatch Planning
+
+## When this process applies
+
+A request to **plan a dispatch wave** that points you at a dispatch wave `.md` file. `/AGENTS.MD`: "When asked to plan a dispatch wave and pointed to a `.md` file, read that file and follow `/docs/dispatch.md`." This is an information/planning task — the deliverable is a single JSON assignment object, not a commerce mutation. Do not mutate carts/payments/inventory.
+
+## Inputs
+
+- Live workspace paths:
+  - The dispatch wave `.md` file named by the request (typically under `/uploads`; see `/docs/attachments.md`). It names the **package TSV** and **lane TSV** for that wave.
+  - The package TSV and lane TSV the wave file names.
+  - `/docs/dispatch.md` — the authoritative planning policy and output schema.
+- Tools: `/bin/id`; `/bin/cat` to read the wave file and TSVs. SQL is unavailable.
+
+## Process
+
+From `/docs/dispatch.md`:
+
+1. Read the wave file first; it names the package TSV and lane TSV. Read both TSVs.
+2. Package rows define the item to move, the source store (`from_store_id`), the destination store (`to_store_id`), the delivery due time, and the margin earned if the package arrives.
+3. Lane rows define directed transport links: origin, destination, capacity per trip, ETA, trip cost, and `delay_hint` (a summary of past delay observations).
+4. Build a route per package: it must **start at the package `from_store_id` and end at `to_store_id`**, using direct or multiple hub lanes, where every consecutive lane connects (each lane's destination is the next lane's origin).
+5. `capacity` is **per trip**, not a cap on how many packages may ever use a lane. A lane is a queue across trips: several assignments may share it, lower `priority` numbers load first, and any assignment beyond the per-trip `capacity` simply waits for the next trip. Set `priority` so the tightest-`due_time` / highest-margin packages on a shared lane load first. Do **not** divert a package onto a costlier or more delay-prone route merely because a cheaper shared lane is already at its per-trip `capacity` — share the lane and order the queue with `priority`; divert only when the expected next-trip wait would push that package past its `due_time` by more than the cheaper route saves.
+6. **Maximize expected net profit per package — price the late penalty into each route; do not rank routes on nominal ETA.** For each package, compare candidate routes from `from_store_id` to `to_store_id` on *expected* net, not nominal net:
+   - Nominal net = `margin − Σ lane cost`; schedule buffer = `due_time − Σ lane eta`.
+   - The late penalty is charged per unit of delay, and a route's *actual* arrival is its nominal ETA **plus** whatever delay its lanes' `delay_hint`s imply — so buffer is a safety margin, not a guarantee. Thin, zero, or negative buffer, more hops (each lane can delay independently and consumes scarce capacity), and `likely`/`often` or `medium`/`long when delayed` hints all raise expected lateness.
+   - **Selection rule:** pick the route that maximizes `nominal_net − expected_late_penalty`. Do **not** trade away schedule buffer or add a hop to shave a small amount of trip cost — on a high-margin package even a modest chance of arriving late outweighs a few cents of saving, so prefer the route with the most buffer and the fewest, lowest-risk lanes. Take a cheaper multi-hop route only when its cost saving clearly exceeds the added late-penalty risk *and* it keeps comfortable buffer.
+   - When no route can arrive by `due_time`, choose the one with the least expected lateness; keep a package assigned only while its expected net (after the expected penalty) stays positive.
+7. Return **exactly one** JSON object with **one assignment per package**:
+
+   ```json
+   {
+     "assignments": [
+       {"package_id": "XFER-001", "route": ["lane-a", "lane-b"], "priority": 1}
+     ]
+   }
+   ```
+
+8. The JSON object is the answer payload; [submission_terminal](submission_terminal.md) owns the final emission. Do not wrap or reshape it beyond what `/docs/dispatch.md` specifies.
+
+## Outcomes
+
+- `OUTCOME_OK`: a valid assignment object covering every package with connected routes from `from_store_id` to `to_store_id`, priorities set, optimized for expected net profit.
+- `OUTCOME_NONE_CLARIFICATION`: the request does not name a wave file, or the wave file does not name its TSVs.
+- `OUTCOME_NONE_UNSUPPORTED`: the named wave/TSV inputs are missing or unreadable, or no connected route exists for a required package (state which packages cannot be routed).
+
+## Evidence ledger
+
+`request_named_inputs`:
+
+- The dispatch wave `.md` file and the package/lane TSVs it names. Their live paths are load-bearing answer evidence.
+
+`policy_docs_applied`:
+
+- `/docs/dispatch.md` when its routing/optimization/schema rules shaped the answer.
+
+`answer_records`:
+
+- The wave file and the two TSVs that determine the assignments.
+
+`refs_must_include`:
+
+- `/docs/dispatch.md` and the request-named wave/TSV input paths the plan was built from.
+
+`refs_must_not_include`:
+
+- Commerce records (`/proc/...`) not used by the plan, and `bin-help` paths.
+
+`post_state_records`:
+
+- none; this BP does not mutate.
+
+## Anti-patterns
+
+- Building a route whose lanes do not connect from `from_store_id` to `to_store_id`.
+- Optimizing for delivered-package count instead of expected net profit (ignoring trip cost and late/missed penalties).
+- Treating a lane's `capacity` as a hard cap on total assignments and diverting a package onto a costlier or more delay-prone route to avoid sharing — `capacity` is per trip; share the lane and order the queue with `priority`, letting overflow wait a trip unless that wait would miss `due_time`.
+- Ranking routes by **nominal** net (margin − cost at face-value ETA) and using `delay_hint` only as a tie-breaker — sacrificing schedule buffer or adding hops to save a little cost is how a high-margin package picks up an avoidable late penalty.
+- Emitting more than one JSON object, or more/fewer than one assignment per package.
+- Treating `delay_hint` as a hard guarantee rather than a summary of past observations.
+- Mutating commerce records — dispatch planning produces a JSON plan only.
+
+## Dependencies
+
+> If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+
+- `/docs/dispatch.md` — the wave/package/lane model, the routing constraints, the per-trip capacity/priority queue semantics, the expected-net-profit objective (margins, trip cost, delay/missed penalties), and the exact output JSON schema.
+- `/docs/attachments.md` — `/uploads` as the root for the request-named wave and TSV input files.

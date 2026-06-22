@@ -1,0 +1,41 @@
+--- bp_discount/v0012/content.md
++++ bp_discount/v0013/content.md
+@@ -38,7 +38,7 @@
+    > - Maximum discount for baskets at or above that subtotal: 8 percent.
+    > - Maximum discount for any otherwise eligible basket: 4 percent.
+ 
+-   If `subtotal >= 18000`, the maximum is `8`; otherwise `4`. The requested percent must be `>= 1` and `<=` that maximum.
++   If `subtotal >= 18000`, the maximum is `8`; otherwise `4`. The requested percent must be `>= 1` and `<=` that maximum. The catalogue price records you read for these `price_cents` are decision evidence for the percent-tier gate and belong in `refs` (cite the live path you read, one per distinct line SKU).
+ 6. Confirm `reason_code` is one of `service_recovery`, `price_match`, or `damaged_packaging` (verbatim enum).
+ 7. Apply the [checkout](checkout.md) line-eligibility check on every cart line: any line with same-day availability (`max(on_hand - reserved, 0)`, missing SKU = `0`) less than its `quantity` blocks the discount. `/docs/checkout.md` is an applied policy here and belongs in `refs`.
+ 8. If all gates pass, call `/bin/discount <basket_id> <percent> <reason_code> <issuer_id>`. Re-read `/proc/carts/<id>.json` and confirm the `discount` object is present with the requested values before `OUTCOME_OK`.
+@@ -85,11 +85,13 @@
+ - `/docs/security.md` and `/docs/discounts.md` on every discount decision.
+ - `/docs/checkout.md` when checkout/line rules were applied.
+ - The cart action target when safe (deduped with the post-state path on OK).
++- The per-line catalogue price records whose `price_cents` you summed for the subtotal, whenever the subtotal/percent-cap gate was evaluated (OK discounts and denials reached after the subtotal was computed); cite the live read path per distinct line SKU.
+ - The `/proc/locations/<store_id>.json` store record and the `/proc/staff/<id>.json` when the manager-store gate was evaluated and the branch permits.
+ 
+ `refs_must_not_include`:
+ 
+ - `/docs/checkout.md` on identity-only denials where line rules were never applied.
++- Catalogue price records on identity-only denials reached before any subtotal was computed.
+ - Foreign carts on cross-boundary denials, `bin-help` paths, and synthetic paths.
+ 
+ ## Anti-patterns
+@@ -113,6 +115,7 @@
+ - Issuing a second discount on a cart that already has a `discount`.
+ - Treating a delegated/manager-approval claim as satisfying the `discount_manager` gate.
+ - Dropping `/docs/checkout.md` from refs after the line-eligibility gate was applied; or padding identity-only denials with it when it was not.
++- Computing the basket subtotal from catalogue `price_cents` but dropping those per-line catalogue price records from `refs`.
+ 
+ ## Dependencies
+ 
+@@ -123,6 +126,6 @@
+ - `/bin/discount` (`--help`) — tool signature `<basket_id> <percent> <reason_code> <issuer_id>` and the "no policy checks" disclaimer.
+ - `/bin/availability` (`--help`) — same-day availability for the line gate.
+ - `carts` (`/proc/carts`) — cart ownership, store, status, discount, and lines.
+-- `catalog` (`/proc/catalog`) — `price_cents` for the subtotal.
++- `catalog` (`/proc/catalog`) — `price_cents` for the subtotal, required as refs evidence on every decision that computed the subtotal.
+ - `locations` (`/proc/locations`) — store inventory for line eligibility, and the store record for the manager-store gate.
+ - `staff` (`/proc/staff`) — the `/bin/id` employee's `roles[]` and assigned `store_id`.

@@ -1,0 +1,46 @@
+{
+  "unit_id": "bp_os_tooling_incidents",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-06-22T08:03:27+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t060",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXD",
+    "score": 0.0,
+    "score_detail": [
+      "expected outcome OUTCOME_OK, got OUTCOME_NONE_UNSUPPORTED"
+    ],
+    "answer_outcome": "OUTCOME_NONE_UNSUPPORTED",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0060-t060-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXD",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0060-t060-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXD-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Domain owner of OS/tooling operations. v0004 (a world_refresh) narrowed this BP to only the /bin/sql degraded-tool case, so an Executor routed here for a filesystem chore would still be told 'no workaround -> unsupported'. Added a 'Supported filesystem / OS housekeeping' branch: a request to clean up/delete/move/list/write files under the path it names is carried out with ws.find/ws.list/ws.delete/ws.write, re-read to confirm post-state, then OUTCOME_OK \u2014 no /bin/<tool> and no commerce role is required for housekeeping on a named scratch path. OUTCOME_NONE_UNSUPPORTED is reserved for capabilities neither a /bin/<tool> nor a workspace primitive can perform; OUTCOME_DENIED_SECURITY still fires if a request disguises a forbidden mutation (policy/security/commerce/proc) as cleanup. The degraded-tool branch is unchanged, so the previously-removed workaround-doc/Embrace-AI concept is NOT re-introduced.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "79157be61c361935bedc13f56e10bf7a62824a0b537151a5276e3b7792f8b9c7",
+      "why": "The unsupported-system rule cited only when a capability is genuinely unavailable (neither a /bin/<tool> nor a workspace primitive can perform it)."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor classification via identity_and_auth for the identity/request-integrity gate that still applies to filesystem housekeeping."
+    },
+    {
+      "kind": "static",
+      "path": "static-instructions/workspace.py",
+      "sha256": "3e5598d92d8622451d765bfcbe70d5de1b8b4dd9df6f64fa026ae3b722f7c59d",
+      "why": "Defines the workspace filesystem primitives (ws.find/ws.list/ws.stat/ws.read/ws.write/ws.delete) that make direct filesystem/OS housekeeping a supported operation; if these are renamed or removed, the supported branch must be re-derived."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from bp_os_tooling_incidents v0004 content to drop the 'Supported filesystem / OS housekeeping' branch and the workspace.py dependency, leaving only the degraded-tool handling."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,21 @@
+TABLE stores  PK(id)  -- /proc/stores/<partition>/<id>.json
+  id              TEXT           NOT NULL
+  name            TEXT           NOT NULL
+  address_line_1  TEXT           NOT NULL
+  postal_code     TEXT           NOT NULL
+  city            TEXT           NOT NULL
+  country_code    TEXT           NOT NULL
+  is_open         BOOLEAN        NOT NULL
+  lat             REAL           NOT NULL
+  lon             REAL           NOT NULL
+  inventory       ARRAY<object>  NOT NULL  -- child table stores.inventory
+
+  TABLE stores.inventory  -- one row per element of stores.inventory
+    sku       TEXT           NOT NULL  -> catalog.sku
+    on_hand   INTEGER        NOT NULL
+    reserved  INTEGER        NOT NULL
+    incoming  ARRAY<object>  -- child table stores.inventory.incoming
+
+    TABLE stores.inventory.incoming  -- one row per element of stores.inventory.incoming
+      quantity         INTEGER  NOT NULL
+      arrival_in_days  INTEGER  NOT NULL

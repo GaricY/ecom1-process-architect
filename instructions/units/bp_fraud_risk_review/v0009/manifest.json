@@ -1,0 +1,41 @@
+{
+  "unit_id": "bp_fraud_risk_review",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-06-22T07:03:13+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t015",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWS",
+    "score": 0.5264104604721069,
+    "score_detail": [
+      "answer amount mismatch",
+      "archive fraud refs recovered ~91% EUR from fraud amount, and also marked up to ten payments as false positives."
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0015-t015-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWS",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0015-t015-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWS-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: domain_policy (this topic BP defines the fraud hard-signal families and cohort membership). The trial failed on two fronts at once: ~9% of the fraud EUR was missed and several cited rows were false positives. (1) Over-capture: the cross-actor exact-identifier collision family listed 'identical created_at across different customer_id' as a HARD signal, so the Executor cited two payments (different device/payment fingerprint, store and amount) that merely shared a second-resolution timestamp \u2014 a coincidence, not an identity. This rule was carried verbatim since v0005 (never a deliberate fix), so narrowing it is not re-litigating a prior change. I drop the timestamp clause from the hard family and reclassify a timestamp-only cross-actor match as soft-only. (2) Under-capture: impossible-travel membership was pairwise (only the rows bracketing each over-threshold hop), so a trailing event of one actor's rapid multi-city run that landed near its immediate neighbour was dropped despite being the same dense run. I extend the impossible-travel scan-shape rule to expand a hit to the whole contiguous rapid run for that actor (mirroring the stationary-burst expansion already in step 9). Two surgical edits to existing rules plus matching anti-patterns and one coverage-check line; no new families added.",
+  "dependencies": [
+    {
+      "kind": "sql_table",
+      "path": "payment-ledger",
+      "sha256": "d18ade5b141d09808b0fdf61b8fdcb43a57ab671bb42ff3128753ce67309c882",
+      "why": "Every rule changed by this fix reads payment-ledger fields: payment_method_fingerprint/device_fingerprint and basket_id/order_id for the cross-actor collision family, and customer_id/created_at/observed_lat/observed_lon for the impossible-travel run expansion. A change to this record shape would make the corrected rules wrong."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "cf463ed7179a4a77b8c11cd1affc7dbd8b5c505cc2f745670c7ea41a367700c1",
+      "why": "Backs the retained workflow-state invariant family in this BP (status==paid carrying failed/pending three_ds, exhausted attempts, impossible 3DS transitions); if the legitimate 3DS transitions change, that hard-signal family goes stale."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0008 content if the narrowed timestamp rule or the impossible-travel run-expansion proves wrong (v0008 keeps identical-created_at as a hard collision and pairwise travel membership)."
+  },
+  "no_semantic_change": false
+}

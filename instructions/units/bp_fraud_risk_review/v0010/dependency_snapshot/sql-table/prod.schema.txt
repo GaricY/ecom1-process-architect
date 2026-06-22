@@ -1,0 +1,12 @@
+TABLE prod  PK(id)  -- /proc/prod/<partition>/<id>.json
+  id                INTEGER  NOT NULL
+  sku               TEXT     NOT NULL
+  name              TEXT     NOT NULL
+  brand             TEXT     NOT NULL
+  category_id       TEXT     NOT NULL
+  kind_id           TEXT     NOT NULL
+  family_id         TEXT     NOT NULL
+  price_cents       INTEGER  NOT NULL
+  fulfillment_type  INTEGER  NOT NULL
+  return_policy     INTEGER  NOT NULL
+  properties        OBJECT   NOT NULL

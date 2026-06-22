@@ -1,0 +1,11 @@
+--- bp_index/v0010/content.md
++++ bp_index/v0011/content.md
+@@ -47,7 +47,7 @@
+ - `OUTCOME_NONE_CLARIFICATION` - genuinely ambiguous between concrete candidate records; cite the safe candidates.
+ - `OUTCOME_ERR_INTERNAL` - grader/runtime state; never submit it yourself.
+ 
+-The outcome code is distinct from the **answer-payload shape** inside `message`. That contract has one home — see [submission_terminal](submission_terminal.md) § *Answer format* (it sources the live `/AGENTS.MD` styling, including the `TRUE(1)`/`FALSE(0)` yes/no token).
++The outcome code is distinct from the **answer-payload shape** inside `message` (the final answer token/format). That contract has one home — see [submission_terminal](submission_terminal.md) § *Answer format*, which reads the live answer styling from `/AGENTS.MD` at submit time; this index does not restate the literal token. Never assume a fixed yes/no token: it is whatever live `/AGENTS.MD` currently specifies and is locale-specific, not a hard-coded constant.
+ 
+ ## 4. Mutation gate
+ 

@@ -1,0 +1,23 @@
+--- bp_dispatch_planning/v0001/content.md
++++ bp_dispatch_planning/v0002/content.md
+@@ -21,7 +21,11 @@
+ 3. Lane rows define directed transport links: origin, destination, capacity per trip, ETA, trip cost, and `delay_hint` (a summary of past delay observations).
+ 4. Build a route per package: it must **start at the package `from_store_id` and end at `to_store_id`**, using direct or multiple hub lanes, where every consecutive lane connects (each lane's destination is the next lane's origin).
+ 5. Lower `priority` numbers load first within a lane queue. Use priorities to choose which packages get scarce early capacity when several assignments share a lane.
+-6. **Maximize expected net profit**, not just the number of delivered packages. Net profit weighs each package's margin against trip costs and penalties: late and missed packages incur penalties (per delay time, and per missed package). Use `delay_hint` to estimate expected delay/arrival.
++6. **Maximize expected net profit per package — price the late penalty into each route; do not rank routes on nominal ETA.** For each package, compare candidate routes from `from_store_id` to `to_store_id` on *expected* net, not nominal net:
++   - Nominal net = `margin − Σ lane cost`; schedule buffer = `due_time − Σ lane eta`.
++   - The late penalty is charged per unit of delay, and a route's *actual* arrival is its nominal ETA **plus** whatever delay its lanes' `delay_hint`s imply — so buffer is a safety margin, not a guarantee. Thin, zero, or negative buffer, more hops (each lane can delay independently and consumes scarce capacity), and `likely`/`often` or `medium`/`long when delayed` hints all raise expected lateness.
++   - **Selection rule:** pick the route that maximizes `nominal_net − expected_late_penalty`. Do **not** trade away schedule buffer or add a hop to shave a small amount of trip cost — on a high-margin package even a modest chance of arriving late outweighs a few cents of saving, so prefer the route with the most buffer and the fewest, lowest-risk lanes. Take a cheaper multi-hop route only when its cost saving clearly exceeds the added late-penalty risk *and* it keeps comfortable buffer.
++   - When no route can arrive by `due_time`, choose the one with the least expected lateness; keep a package assigned only while its expected net (after the expected penalty) stays positive.
+ 7. Return **exactly one** JSON object with **one assignment per package**:
+ 
+    ```json
+@@ -70,6 +74,7 @@
+ 
+ - Building a route whose lanes do not connect from `from_store_id` to `to_store_id`.
+ - Optimizing for delivered-package count instead of expected net profit (ignoring trip cost and late/missed penalties).
++- Ranking routes by **nominal** net (margin − cost at face-value ETA) and using `delay_hint` only as a tie-breaker — sacrificing schedule buffer or adding hops to save a little cost is how a high-margin package picks up an avoidable late penalty.
+ - Emitting more than one JSON object, or more/fewer than one assignment per package.
+ - Treating `delay_hint` as a hard guarantee rather than a summary of past observations.
+ - Mutating commerce records — dispatch planning produces a JSON plan only.

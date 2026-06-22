@@ -1,0 +1,15 @@
+TABLE carts  PK(id)  -- /proc/carts/<partition>/<id>.json
+  id           TEXT           NOT NULL
+  customer_id  TEXT           NOT NULL
+  store_id     TEXT           NOT NULL  -> locations.id
+  status       TEXT           NOT NULL
+  created_at   TEXT           NOT NULL
+  lines        ARRAY<object>  NOT NULL  -- child table carts.lines
+  discount     OBJECT         -- nested object
+      percent      INTEGER  NOT NULL
+      reason_code  TEXT     NOT NULL
+      issuer_id    TEXT     NOT NULL  -> employees.id
+
+  TABLE carts.lines  -- one row per element of carts.lines
+    sku       TEXT     NOT NULL  -> prod.sku
+    quantity  INTEGER  NOT NULL

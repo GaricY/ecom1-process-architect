@@ -1,0 +1,82 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0013",
+  "parent": "v0012",
+  "status": "active",
+  "created_at": "2026-06-22T08:55:04+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t095",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXp",
+    "score": 0.0,
+    "score_detail": [
+      "answer refs for family \"/proc/prod\" mismatch: missing [/proc/prod/PT-DRL-BOS-GSR55-2AH.json /proc/prod/PT-DRL-BOS-GSR55-BODY.json], extra []"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0095-t095-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXp",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0095-t095-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnXp-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: topic_evidence (bp_discount). The Executor applied the correct 12% service_recovery discount and confirmed post-state, but the grader failed it for a /proc/prod refs mismatch: the two per-line product records that supplied price_cents for the subtotal (which determined the high-subtotal percent tier) were missing from refs. Across v0011/v0012 the catalogue price records sit only in `answer_records`; `refs_must_include` named cart, store, and staff but never the catalogue price rows, so the Executor projected refs without them. This was never tried-and-reverted \u2014 it is a standing gap, not a PA regression. Fix promotes the per-line catalogue price records into `refs_must_include` whenever the subtotal/percent-cap gate was evaluated, mirroring the existing checkout.md treatment with a matching step-5 'belongs in refs' clause and an anti-pattern, plus a `refs_must_not_include` carve-out so identity-only denials reached before any subtotal don't over-cite them.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "4d34145c5c135eb4a109640f4ba7d183c6990aca6d48df45e33359dceec137bc",
+      "why": "Gate set, subtotal/percent tiers, reason-code enum, manager-store gate, and the Non-Authority Bait table \u2014 the policy whose subtotal rule makes the catalogue price records load-bearing evidence."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "Same-day availability line-eligibility gate the discount policy applies at step 7."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/issuer authority applied via identity_and_auth for the capability and cross-boundary gates."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Tool signature <basket_id> <percent> <reason_code> <issuer_id> and the no-policy-checks disclaimer."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability for the per-line eligibility gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "a804cb8e0f959b08ca8f91b714b125b7e5657d319367101cf0ffe148d3ae1d8f",
+      "why": "Cart ownership, store, status, discount object, and lines used by the gate set and the subtotal computation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "prod",
+      "sha256": "4032460346d38f05f20a9821da18a4761736906770d72577cd6f4c75e705e620",
+      "why": "price_cents per line SKU summed for the subtotal; these catalogue records are now required in refs whenever the subtotal/percent gate was evaluated."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "255dc671a11627a22fc1dd61e4c13ad19b0dbd69f4040f96b02b61f1d1be88e3",
+      "why": "Store inventory for line eligibility and the store record for the manager-store gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "employees",
+      "sha256": "7d52e06e77cf0ef0fb9ac28dac23954297c81611ab844767e47f15c44a7313ac",
+      "why": "The /bin/id employee's roles[] and assigned store_id for the manager-store match."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0012 content (which lacks the catalogue-price refs_must_include bullet, step-5 'belongs in refs' clause, and the matching anti-pattern) if requiring the per-line catalogue records over-cites or regresses discount tasks."
+  },
+  "no_semantic_change": false
+}

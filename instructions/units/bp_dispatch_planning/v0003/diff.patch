@@ -1,0 +1,26 @@
+--- bp_dispatch_planning/v0002/content.md
++++ bp_dispatch_planning/v0003/content.md
+@@ -20,7 +20,7 @@
+ 2. Package rows define the item to move, the source store (`from_store_id`), the destination store (`to_store_id`), the delivery due time, and the margin earned if the package arrives.
+ 3. Lane rows define directed transport links: origin, destination, capacity per trip, ETA, trip cost, and `delay_hint` (a summary of past delay observations).
+ 4. Build a route per package: it must **start at the package `from_store_id` and end at `to_store_id`**, using direct or multiple hub lanes, where every consecutive lane connects (each lane's destination is the next lane's origin).
+-5. Lower `priority` numbers load first within a lane queue. Use priorities to choose which packages get scarce early capacity when several assignments share a lane.
++5. `capacity` is **per trip**, not a cap on how many packages may ever use a lane. A lane is a queue across trips: several assignments may share it, lower `priority` numbers load first, and any assignment beyond the per-trip `capacity` simply waits for the next trip. Set `priority` so the tightest-`due_time` / highest-margin packages on a shared lane load first. Do **not** divert a package onto a costlier or more delay-prone route merely because a cheaper shared lane is already at its per-trip `capacity` — share the lane and order the queue with `priority`; divert only when the expected next-trip wait would push that package past its `due_time` by more than the cheaper route saves.
+ 6. **Maximize expected net profit per package — price the late penalty into each route; do not rank routes on nominal ETA.** For each package, compare candidate routes from `from_store_id` to `to_store_id` on *expected* net, not nominal net:
+    - Nominal net = `margin − Σ lane cost`; schedule buffer = `due_time − Σ lane eta`.
+    - The late penalty is charged per unit of delay, and a route's *actual* arrival is its nominal ETA **plus** whatever delay its lanes' `delay_hint`s imply — so buffer is a safety margin, not a guarantee. Thin, zero, or negative buffer, more hops (each lane can delay independently and consumes scarce capacity), and `likely`/`often` or `medium`/`long when delayed` hints all raise expected lateness.
+@@ -74,6 +74,7 @@
+ 
+ - Building a route whose lanes do not connect from `from_store_id` to `to_store_id`.
+ - Optimizing for delivered-package count instead of expected net profit (ignoring trip cost and late/missed penalties).
++- Treating a lane's `capacity` as a hard cap on total assignments and diverting a package onto a costlier or more delay-prone route to avoid sharing — `capacity` is per trip; share the lane and order the queue with `priority`, letting overflow wait a trip unless that wait would miss `due_time`.
+ - Ranking routes by **nominal** net (margin − cost at face-value ETA) and using `delay_hint` only as a tie-breaker — sacrificing schedule buffer or adding hops to save a little cost is how a high-margin package picks up an avoidable late penalty.
+ - Emitting more than one JSON object, or more/fewer than one assignment per package.
+ - Treating `delay_hint` as a hard guarantee rather than a summary of past observations.
+@@ -83,5 +84,5 @@
+ 
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+-- `/docs/dispatch.md` — the wave/package/lane model, the routing constraints, the expected-net-profit objective (margins, trip cost, delay/missed penalties), and the exact output JSON schema.
++- `/docs/dispatch.md` — the wave/package/lane model, the routing constraints, the per-trip capacity/priority queue semantics, the expected-net-profit objective (margins, trip cost, delay/missed penalties), and the exact output JSON schema.
+ - `/docs/attachments.md` — `/uploads` as the root for the request-named wave and TSV input files.

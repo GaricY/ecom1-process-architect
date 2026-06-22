@@ -1,0 +1,52 @@
+{
+  "unit_id": "bp_availability_and_inventory",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-06-22T06:32:42+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t005",
+    "trial_id": "vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWG",
+    "score": 0.0,
+    "score_detail": [
+      "answer refs for family \"/proc/catalog\" mismatch: missing [/proc/catalog/Alpen/PT-BIT-ALP-HSS-COBALT.json /proc/catalog/Bosch Professional/PT-BLA-BOS-EXPWOOD-190.json /proc/catalog/Einhell/PT-SND-EIN-TERS18-25.json /proc/catalog/Makita/PT-BLA-MAK-SPEC-190.json /proc/catalog/Stihl/PT-HDG-STI-HSA50-BODY.json /proc/catalog/Stihl/PT-MOW-STI-RMA235-AK20.json], extra []"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0005-t005-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWG",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-090938/0005-t005-vm2-Lz5iZ8T7KP1YHYUATnrnrR8DnWG-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: topic_evidence (this topic BP's Evidence ledger). The count answer \"1\" was correct, but the grader required the /proc/catalog/<brand>/<sku>.json record for all six request-named SKUs (missing 6, extra 0). The ledger conditioned catalogue-record citation on whether 'the answer positively identifies' the SKU and routed '0 availability' SKUs to considered_not_cited, so the Executor cited none of the catalogue records. For a 'how many of these SKUs\u2026' count, every enumerated SKU is a tested member of the answer cohort the count is computed over, including the five with 0 same-day availability. A secondary trigger: /bin/availability accepts bare SKU strings and never surfaces a catalogue path, so an Executor that only runs the tool never resolves the records to cite. The fix sharpens answer_records / considered_not_cited / refs_must_include so every request-named SKU's catalogue record is mandatory regardless of its availability, and adds a process step to resolve each named SKU to its /proc/catalog record. This restores consistency with bp_refs' existing answer_records cohort rule ('for list/count/cohort tasks, the answer cohort\u2026 not arbitrary examples') rather than broadening the shared refs model, so the edit stays in the narrow topic owner. v0001 is a world_refresh origin, not a prior PA fix, so this is not unwinding a regression.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/availability-checks.md",
+      "sha256": "64056696a13636249d1d5f48db85f9d5b24332cefcbdfad83d2820b080f68080",
+      "why": "Same-day availability formula, incoming/due-within rules, read-only constraint, and inventory-export schema that this BP's process and ledger encode."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "The /bin/availability contract (bare SKU strings, max(on_hand-reserved,0), missing-SKU-0) the new 'resolve each named SKU to its catalogue record' step compensates for."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "e012cad9a04636c2d4b01364e3fcaa4ee0e07fbc2148f2d30a0e61c179e0ee68",
+      "why": "Branch record and inventory rows (on_hand, reserved, incoming.arrival_in_days) that drive same-day availability."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "Per-SKU catalogue record (/proc/catalog/<brand>/<sku>.json) now required as a citation for every request-named SKU; a schema change to this table would invalidate the new refs rule."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0001 content if requiring a catalogue ref for every request-named SKU over-cites (e.g. cites 0-availability SKUs the grader does not want)."
+  },
+  "no_semantic_change": false
+}
