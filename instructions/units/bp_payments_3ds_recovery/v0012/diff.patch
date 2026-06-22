@@ -1,0 +1,20 @@
+--- bp_payments_3ds_recovery/v0011/content.md
++++ bp_payments_3ds_recovery/v0012/content.md
+@@ -35,7 +35,7 @@
+ 1. Apply [identity_and_auth](identity_and_auth.md). Customer actor: `payment.customer_id == /bin/id user`. From `/docs/payments/3ds.md`: "`/bin/id` reports a customer identity" and "The payment `customer_id` matches the current customer identity." A foreign payment → `OUTCOME_DENIED_SECURITY`; the foreign `/proc/payment-ledger/...` and `/proc/carts/...` paths stay **out** of refs.
+ 2. Confirm the payment `status == requires_3ds_action`.
+ 3. Confirm the payment has a `basket_id`, that basket exists under `/proc/carts/` with `status == checked_out`, `payment.basket_id == cart.id`, and both records share the same `customer_id`.
+-4. Confirm the payment has a `three_ds` object and `three_ds.attempts < three_ds.max_attempts` (this workspace allows up to 2 attempts).
++4. Confirm the payment has a `three_ds` object and `three_ds.attempts < three_ds.max_attempts` (this workspace allows up to 3 attempts).
+ 5. Check `three_ds.status` against the status table, **verbatim** from `/docs/payments/3ds.md`:
+ 
+    > - `3ds-status1`: a fresh challenge is already active. Do not start another challenge before the payment `three_ds.retry_after` timestamp. Use `/bin/date`; if the current time is earlier than `retry_after`, leave the payment unchanged and tell the customer when retry is available. If current time is at or after `retry_after`, a fresh challenge may be started if attempts remain.
+@@ -87,7 +87,7 @@
+ 
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+-- `/docs/payments/3ds.md` — full gate set, the customer-identity gate, the `retry_after`/`3ds-status1` semantics, the 2-attempt cap, the recover-3ds invocation, and the prerequisite line naming `/docs/security.md` and `/docs/checkout.md`.
++- `/docs/payments/3ds.md` — full gate set, the customer-identity gate, the `retry_after`/`3ds-status1` semantics, the 3-attempt cap, the recover-3ds invocation, and the prerequisite line naming `/docs/security.md` and `/docs/checkout.md`.
+ - `/docs/checkout.md` — prerequisite policy that 3DS recovery defers to.
+ - `/docs/security.md` — identity / cross-boundary rule named in the 3DS prerequisite line.
+ - `bin-help/payments.help.txt` — tool signature; this BP authorises `recover-3ds` only (the refund subcommands have moved off this binary).

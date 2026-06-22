@@ -1,0 +1,7 @@
+# /bin/availability --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: availability <store_record_path|-> <sku>...
+Prints same-day availability as max(on_hand - reserved, 0); missing SKUs return 0.

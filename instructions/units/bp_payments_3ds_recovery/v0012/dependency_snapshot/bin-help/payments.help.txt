@@ -1,0 +1,9 @@
+# /bin/payments --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: payments <subcommand> [args]
+
+Subcommands:
+  recover-3ds <payment_id>   Start a fresh 3DS challenge for an eligible payment.

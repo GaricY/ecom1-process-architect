@@ -1,0 +1,3 @@
+TABLE staff_roles  PK(employee_id, role)
+  employee_id  TEXT  NOT NULL  -> staff.id
+  role         TEXT  NOT NULL

@@ -1,0 +1,40 @@
+--- bp_submission_terminal/v0006/content.md
++++ bp_submission_terminal/v0007/content.md
+@@ -2,7 +2,7 @@
+ 
+ ## When this process applies
+ 
+-Read this process immediately before the final `submit_and_exit(...)` call in every trial. This file owns the terminal protocol: final outcome validation, post-state confirmation, the rule that execution stops after submission, and the **final `message` answer-format / token contract** (the `## Answer format` section below — the single source of truth for `TRUE(1)`/`FALSE(0)` / SKU / bare-value payload shaping).
++Read this process immediately before the final `submit_and_exit(...)` call in every trial. This file owns the terminal protocol: final outcome validation, post-state confirmation, the rule that execution stops after submission, and the **final `message` answer-format / token contract** (the `## Answer format` section below — the single source of truth for the live-`/AGENTS.MD` yes/no token / SKU / bare-value payload shaping).
+ 
+ Do not use this file to decide which evidence belongs in `refs`. Build and validate the refs list with [refs](refs.md) first, then return here.
+ 
+@@ -36,11 +36,11 @@
+ 
+ 1. **Explicit printf clause in the instruction** (`Answer in exactly format "%d"`, `"%s"`, `"%.2f"`, etc.) → emit the **bare value** the placeholder describes. No token, no brackets, no prose, no units. A bare-`%s` SKU is the raw SKU string.
+ 2. **Explicit literal token shown in the instruction** (the instruction text itself contains a token such as `TRUE(1)` / `FALSE(0)` / a `[QTY:N]` slot and tells you to emit it) → reproduce that token byte-for-byte with its slot filled.
+-3. **Yes/no question** (no printf clause) → answer **exactly `TRUE(1)`** for yes or **`FALSE(0)`** for no. From `/AGENTS.MD`: "For yes/no answers, answer exactly `TRUE(1)` or `FALSE(0)`." This is the literal token a yes/no answer must carry, even when the question text never shows it. Any explanatory prose goes around the token, not instead of it.
++3. **Yes/no question** (no printf clause) → answer with the **exact yes/no token defined in the live `/AGENTS.MD`**, copied verbatim (one literal for yes, one for no). Read `/AGENTS.MD` for the current token — do not assume one from memory, from another trial, or from this file. The token is mandatory even when the question text never shows it; any explanatory prose goes around the token, not instead of it.
+ 4. **SKU lookup** → from `/AGENTS.MD`: "For SKU lookups, answer with `OUTCOME_OK` and the SKU only when exactly one product matches." Emit the single matching SKU as the bare value. If the request is ambiguous between products, submit `OUTCOME_NONE_CLARIFICATION`, ask which product the user meant, and cite every candidate product record (see [product_discovery](product_discovery.md)).
+ 5. **Otherwise** → concise prose or a bare identifier/path (e.g. a count as a bare integer). For an identifier or path, also put the path in `refs`.
+ 
+-Pre-submission check: quote the instruction's format clause (if any) verbatim. If it gives a printf placeholder, strip any token wrapping. If it is a yes/no question with no printf clause, confirm `TRUE(1)` / `FALSE(0)` is present in `message`. Bare `yes`/`no`/`Yes.`/`No.` prose on a yes/no question is a format miss and scores zero even when the verdict and refs are right.
++Pre-submission check: quote the instruction's format clause (if any) verbatim. If it gives a printf placeholder, strip any token wrapping. If it is a yes/no question with no printf clause, confirm the live `/AGENTS.MD` yes/no token is present in `message`. Bare `yes`/`no`/`Yes.`/`No.` prose on a yes/no question is a format miss and scores zero even when the verdict and refs are right.
+ 
+ ## Outcomes
+ 
+@@ -62,7 +62,7 @@
+ - Letting this file decide whether a target record is safe to cite; that belongs to [refs](refs.md).
+ - Submitting a blocked outcome whose `message` reveals a foreign owner id, employee contact field, or coordinates.
+ - Hand-editing a `/proc/...` record as an "unsupported fallback" when no tool/policy supports it.
+-- Emitting `<YES>` / `<NO>` / `<COUNT:N>` or bare `yes`/`no` prose on a yes/no question. The current world token is `TRUE(1)` / `FALSE(0)` — those older tokens are retired.
++- Emitting a yes/no answer in any token other than the one the live `/AGENTS.MD` currently specifies — e.g. bare `yes`/`no`/`Yes.`/`No.` prose, `<YES>`/`<NO>`/`<COUNT:N>`, or a token remembered from another trial or an older copy of `/AGENTS.MD`. Read the live `/AGENTS.MD` for the current token; do not assume it.
+ - Wrapping a printf-formatted (`%d`/`%s`/`%.2f`) answer in any token the instruction's format clause did not call for.
+ 
+ ## Dependencies
+@@ -70,4 +70,4 @@
+ > If any of these dependencies change, this BP file may have become stale and must be re-derived.
+ 
+ - `runtime_prelude.py` — defines `submit_and_exit`, its `ws.answer` call, and the clean `SystemExit(0)` after submission.
+-- `/AGENTS.MD` — source of the merchant reply-styling contract: yes/no → `TRUE(1)`/`FALSE(0)`, SKU lookup → bare SKU on a single match / `OUTCOME_NONE_CLARIFICATION` otherwise. The `## Answer format` precedence is **derived from it**. `/AGENTS.MD` is a world-only file (tracked by `world_refresh`); if its reply-styling rule changes — different tokens, removal, or a new answer type — this contract is stale and must be re-derived here.
++- `/AGENTS.MD` — source of the merchant reply-styling contract: the yes/no token (read live; do not hardcode the literal here), SKU lookup → bare SKU on a single match / `OUTCOME_NONE_CLARIFICATION` otherwise. The `## Answer format` precedence is **derived from it**. `/AGENTS.MD` is a world-only file (tracked by `world_refresh`); if its reply-styling rule changes — different tokens, removal, or a new answer type — this contract is stale and must be re-derived here.

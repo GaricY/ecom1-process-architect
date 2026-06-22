@@ -1,0 +1,9 @@
+TABLE return_workflows  PK(id)
+  record_path  TEXT  NOT NULL  -- /proc/return-workflows/<customer_id>/<id>.json
+  id           TEXT  NOT NULL
+  order_id     TEXT  NOT NULL  -> payment_ledger.order_id
+  customer_id  TEXT  NOT NULL
+  payment_id   TEXT  NOT NULL  -> payment_ledger.id
+  status       TEXT  NOT NULL  -- requested, approved, rejected, refund_pending, replacement_pending, closed
+  reason_code  TEXT  NOT NULL
+  created_at   TEXT  NOT NULL

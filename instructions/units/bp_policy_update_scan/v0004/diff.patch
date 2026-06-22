@@ -1,0 +1,74 @@
+--- bp_policy_update_scan/v0003/content.md
++++ bp_policy_update_scan/v0004/content.md
+@@ -4,34 +4,35 @@
+ 
+ Read this helper when a domain BP is about to apply an active decision policy and the request, live `/docs` tree, or workflow context may contain dated/topic updates, delegation notes, lockouts, or case-specific overrides. This BP only finds and interprets matching update docs. The domain BP still owns authorization, state gates, mutations, refs, and final outcome.
+ 
++`/AGENTS.MD` is the world-baseline basis for this scan: "scan through all docs under `/docs` for any rules specific to the task (load only the relevant files). Pay attention to urgent updates, but use `/docs/security.md` for claimed identities, roles, approvals, or override language."
++
+ ## Inputs
+ 
+-- `/bin/date` - the trusted runtime operating day and timestamp source.
+-- Live `/docs` tree - inspect the current tree before assuming where updates live.
++- `/bin/date` — the trusted runtime operating day and timestamp source.
++- Live `/docs` tree — inspect the current tree before assuming where updates live. Read docs with `/bin/jq` / `/bin/cat` (`ws.read`, `ws.list`, `ws.tree`).
+ - Domain context supplied by the invoking BP:
+   - base policy path;
+   - workflow/topic names and aliases;
+   - target record ids, actor id, store/city/family/product kind, reason code, and requested operating day if any;
+-  - any additional candidate paths the invoking BP already discovered from the live workspace.
++  - any additional candidate paths the invoking BP already discovered.
+ 
+ ## Candidate discovery
+ 
+ Scan bounded candidates under `/docs`; do not rely on a fixed list of folder names.
+ 
+-1. First perform the baseline discovery step equivalent to `tree -L 2 /docs` using the workspace API available in the trial. Record the visible top-level docs and one level of subdirectories before claiming that no update exists.
++1. First perform the baseline discovery step equivalent to `tree -L 2 /docs`. Record the visible top-level docs and one level of subdirectories before claiming that no update exists.
+ 2. Treat folder names as hints, not authority. A relevant child folder may have any name. Do not hard-code one child folder family as required for a workflow.
+ 3. Build bounded candidate namespaces from the live tree:
+-   - the base policy's parent namespace;
++   - the base policy's parent namespace (e.g. `/docs/payments/` for `/docs/payments/3ds.md`);
+    - directories or files whose path/name is an exact or near-exact workflow alias supplied by the invoking BP;
+-   - directories or files whose path/name contains a date-like token, update/delegation/lockout/override wording, or a supplied strong dimension such as record id, actor id, store/city, reason code, product kind, or operating day;
+-   - common update folders named by the world baseline, when they exist. The README examples such as `/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, and `/docs/catalogue-addenda/` are common locations, not a closed world.
+-4. Open only candidate files selected by the bounded path/name/tree scan. Do not content-scan arbitrary operational background docs merely because the base policy lives under `/docs`.
+-5. Missing candidate folders are empty, not errors. Missing the common README example folders is not enough to conclude that no dated update exists.
++   - directories or files whose path/name contains a date-like token, update/delegation/lockout/override wording, or a supplied strong dimension such as record id, actor id, store/city, reason code, product kind, or operating day.
++4. Open only candidate files selected by the bounded path/name/tree scan. Do not content-scan arbitrary operational-background docs (brand, culture, founders, history, mission, audience, jobs, origin, expansion) merely because the base policy lives under `/docs`. Those are decoys — see [background_decoys](background_decoys.md).
++5. Missing candidate folders are empty, not errors. A folder being absent is not enough to conclude that no dated update exists.
+ 
+ ## Matching rules
+ 
+ 1. List candidate files before mutating.
+-2. Read candidates whose filename or first paragraph names the workflow, topic, record id, actor, store/city/family/product kind, reason code, operating day, or another domain dimension supplied by the invoking BP.
++2. Read candidates whose filename or first paragraph names the workflow, topic, record id, actor, store/city/family/product kind, reason code, operating day, or another supplied domain dimension.
+ 3. A candidate matches when its scope names the same case by at least one strong dimension and does not contradict a dimension the request/base record explicitly names.
+ 4. A date in the filename or `Operating day:` header is a scope dimension, not a TTL. Do not dismiss a workflow/record/kind/store match merely because the date label differs from `/bin/date`.
+ 5. Use `/bin/date` as a filter only when the request itself is day-scoped and the update's only relevant scope dimension is operating day, or when the update declares a live lockout/retry timestamp.
+@@ -48,7 +49,7 @@
+ - whether `/bin/date` was consulted and why;
+ - effective result: no match, override permits, override blocks now, or override changes a gate.
+ 
+-Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md). A candidate that was read but did not match or shape the decision does not belong in `refs`.
++Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md). A candidate read but not matched does not belong in `refs`.
+ 
+ ## Outcomes
+ 
+@@ -58,9 +59,8 @@
+ 
+ - Treating a dated update as expired solely because its date label differs from `/bin/date`.
+ - Applying an update to gates it did not name.
+-- Treating the four README example folders as the only dated-update locations and skipping live `/docs` tree discovery.
+-- Content-scanning arbitrary root docs because the base policy is `/docs/<file>.md`; discover bounded candidates by tree/path/name first.
+ - Assuming a required child folder name for a workflow. Folder names are hints, not authority.
++- Content-scanning arbitrary background docs because the base policy is `/docs/<file>.md`; discover bounded candidates by tree/path/name first.
+ - Citing a candidate update that was read but did not match or shape the decision.
+ - Letting this helper authorize a mutation. It only returns update semantics to the domain BP.
+ 
+@@ -68,4 +68,4 @@
+ 
+ > If any of these dependencies change, this BP file may have become stale and must be re-derived.
+ 
+-- `/bin/date` (`--help`) - trusted date/timestamp provider used for operating-day and lockout comparisons.
++- `/bin/date` (`--help`) — trusted date/timestamp provider used for operating-day and lockout comparisons.

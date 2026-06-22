@@ -1,0 +1,71 @@
+{
+  "unit_id": "bp_checkout",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "checkout.md was rewritten: checkout is now customer-only and the doc adds a customer-only basket item-edit mutation (edit the cart JSON directly to add a unit), so this BP is expanded to 'Baskets and Checkout'; same-day availability is computed via /bin/availability (or /proc/locations inventory) as max(on_hand-reserved,0) since /bin/sql is down and store_inventory is gone; basket family /proc/baskets -> /proc/carts; adds do not require availability.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "The basket-item-edit gate set, the checkout gate set, the same-day availability formula, and the store-floor caveats."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/ownership gate applied via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "sha256": "65ef4279c83faf04c0c854f078421aad488f6059621f449ef6d9f54c6f4814ad",
+      "why": "Checkout tool signature <basket_id>."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability per SKU at a store record path for the checkout line gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "b20995a36e83ebd579ae0a1ed17325389c98efc3b49c06fd7669f4fe13e037e2",
+      "why": "Ownership, status, store pointer, and lines shape."
+    },
+    {
+      "kind": "sql_table",
+      "path": "cart_lines",
+      "sha256": "b01ea8eb3b82ae3a5bcd21e5e3296c72fb69c79cb3e47f492e4c87926d0896d5",
+      "why": "Basket line sku/quantity."
+    },
+    {
+      "kind": "sql_table",
+      "path": "location_inventory",
+      "sha256": "d71cc1d11e46a3028ab8af048f995222c3a73e37ed6ae98b91eb27df7845707c",
+      "why": "on_hand/reserved for the same-day availability gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "b0d6a870456671698221bb3c3b79843f22f120985a8106cca404834b80ee30de",
+      "why": "SKU resolution for the basket item-edit path."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore v0004 content (checkout-only, employee-or-customer actor, SQL store_inventory availability gate, /proc/baskets, no item-edit section)."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,6 @@
+# /bin/date --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: date

@@ -1,0 +1,11 @@
+--- bp_fraud_risk_review/v0008/content.md
++++ bp_fraud_risk_review/v0009/content.md
+@@ -9,7 +9,7 @@
+ ## Inputs
+ 
+ - `bin-help/sqlite_schema.txt` — the recovered record-shape map for the `/proc` families and the field names below.
+-- Live `/proc` families read with `/bin/jq` / `/bin/cat`: `/proc/payment-ledger` (payments), `/proc/carts`, `/proc/return-workflows`, `/proc/locations` (+ `location_inventory`), `/proc/catalog`, `/proc/staff`. **`/bin/sql` is unavailable** — see [os_tooling_incidents](os_tooling_incidents.md); build indexes in `execute_python` over the JSON you read (stdlib `json`, `datetime`, `defaultdict`, `Counter`, `math`).
++- Live `/proc` families read with `/bin/jq` / `/bin/cat`: `/proc/payment-ledger` (payments), `/proc/carts`, `/proc/return-workflows`, `/proc/locations` (+ `location_inventory`), `/proc/catalog`, `/proc/employees`. **`/bin/sql` is unavailable** — see [os_tooling_incidents](os_tooling_incidents.md); build indexes in `execute_python` over the JSON you read (stdlib `json`, `datetime`, `defaultdict`, `Counter`, `math`).
+ - `/docs/payments/3ds.md` — legitimate 3DS state transitions for workflow-state invariants.
+ 
+ **Schema note (renamed projection).** Payment risk fields are now `payment_ledger.created_at` (event time), `observed_lat` / `observed_lon` (checkout-time risk-log coordinates, not customer address), `archived` (archive flag; archived payments may omit `order_id` / `basket_id`), `status` (`paid` / `requires_3ds_action`), plus the opaque exact identifiers `payment_method_fingerprint` / `device_fingerprint`. 3DS fields live in the `payment_three_ds` shape (`status`, `attempts`, `max_attempts`, `retry_after`, `failure_reason`). **There is no customer account family** in the live projection — `home_latitude` / `home_longitude` no longer exist, so observed-vs-home distance is not an available axis. Store coordinates (`locations.lat` / `locations.lon`) remain for branch-distance context. Read the current field list from `bin-help/sqlite_schema.txt` before composing a scan.

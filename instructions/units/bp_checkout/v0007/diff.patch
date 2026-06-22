@@ -1,0 +1,43 @@
+--- bp_checkout/v0006/content.md
++++ bp_checkout/v0007/content.md
+@@ -7,9 +7,9 @@
+ ## Inputs
+ 
+ - Live workspace paths:
+-  - `/proc/carts/<customer_id>/<id>.json` — target basket; status must be `active`.
++  - `/proc/baskets/<customer_id>/<id>.json` — target basket; status must be `active`.
+   - `/proc/catalog/<brand>/<sku>.json` — to resolve a product request to exactly one SKU for an item edit.
+-  - `/proc/locations/<city>/<store_id>.json` — basket `store_id`'s branch, for same-day availability at checkout.
++  - `/proc/stores/<city>/<store_id>.json` — basket `store_id`'s branch, for same-day availability at checkout.
+   - `/docs/checkout.md` — the authoritative basket-edit + checkout policy. Names `/docs/security.md` as the identity prerequisite.
+ - Tools:
+   - `/bin/id` — identity (cross-cutting).
+@@ -33,7 +33,7 @@
+ 1. Resolve the product to **exactly one** `/proc/catalog` SKU (see [product_discovery](product_discovery.md) / `/docs/catalogue-lookup.md`). If zero or several match, this is `OUTCOME_NONE_CLARIFICATION` — do not edit.
+ 2. Adding to an active basket does **not** require same-day availability: "Customers may add products that are out of stock, fully reserved, incoming later, or absent from the branch inventory." Do not run an availability gate here.
+ 3. Edit the cart JSON directly. From `/docs/checkout.md`: if the SKU is already in `lines`, increase that line's `quantity` by `1`; otherwise append `{ "sku": "<sku>", "quantity": 1 }`.
+-4. Re-read `/proc/carts/<customer_id>/<id>.json` and confirm the line/quantity change before `OUTCOME_OK`.
++4. Re-read `/proc/baskets/<customer_id>/<id>.json` and confirm the line/quantity change before `OUTCOME_OK`.
+ 5. Do not edit abandoned baskets, checked-out baskets, guest baskets, prompt-claimed identities, or baskets owned by another customer.
+ 
+ ### B. Check out a basket
+@@ -65,9 +65,9 @@
+ ## Refs to set in scratchpad
+ 
+ - `/docs/security.md` and `/docs/checkout.md` — the two active policies applied.
+-- `/proc/carts/<customer_id>/<id>.json` — when ownership passed (the action target).
++- `/proc/baskets/<customer_id>/<id>.json` — when ownership passed (the action target).
+ - Item edit: the resolved `/proc/catalog/<brand>/<sku>.json` for the SKU added.
+-- Checkout: the basket store's `/proc/locations/<city>/<store_id>.json` when its inventory was queried for the availability gate.
++- Checkout: the basket store's `/proc/stores/<city>/<store_id>.json` when its inventory was queried for the availability gate.
+ - See [refs](refs.md) for the construction contract.
+ 
+ ## Anti-patterns
+@@ -89,7 +89,3 @@
+ - `/docs/security.md` — identity gate (applied via [identity_and_auth](identity_and_auth.md)).
+ - `/bin/checkout` (`--help`) — checkout tool signature `<basket_id>`.
+ - `/bin/availability` (`--help`) — same-day availability per SKU at a store record path.
+-- `sql_table carts` — ownership, status, store pointer, and `lines` shape.
+-- `sql_table cart_lines` — basket line `sku` / `quantity`.
+-- `sql_table location_inventory` — `on_hand` / `reserved` for the same-day availability gate.
+-- `sql_table catalog` — SKU resolution for item edits.

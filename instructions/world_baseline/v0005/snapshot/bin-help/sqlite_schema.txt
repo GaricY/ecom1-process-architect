@@ -1,0 +1,118 @@
+# Warehouse schema — reconstructed from the live /proc projection.
+# Recovered from live /proc JSON records via /bin/jq and /bin/cat. /bin/sql is unavailable in this prod runtime
+# Structure only: tables, columns, types, nullability, relationships. Record
+# counts, column values, and open-ended map keys are NOT shown — they are
+# data (vary per trial), not schema. Each TABLE is one
+# /proc/<family>/<partition>/<id>.json record type; nested arrays are child
+# tables. Read /proc live for actual data: ws.read_json(path) for one record,
+# ws.proc("<family>") for a whole family (list /proc live — family names can
+# vary per trial). /proc is the source of truth.
+
+## Foreign-key edges (inferred from /proc id references)
+  carts.discount.issuer_id     -> staff.id
+  carts.lines.sku              -> catalog.sku
+  carts.store_id               -> locations.id
+  locations.inventory.sku      -> catalog.sku
+  payment-ledger.basket_id     -> carts.id
+  payment-ledger.lines.sku     -> catalog.sku
+  payment-ledger.store_id      -> locations.id
+  return-workflows.payment_id  -> payment-ledger.id
+  staff.store_id               -> locations.id
+
+## Families
+
+TABLE carts  PK(id)  -- /proc/carts/<partition>/<id>.json
+  id           TEXT           NOT NULL
+  customer_id  TEXT           NOT NULL
+  store_id     TEXT           NOT NULL  -> locations.id
+  status       TEXT           NOT NULL
+  created_at   TEXT           NOT NULL
+  lines        ARRAY<object>  NOT NULL  -- child table carts.lines
+  discount     OBJECT         -- nested object
+      percent      INTEGER  NOT NULL
+      reason_code  TEXT     NOT NULL
+      issuer_id    TEXT     NOT NULL  -> staff.id
+
+  TABLE carts.lines  -- one row per element of carts.lines
+    sku       TEXT     NOT NULL  -> catalog.sku
+    quantity  INTEGER  NOT NULL
+
+TABLE catalog  PK(id)  -- /proc/catalog/<partition>/<id>.json
+  id                INTEGER  NOT NULL
+  sku               TEXT     NOT NULL
+  name              TEXT     NOT NULL
+  brand             TEXT     NOT NULL
+  category_id       TEXT     NOT NULL
+  kind_id           TEXT     NOT NULL
+  family_id         TEXT     NOT NULL
+  price_cents       INTEGER  NOT NULL
+  fulfillment_type  INTEGER  NOT NULL
+  return_policy     INTEGER  NOT NULL
+  properties        OBJECT   NOT NULL
+
+TABLE locations  PK(id)  -- /proc/locations/<partition>/<id>.json
+  id              TEXT           NOT NULL
+  name            TEXT           NOT NULL
+  address_line_1  TEXT           NOT NULL
+  postal_code     TEXT           NOT NULL
+  city            TEXT           NOT NULL
+  country_code    TEXT           NOT NULL
+  is_open         BOOLEAN        NOT NULL
+  lat             REAL           NOT NULL
+  lon             REAL           NOT NULL
+  inventory       ARRAY<object>  NOT NULL  -- child table locations.inventory
+
+  TABLE locations.inventory  -- one row per element of locations.inventory
+    sku       TEXT           NOT NULL  -> catalog.sku
+    on_hand   INTEGER        NOT NULL
+    reserved  INTEGER        NOT NULL
+    incoming  ARRAY<object>  -- child table locations.inventory.incoming
+
+    TABLE locations.inventory.incoming  -- one row per element of locations.inventory.incoming
+      quantity         INTEGER  NOT NULL
+      arrival_in_days  INTEGER  NOT NULL
+
+TABLE payment-ledger  PK(id)  -- /proc/payment-ledger/<partition>/<id>.json
+  id                          TEXT           NOT NULL
+  order_id                    TEXT
+  basket_id                   TEXT           -> carts.id
+  customer_id                 TEXT           NOT NULL
+  store_id                    TEXT           NOT NULL  -> locations.id
+  amount_cents                INTEGER        NOT NULL
+  currency                    TEXT           NOT NULL
+  status                      TEXT           NOT NULL
+  created_at                  TEXT           NOT NULL
+  payment_method_fingerprint  TEXT           NOT NULL
+  device_fingerprint          TEXT           NOT NULL
+  observed_lat                REAL           NOT NULL
+  observed_lon                REAL           NOT NULL
+  lines                       ARRAY<object>  NOT NULL  -- child table payment-ledger.lines
+  three_ds                    OBJECT         -- nested object
+      status          TEXT     NOT NULL
+      attempts        INTEGER  NOT NULL
+      max_attempts    INTEGER  NOT NULL
+      retry_after     TEXT
+      failure_reason  TEXT
+  archived                    BOOLEAN
+
+  TABLE payment-ledger.lines  -- one row per element of payment-ledger.lines
+    sku               TEXT     NOT NULL  -> catalog.sku
+    quantity          INTEGER  NOT NULL
+    unit_price_cents  INTEGER  NOT NULL
+
+TABLE return-workflows  PK(id)  -- /proc/return-workflows/<partition>/<id>.json
+  id           TEXT  NOT NULL
+  order_id     TEXT  NOT NULL
+  customer_id  TEXT  NOT NULL
+  payment_id   TEXT  NOT NULL  -> payment-ledger.id
+  status       TEXT  NOT NULL
+  reason_code  TEXT  NOT NULL
+  created_at   TEXT  NOT NULL
+
+TABLE staff  PK(id)  -- /proc/staff/<partition>/<id>.json
+  id            TEXT         NOT NULL
+  display_name  TEXT         NOT NULL
+  email         TEXT         NOT NULL
+  title         TEXT         NOT NULL
+  store_id      TEXT         NOT NULL  -> locations.id
+  roles         ARRAY<TEXT>  NOT NULL

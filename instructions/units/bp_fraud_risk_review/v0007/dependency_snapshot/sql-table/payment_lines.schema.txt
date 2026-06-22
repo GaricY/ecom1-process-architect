@@ -1,0 +1,6 @@
+TABLE payment_lines  PK(payment_id, line_number)
+  payment_id        TEXT     NOT NULL  -> payment_ledger.id
+  line_number       INTEGER  NOT NULL  -- array order in payment_ledger.lines, 1-based
+  sku               TEXT     NOT NULL  -> catalog.sku
+  quantity          INTEGER  NOT NULL
+  unit_price_cents  INTEGER  NOT NULL

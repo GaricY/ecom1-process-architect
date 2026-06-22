@@ -1,0 +1,36 @@
+{
+  "unit_id": "bp_identity_and_auth",
+  "version": "v0006",
+  "parent": "v0005",
+  "status": "active",
+  "created_at": "2026-05-30T09:46:44+00:00",
+  "created_by": "human",
+  "mode": "refresh",
+  "trigger": {
+    "command": "hand-edit",
+    "run_id": "20260530-123952",
+    "task_ids": [
+      "t001"
+    ],
+    "analysis": ".tasks/task-035/plan.md"
+  },
+  "rationale": "Drop dead sql_table deps. /bin/sql cluster is down on ecom1-prod, so bin-help/sqlite_schema.txt is the outage error and every sql_table dep is permanently stale, flooding attention/unit-diffs (run 20260530-123952/0001-t001). The warehouse is now read from the /proc file projection (ws.proc/read_json/jq, executor_core v0014), so table-name deps no longer model a real dependency. Content unchanged; only the structured dependency contract drops the sql_table entries (kept: workspace docs + command bin-helps). A future refresh/world_refresh can re-add table deps if /bin/sql recovers.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Sole authority for identity, ownership, cross-boundary rule, capability-vs-boundary distinction, employee-contact non-disclosure, and the legacy phrase glossary."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Defines the /bin/id output (user, roles) used to branch on actor type."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0005 (bp_admin rollback bp_identity_and_auth --from v0005, or retire the new version) to restore the sql_table deps if /bin/sql recovers and table-keyed staleness is wanted."
+  },
+  "no_semantic_change": false
+}

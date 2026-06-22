@@ -1,0 +1,20 @@
+# bp_checkout v0006
+
+- mode: `refresh`
+- created_by: `human`
+- created_at: `2026-05-30T09:46:43+00:00`
+- parent: `v0005`
+
+## Rationale
+
+Drop dead sql_table deps. /bin/sql cluster is down on ecom1-prod, so bin-help/sqlite_schema.txt is the outage error and every sql_table dep is permanently stale, flooding attention/unit-diffs (run 20260530-123952/0001-t001). The warehouse is now read from the /proc file projection (ws.proc/read_json/jq, executor_core v0014), so table-name deps no longer model a real dependency. Content unchanged; only the structured dependency contract drops the sql_table entries (kept: workspace docs + command bin-helps). A future refresh/world_refresh can re-add table deps if /bin/sql recovers.
+
+## Rollback
+
+Revert to v0005 (bp_admin rollback bp_checkout --from v0005, or retire the new version) to restore the sql_table deps if /bin/sql recovers and table-keyed staleness is wanted.
+
+## Dependencies
+- `workspace:/docs/checkout.md` — The basket-item-edit gate set, the checkout gate set, the same-day availability formula, and the store-floor caveats.
+- `workspace:/docs/security.md` — Identity/ownership gate applied via identity_and_auth.
+- `bin_help:checkout.help.txt` — Checkout tool signature <basket_id>.
+- `bin_help:availability.help.txt` — Same-day availability per SKU at a store record path for the checkout line gate.

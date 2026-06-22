@@ -1,0 +1,42 @@
+{
+  "unit_id": "bp_dispatch",
+  "version": "v0002",
+  "parent": "v0001",
+  "status": "active",
+  "created_at": "2026-05-30T18:09:21+00:00",
+  "created_by": "process_architect",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "t004",
+    "trial_id": "vm2-LxpNVZFk3MtnNZXrGg8fw2sdXJK",
+    "unit_id": "bp_dispatch",
+    "base_version": "v0001",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-210416/0004-t004-vm2-LxpNVZFk3MtnNZXrGg8fw2sdXJK-process-architect-refresh-bp_dispatch",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Dep drift in /docs/attachments.md renamed the upload root from /uploads to /storage. The bp_dispatch text named /uploads in two places (Inputs and Refs) as the typical location for the wave .md and TSV input artifacts; both references are updated to /storage and the Dependencies prose now describes /storage as the input-artifact root. No other policy gates changed.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/dispatch.md",
+      "sha256": "721ed4506208401d7a28a01c0ed858bff503b048da326d314d0eeffb6d02635c",
+      "why": "Authoritative dispatch-planning policy: wave-file -> package/lane TSV flow, route connectivity rule, priority semantics, maximize-expected-net-profit objective, late/missed penalty rule, and the required output JSON shape."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "fd2242d4582126e7f50728e67013de5eff21abe82c6ac6f7eaf51d8f8381c36d",
+      "why": "Defines /storage as the upload root for input artifacts; the BP names this path as the typical location for the wave .md and TSV files."
+    },
+    {
+      "kind": "bin_help",
+      "path": "cat.help.txt",
+      "sha256": "3454221c52058ad69f9c1b9652e2e755808adb2f4f73b6d806256d0a04cf7e96",
+      "why": "/bin/cat is the file-read tool the Executor uses to load the wave .md and TSV inputs."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert pa-output/units/bp_dispatch/content.md to the v0001 content (which named /uploads instead of /storage) and re-record the v0001 attachments.md dep hash."
+  },
+  "no_semantic_change": false
+}

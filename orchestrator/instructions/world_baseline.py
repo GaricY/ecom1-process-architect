@@ -157,6 +157,19 @@ def effective_world_files(
     and the baseline manifest.
     """
     explicit = load_world_files(project_root)
+    if baseline is None:
+        # Write/seed path: snapshot only what this world actually carries.
+        # An explicit `world.json` entry the upstream world removed (e.g.
+        # ecom1-prod has no `/docs/README.md`, `/bin/README.md`,
+        # `/run/actions/README.md`) must drop out of the new baseline —
+        # exactly as an auto-discovered bin-help tool does when it leaves
+        # the dump — otherwise `write_new_baseline` aborts on a file that
+        # legitimately no longer exists. The read/drift path (baseline is
+        # not None) keeps them so a removal still surfaces as
+        # `missing_in_current` against the accepted baseline.
+        explicit = [
+            wf for wf in explicit if fp.get(wf.kind, wf.path).sha256 is not None
+        ]
     explicit_sigs = {(wf.kind, normalize(wf.kind, wf.path)) for wf in explicit}
     discovered: set[str] = set(fp.list_bin_help())
     if baseline is not None:

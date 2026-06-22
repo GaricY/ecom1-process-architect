@@ -1,0 +1,95 @@
+{
+  "unit_id": "bp_fraud_risk_review",
+  "version": "v0007",
+  "parent": "v0006",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "/bin/sql is down so the SQL window-function scan shapes are re-expressed as Python-over-/proc-JSON scans read via /bin/jq|cat; tables/columns renamed (payment_ledger.created_at, observed_lat/observed_lon, archived, status; three_ds moved to payment_three_ds; payment_lines; carts/cart_lines; return_workflows; locations/location_inventory; catalog); the customer_accounts table was removed so customer home_latitude/home_longitude no longer exist and the observed-vs-home axis is dropped; /proc/*/README.md semantics move into the schema.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "093458ac37aebb524ad2b900ce87bbc3f622f9213eea4655be05fcae3c875e03",
+      "why": "Legitimate 3DS workflow-state transitions used for payment invariant checks."
+    },
+    {
+      "kind": "bin_help",
+      "path": "jq.help.txt",
+      "sha256": "047679dc66110adce99a3f041efcf89a86e739e86c09c96caf24e728e877f287",
+      "why": "JSON read tool used for the scans now that /bin/sql is unavailable."
+    },
+    {
+      "kind": "bin_help",
+      "path": "cat.help.txt",
+      "sha256": "3454221c52058ad69f9c1b9652e2e755808adb2f4f73b6d806256d0a04cf7e96",
+      "why": "Raw record read tool for risk scans."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_ledger",
+      "sha256": "c2165a0cd07ee41e6e5639ebba8aae2ac79035c9a3cb18f7075fe53ae52adef3",
+      "why": "Primary risk record: fingerprints, created_at, status, observed_lat/observed_lon, archived."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_three_ds",
+      "sha256": "0c443e69fec2e1d6cb49baea8ed0644a01d3a78bad2b31b1659982bf9c1b8db4",
+      "why": "status/attempts/max_attempts/retry_after for workflow-state invariants."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_lines",
+      "sha256": "2405d1f996a4b505511d53040b8e2427ac98524a9037727740d189801fc895e1",
+      "why": "Line-level reconciliation (quantity, unit_price_cents) for amount anomalies."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "b20995a36e83ebd579ae0a1ed17325389c98efc3b49c06fd7669f4fe13e037e2",
+      "why": "Cart/customer/store joins and archive context."
+    },
+    {
+      "kind": "sql_table",
+      "path": "cart_lines",
+      "sha256": "b01ea8eb3b82ae3a5bcd21e5e3296c72fb69c79cb3e47f492e4c87926d0896d5",
+      "why": "Resource lines for quantity/resource reconciliation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_workflows",
+      "sha256": "9624f76fde57a89e7e451a81559889958ade5e33b296f413e0fc7f3974001791",
+      "why": "Return/payment workflow joins."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "ffb2755c24996a548b3c8f4225f51c5a68bd1102fb8dc62d036a56c0e6cbf383",
+      "why": "Store coordinates axis for geo context."
+    },
+    {
+      "kind": "sql_table",
+      "path": "location_inventory",
+      "sha256": "d71cc1d11e46a3028ab8af048f995222c3a73e37ed6ae98b91eb27df7845707c",
+      "why": "Reserve/availability arithmetic and store/SKU resource axis."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "b0d6a870456671698221bb3c3b79843f22f120985a8106cca404834b80ee30de",
+      "why": "Price joins for amount/line checks."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore v0006 content (SQL query shapes, payment_transactions/customer_accounts column names, observed-vs-home axis, /proc README dependencies)."
+  },
+  "no_semantic_change": false
+}

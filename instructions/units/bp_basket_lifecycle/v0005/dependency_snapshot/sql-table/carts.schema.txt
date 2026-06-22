@@ -1,0 +1,10 @@
+TABLE carts  PK(id)
+  record_path          TEXT  NOT NULL  -- /proc/carts/<customer_id>/<id>.json
+  id                   TEXT  NOT NULL
+  customer_id          TEXT  NOT NULL
+  store_id             TEXT  NOT NULL  -> locations.id
+  status               TEXT  NOT NULL  -- active, abandoned, checked_out
+  created_at           TEXT  NOT NULL
+  discount_percent     INTEGER
+  discount_reason_code TEXT
+  discount_issuer_id   TEXT            -> staff.id

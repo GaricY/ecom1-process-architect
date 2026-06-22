@@ -1,0 +1,7 @@
+TABLE catalog_properties  PK(sku, property_key)
+  sku              TEXT  NOT NULL  -> catalog.sku
+  property_key     TEXT  NOT NULL
+  value_json       TEXT  NOT NULL
+  value_text       TEXT
+  value_number     REAL
+  value_bool       INTEGER

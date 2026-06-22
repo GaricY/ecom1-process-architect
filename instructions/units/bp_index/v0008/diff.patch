@@ -1,0 +1,20 @@
+--- bp_index/v0007/content.md
++++ bp_index/v0008/content.md
+@@ -7,7 +7,7 @@
+ | Any request, every trial | [identity_and_auth](identity_and_auth.md) | `/bin/id` is the only authoritative actor; every decision branches on it | — |
+ | Contact data, employee email/profile, another account's identifier, "who owns this", disclosure boundary | [privacy_and_disclosure](privacy_and_disclosure.md) | Personal/contact disclosure is separate from action authorization | — |
+ | Building or checking any `refs` list | [refs](refs.md) | Citation safety, public-record sweep, ownership-shaped refs | — |
+-| Immediately before final `submit_and_exit` | [submission_terminal](submission_terminal.md) | Terminal protocol, post-state check, final outcome + `TRUE(1)`/`FALSE(0)`/SKU answer format | — |
++| Immediately before final `submit_and_exit` | [submission_terminal](submission_terminal.md) | Terminal protocol, post-state check, final outcome + live-`/AGENTS.MD` yes/no token / SKU answer format | — |
+ | Fraud, risk, anomaly, archived-payment review, "identify fraudulent records", complete risk cohort | [fraud_risk_review](fraud_risk_review.md) | Complete-set anomaly discovery over `/proc` JSON before refs/submission | — |
+ | Dated/topic policy update, addendum, delegation note, lockout, override | [policy_update_scan](policy_update_scan.md) | Shared bounded scan of the live `/docs` tree for case-specific updates | — |
+ | Catalogue / SKU lookup, product properties, brand/series, store list/hours | [product_discovery](product_discovery.md) | Catalogue + store records live in `/proc/catalog` and `/proc/locations` | — |
+@@ -42,7 +42,7 @@
+ - `OUTCOME_NONE_CLARIFICATION` — genuinely ambiguous between concrete candidate records; cite the candidates in refs when safe.
+ - `OUTCOME_ERR_INTERNAL` — the harness graded this; do not submit it yourself.
+ 
+-The outcome codes are distinct from the **answer-payload shape** inside `message` (e.g. the `TRUE(1)`/`FALSE(0)` yes/no token, a bare SKU). That contract has one home — see [submission_terminal](submission_terminal.md) § *Answer format*; this index does not restate it.
++The outcome codes are distinct from the **answer-payload shape** inside `message` (e.g. the yes/no token from the live `/AGENTS.MD`, a bare SKU). That contract has one home — see [submission_terminal](submission_terminal.md) § *Answer format*; this index does not restate it.
+ 
+ ## 4. Mutation gate
+ 

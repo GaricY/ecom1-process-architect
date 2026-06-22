@@ -1,0 +1,54 @@
+{
+  "unit_id": "bp_payments_3ds_recovery",
+  "version": "v0011",
+  "parent": "v0010",
+  "status": "active",
+  "created_at": "2026-05-30T09:46:44+00:00",
+  "created_by": "human",
+  "mode": "refresh",
+  "trigger": {
+    "command": "hand-edit",
+    "run_id": "20260530-123952",
+    "task_ids": [
+      "t001"
+    ],
+    "analysis": ".tasks/task-035/plan.md"
+  },
+  "rationale": "Drop dead sql_table deps. /bin/sql cluster is down on ecom1-prod, so bin-help/sqlite_schema.txt is the outage error and every sql_table dep is permanently stale, flooding attention/unit-diffs (run 20260530-123952/0001-t001). The warehouse is now read from the /proc file projection (ws.proc/read_json/jq, executor_core v0014), so table-name deps no longer model a real dependency. Content unchanged; only the structured dependency contract drops the sql_table entries (kept: workspace docs + command bin-helps). A future refresh/world_refresh can re-add table deps if /bin/sql recovers.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "093458ac37aebb524ad2b900ce87bbc3f622f9213eea4655be05fcae3c875e03",
+      "why": "Full gate set, the customer-identity gate, retry_after/3ds-status1 semantics, the 2-attempt cap, the recover-3ds invocation, and the security.md+checkout.md prerequisite line."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "Prerequisite policy that 3DS recovery defers to."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/cross-boundary rule named in the 3DS prerequisite line."
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "64b9da8211c8d06c7abf5ffda82dc5be04cccefac756c541f81acdaee3f26f95",
+      "why": "Tool signature; this BP authorises recover-3ds only (refund subcommands have moved off this binary)."
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted clock for retry_after / lockout comparison."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0010 (bp_admin rollback bp_payments_3ds_recovery --from v0010, or retire the new version) to restore the sql_table deps if /bin/sql recovers and table-keyed staleness is wanted."
+  },
+  "no_semantic_change": false
+}

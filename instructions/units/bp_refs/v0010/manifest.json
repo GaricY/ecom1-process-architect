@@ -1,0 +1,42 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0010",
+  "parent": "v0009",
+  "status": "active",
+  "created_at": "2026-05-30T18:09:18+00:00",
+  "created_by": "process_architect",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "t004",
+    "trial_id": "vm2-LxpNVZFk3MtnNZXrGg8fw2sdXJK",
+    "unit_id": "bp_refs",
+    "base_version": "v0009",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-210416/0004-t004-vm2-LxpNVZFk3MtnNZXrGg8fw2sdXJK-process-architect-refresh-bp_refs",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Unit-dep drift in /docs/attachments.md renamed the upload root from /uploads to /storage; the BP cites the old name in three prose places (class-1 grounding example, Inputs example, What-not-to-include exclusion clause) and in the Dependencies gloss, so all four references update to /storage to match the live policy. World-dep drift in /AGENTS.MD renamed employee records from /proc/staff to /proc/employees; the identity-scoped record families list quoted the old path and is updated to /proc/employees so the cross-boundary rule still names a live path. No change to citation/ownership logic or to the dep contract.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Cross-boundary rule and personal-information disclosure boundary."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "fd2242d4582126e7f50728e67013de5eff21abe82c6ac6f7eaf51d8f8381c36d",
+      "why": "Defines /storage as the request-named input-artifact root for class-1 grounding."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape for customer/employee/guest branching."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert content.md to v0009 wording (/uploads in the three prose mentions plus the dependency gloss; /proc/staff in the identity-scoped families list); the dependency set is unchanged."
+  },
+  "no_semantic_change": false
+}

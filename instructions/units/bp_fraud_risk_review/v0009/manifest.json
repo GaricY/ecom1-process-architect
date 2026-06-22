@@ -1,0 +1,42 @@
+{
+  "unit_id": "bp_fraud_risk_review",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-05-30T18:07:44+00:00",
+  "created_by": "process_architect",
+  "mode": "refresh",
+  "trigger": {
+    "task_id": "t004",
+    "trial_id": "vm2-LxpNVZFk3MtnNZXrGg8fw2sdXJK",
+    "unit_id": "bp_fraud_risk_review",
+    "base_version": "v0008",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-210416/0004-t004-vm2-LxpNVZFk3MtnNZXrGg8fw2sdXJK-process-architect-refresh-bp_fraud_risk_review",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "World-base AGENTS.MD renamed the staff /proc family from /proc/staff to /proc/employees. The BP's Inputs block enumerated /proc/staff as one of the live JSON families read for risk scans, so the path is now stale and would point at a non-existent family if a future risk task touched the employees axis. Renamed the single occurrence in the Inputs bullet. The 3DS doc edit (max attempts 2 -> 3) is metadata only: this BP references max_attempts from the payment_three_ds record, never a hard-coded number, so no rewording is required for that drift.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "76225084fcb923c1b39f3c34578c93af3bb22155a75cdf3a5c5af3c059b5aaf7",
+      "why": "Legitimate 3DS workflow-state transitions used for payment invariant checks (paid-with-failed-3DS, exhausted attempts, impossible transitions)."
+    },
+    {
+      "kind": "bin_help",
+      "path": "jq.help.txt",
+      "sha256": "047679dc66110adce99a3f041efcf89a86e739e86c09c96caf24e728e877f287",
+      "why": "JSON read tool used for /proc family scans now that /bin/sql is unavailable."
+    },
+    {
+      "kind": "bin_help",
+      "path": "cat.help.txt",
+      "sha256": "3454221c52058ad69f9c1b9652e2e755808adb2f4f73b6d806256d0a04cf7e96",
+      "why": "Raw record read tool for /proc risk scans."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0008 (bp_admin rollback bp_fraud_risk_review --from v0008) to restore the /proc/staff wording."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,11 @@
+TABLE locations  PK(id)
+  record_path     TEXT     NOT NULL  -- /proc/locations/<city>/<id>.json
+  id              TEXT     NOT NULL
+  name            TEXT     NOT NULL
+  address_line_1  TEXT     NOT NULL
+  postal_code     TEXT     NOT NULL
+  city            TEXT     NOT NULL
+  country_code    TEXT     NOT NULL
+  is_open         INTEGER  NOT NULL
+  lat             REAL     NOT NULL
+  lon             REAL     NOT NULL

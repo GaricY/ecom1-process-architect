@@ -1,0 +1,7 @@
+TABLE staff  PK(id)
+  record_path    TEXT  NOT NULL  -- /proc/staff/<store_id>/<id>.json
+  id             TEXT  NOT NULL
+  display_name   TEXT  NOT NULL
+  email          TEXT  NOT NULL
+  title          TEXT  NOT NULL
+  store_id       TEXT  NOT NULL  -> locations.id

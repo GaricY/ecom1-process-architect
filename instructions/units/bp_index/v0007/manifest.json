@@ -1,0 +1,22 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0007",
+  "parent": "v0006",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Routing map drifted on every axis: returns now route to /bin/refund approve|close (not /bin/payments); a new availability domain (/docs/availability-checks.md) and dispatch domain (/docs/dispatch.md) need rows; checkout now also covers customer-only basket item edits; the os/tooling-incidents route is repurposed to a tooling-outage / unsupported-system gate (its grounding doc and /bin/claude,/bin/codex were removed); the SQL cluster is down so a cross-cutting 'read /proc JSON via /bin/jq|cat' principle and the new TRUE(1)/FALSE(0) yes/no token reference must be reflected; proc family and decoy references are renamed/swapped.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Restore bp_index content.md to v0006 (returns->/bin/payments, no availability/dispatch rows, old os_tooling row, SQL-projection product_discovery row, <YES>/<NO> token reference)."
+  },
+  "no_semantic_change": false
+}

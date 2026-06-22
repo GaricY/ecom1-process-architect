@@ -1,0 +1,8 @@
+# /bin/jq --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+PowerTools E-Commerce OS jq
+Usage: jq [-r|--raw-output] <filter> [path|-]
+Minimal filters: ., keys, length, .field, .field.nested, .array[0], .array[]

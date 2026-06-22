@@ -1,0 +1,7 @@
+TABLE payment_three_ds  PK(payment_id)
+  payment_id      TEXT     NOT NULL  -> payment_ledger.id
+  status          TEXT     NOT NULL  -- 3ds-status1, 3ds-status2, 3ds-status3
+  attempts        INTEGER  NOT NULL
+  max_attempts    INTEGER  NOT NULL
+  retry_after     TEXT
+  failure_reason  TEXT

@@ -1,0 +1,34 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0007",
+  "parent": "v0006",
+  "status": "active",
+  "created_at": "2026-05-30T10:48:48+00:00",
+  "created_by": "human",
+  "mode": "failure_fix",
+  "trigger": {
+    "command": "hand-edit",
+    "run_id": "20260530-125612",
+    "task_ids": [
+      "t002",
+      "t006",
+      "t022",
+      "t023",
+      "t026",
+      "t042",
+      "t043",
+      "t046",
+      "t062",
+      "t063",
+      "t066",
+      "t080"
+    ],
+    "analysis": "yes/no token regression vs live /AGENTS.MD ja/nein; see conversation analysis under .tasks/task-yesno-ja-nein/"
+  },
+  "rationale": "Run 20260530-125612 (ecom1-prod): this unit owns the answer-format contract and hardcoded the yes/no token as TRUE(1)/FALSE(0), even quoting /AGENTS.MD verbatim and asserting 'older tokens are retired'. /AGENTS.MD had drifted to ja/nein, so the executor emitted the stale token on every yes/no trial. This version de-hardcodes the token: rule 3, the pre-submission check, the anti-pattern, and the Dependencies prose now say 'read the yes/no token from the live /AGENTS.MD' with no baked-in literal. /AGENTS.MD stays a content-prose dependency (world-only), not a structured dep.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "bp_admin rollback bp_submission_terminal --from this version if the live-read token rule regresses; or re-pin a literal only once world_refresh reliably re-derives it on /AGENTS.MD drift."
+  },
+  "no_semantic_change": false
+}

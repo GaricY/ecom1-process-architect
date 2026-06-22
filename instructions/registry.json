@@ -84,6 +84,16 @@
       "id": "bp_os_tooling_incidents",
       "kind": "business_process",
       "render_to": "business_processes/os_tooling_incidents.md"
+    },
+    {
+      "id": "bp_availability",
+      "kind": "business_process",
+      "render_to": "business_processes/availability.md"
+    },
+    {
+      "id": "bp_dispatch",
+      "kind": "business_process",
+      "render_to": "business_processes/dispatch.md"
     }
   ]
 }

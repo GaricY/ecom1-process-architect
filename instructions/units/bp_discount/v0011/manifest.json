@@ -1,0 +1,89 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0011",
+  "parent": "v0010",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "discounts.md changed the thresholds (high-subtotal 18000 cents -> max 8 percent; any-basket max 4 percent), replacing the old 15000-cents/1-10-percent and 1-5-percent tiers; employee record family /proc/employees -> /proc/staff; subtotal/line-eligibility read from /proc/carts, /proc/catalog, /proc/locations via /bin/jq + /bin/availability since /bin/sql is down; store evidence path -> /proc/locations; the dated-update delegation logic and store-record refs rule are preserved.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "95e903779e3c3d44a127ec971d87571f69d75fcaddc46a4404ff32a58eb1109b",
+      "why": "Gate set, the 18000-cent/8-percent/4-percent tiers, reason-code enum, non-authority bait, the line-eligibility bridge into checkout, and the manager-store-match gate."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "The line-eligibility (same-day availability) gate the discount policy applies."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity gate applied via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Signature <basket_id> <percent> <reason_code> <issuer_id> and the no-policy-checks disclaimer."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability for the per-line eligibility re-check."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "b20995a36e83ebd579ae0a1ed17325389c98efc3b49c06fd7669f4fe13e037e2",
+      "why": "Basket ownership, store, status, discount object."
+    },
+    {
+      "kind": "sql_table",
+      "path": "cart_lines",
+      "sha256": "b01ea8eb3b82ae3a5bcd21e5e3296c72fb69c79cb3e47f492e4c87926d0896d5",
+      "why": "quantity for subtotal and line checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "b0d6a870456671698221bb3c3b79843f22f120985a8106cca404834b80ee30de",
+      "why": "price_cents for subtotal."
+    },
+    {
+      "kind": "sql_table",
+      "path": "location_inventory",
+      "sha256": "d71cc1d11e46a3028ab8af048f995222c3a73e37ed6ae98b91eb27df7845707c",
+      "why": "on_hand/reserved for line eligibility."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "ffb2755c24996a548b3c8f4225f51c5a68bd1102fb8dc62d036a56c0e6cbf383",
+      "why": "Store record_path and manager-store scope evidence."
+    },
+    {
+      "kind": "sql_table",
+      "path": "staff",
+      "sha256": "d8e313c7601423b5232f22714590fa24933bc308e9934b8bf2dd60687a32064f",
+      "why": "Issuer role and assigned store_id."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore v0010 content (15000-cents/1-10-percent + 1-5-percent tiers, /proc/employees + /proc/stores, SQL subtotal over shopping_basket_items x product_variants)."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,59 @@
+{
+  "unit_id": "bp_returns",
+  "version": "v0006",
+  "parent": "v0005",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "returns.md moved the refund mutators from /bin/payments approve-refund|refund to /bin/refund approve|close; the customer closure gate dropped the linked-basket requirement (now: customer identity, return customer_id match, payment paid, payment_id match, status refund_pending); families renamed /proc/returns -> /proc/return-workflows and /proc/payments -> /proc/payment-ledger; both steps require return.payment_id == payment.id; /proc/returns/README.md and /proc/payments/README.md removed; /bin/sql down -> reconcile over /proc JSON.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/returns.md",
+      "sha256": "bc8772f89f206d1675cd6489af1ce288c4c3b0342b89a6ab6165afec83dcd641",
+      "why": "Both gate sets, refund_manager role, the approved->refund_pending->closed sequence, the /bin/refund invocations, and the prohibition on editing return files by hand."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/ownership/role rule named verbatim as a prerequisite by returns.md."
+    },
+    {
+      "kind": "bin_help",
+      "path": "refund.help.txt",
+      "sha256": "34e52181664df21d396ef359407eb90e3fbc079748431ab3d8aff50676f7b7c3",
+      "why": "Tool signatures for approve <return_id> and close <return_id> (replaces the retired /bin/payments approve-refund|refund)."
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "64b9da8211c8d06c7abf5ffda82dc5be04cccefac756c541f81acdaee3f26f95",
+      "why": "Confirms /bin/payments no longer carries refund verbs (only recover-3ds)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_workflows",
+      "sha256": "9624f76fde57a89e7e451a81559889958ade5e33b296f413e0fc7f3974001791",
+      "why": "Return id, status, payment_id, customer_id, order_id for reconciliation."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_ledger",
+      "sha256": "c2165a0cd07ee41e6e5639ebba8aae2ac79035c9a3cb18f7075fe53ae52adef3",
+      "why": "status (paid gate), customer_id, archive shape, and surviving lines snapshot."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore v0005 content (/bin/payments approve-refund|refund, the linked-basket finalization gate, /proc/returns + /proc/payments, SQL return_requests/payment_transactions reconciliation)."
+  },
+  "no_semantic_change": false
+}

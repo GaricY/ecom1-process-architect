@@ -1,0 +1,20 @@
+--- bp_product_discovery/v0019/content.md
++++ bp_product_discovery/v0020/content.md
+@@ -37,7 +37,7 @@
+    - Base SKU exists AND includes the extra claim → yes.
+    - Base SKU exists AND does **not** include the extra claim → no (even when a sibling SKU carries it).
+    - Base SKU does not exist → follow the brief's "no base product" wording.
+-5. **Message shape.** Emit the yes/no token per [submission_terminal](submission_terminal.md) (`TRUE(1)` / `FALSE(0)`). When the brief says "include the checked SKU" (or the path / family id), the literal token MUST appear in `submit_and_exit(message=...)`, not only in `refs` — the grader matches the literal against the message string.
++5. **Message shape.** Emit the yes/no token per [submission_terminal](submission_terminal.md) (read the literal from the live `/AGENTS.MD`). When the brief says "include the checked SKU" (or the path / family id), the literal token MUST appear in `submit_and_exit(message=...)`, not only in `refs` — the grader matches the literal against the message string.
+ 6. **Refs.** Cite the base SKU's `/proc/catalog/<brand>/<sku>.json` (the one record the brief asked you to cite). A sibling SKU read while ruling out the extra claim does **not** belong in `refs` — keep it in `scratchpad["decision"]`.
+ 
+ ## Outcomes
+@@ -62,7 +62,7 @@
+ - Returning a SKU on an ambiguous lookup instead of `OUTCOME_NONE_CLARIFICATION` with every candidate cited.
+ - Treating a sibling SKU in the same line as proof the base SKU carries an extra-claim property (turns a correct "no" into a wrong "yes").
+ - Putting the SKU/path/id the brief told you to "include in the answer" only in `refs`, not in `message`.
+-- Emitting `<YES>` / `<NO>` on a yes/no question — the current token is `TRUE(1)` / `FALSE(0)` (see [submission_terminal](submission_terminal.md)).
++- Emitting a yes/no answer in any token other than the one the live `/AGENTS.MD` specifies (see [submission_terminal](submission_terminal.md)) — read the live token rather than assuming `<YES>`/`<NO>` or a remembered literal.
+ - Using a background doc (brand, history, expansion) as catalogue or store truth. See [background_decoys](background_decoys.md).
+ - Trying `/bin/sql` for catalogue/store data — it is down; read `/proc/catalog` and `/proc/locations` JSON.
+ - Answering branch availability/stock here instead of delegating to [availability](availability.md).

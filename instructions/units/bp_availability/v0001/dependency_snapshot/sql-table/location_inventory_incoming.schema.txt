@@ -1,0 +1,5 @@
+TABLE location_inventory_incoming  PK(store_id, sku, arrival_in_days)
+  store_id         TEXT     NOT NULL  -> locations.id
+  sku              TEXT     NOT NULL  -> catalog.sku
+  arrival_in_days  INTEGER  NOT NULL
+  quantity         INTEGER  NOT NULL

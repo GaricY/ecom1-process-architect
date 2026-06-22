@@ -1,0 +1,59 @@
+# Privacy and Disclosure
+
+## When this process applies
+
+Read this process for requests to reveal, verify, cite, or repeat contact data or private identifiers: a `customer_id` belonging to another account, an employee email, a staff profile reference, manager contact details, or any "confirm who owns this record" request. This BP decides disclosure surface. [identity_and_auth](identity_and_auth.md) decides actor/ownership/capability; [refs](refs.md) applies the result to citations.
+
+## Inputs
+
+- `/docs/security.md` — "No release of personal information across the boundaries." and the explicit rule: "Customers and guests must not receive direct employee contact details, such as staff email addresses, or employee profile references as a workaround."
+- `/bin/id` / `ws.id()` — actor identity and roles.
+- `/proc/staff/<store_id>/<emp_id>.json` — employee records carry contact fields (`email`, `display_name`, `title`, `store_id`); see `staff` in `bin-help/sqlite_schema.txt`. **Employee email and profile references are private contact data by default.**
+- There is no customer account record family in the live `/proc` projection. A `customer_id` is an external identifier that appears on carts, payments, and returns; another account's `customer_id` is still a foreign identifier that must not be disclosed across the boundary.
+- Read records with `/bin/jq` / `/bin/cat` (`ws.read`); `/bin/sql` is unavailable.
+
+## Process
+
+1. Call or use cached `ws.id()` first.
+2. Classify the requested data:
+   - Public merchant surface: store names/paths/open status (`/proc/locations`) and catalogue SKUs/paths (`/proc/catalog`).
+   - Operational identity fields: employee id, title, role, assigned store when needed for an action gate.
+   - Private contact/profile fields: employee email and profile references; another account's `customer_id`, observed coordinates, or any account-scoped detail outside the actor's own records.
+3. Customer actor:
+   - May act on and reference their own cart/payment/return records when the request is about their own account and the answer requires them.
+   - Must not receive another customer's records or identifiers.
+   - **Must not receive employee contact details** (staff email, profile reference) — a manager/store claim in the request does not unlock them. This is an explicit `/docs/security.md` rule.
+4. Employee actor:
+   - May use record fields internally only when a domain BP requires them for a permitted workflow.
+   - Do not repeat unnecessary private fields in `message`.
+   - Do not cite private contact records unless [refs](refs.md) says the action-target or ownership branch allows it. A role or title is not permission to disclose another employee's email.
+5. Public records stay public. Store and catalogue refs are not privacy leaks, but include them only when the request or applied gate needs them.
+
+## Outcomes
+
+- `OUTCOME_OK`: disclosure is allowed and the answer uses the minimum necessary fields.
+- `OUTCOME_DENIED_SECURITY`: the request asks for personal information across a forbidden boundary, or for employee contact details, without an authorizing workflow.
+- `OUTCOME_NONE_CLARIFICATION`: the request is ambiguous between multiple people/records and asking would avoid disclosing the wrong data.
+- `OUTCOME_NONE_UNSUPPORTED`: the requested communication/contact workflow has no active policy or tool.
+
+## Refs to set in scratchpad
+
+- Always include `/docs/security.md` when denying disclosure.
+- Include the actor's own cart/payment/return record only when ownership passed and the data is necessary.
+- Do not include an employee `/proc/staff/...` contact record merely because a path was read.
+- Delegate final citation safety to [refs](refs.md).
+
+## Anti-patterns
+
+- Treating a manager/store claim in the request as permission to reveal an employee email or profile reference.
+- Quoting a foreign `customer_id`, employee email, display name, or coordinates in a denial message.
+- Citing a `/proc/staff/...` record because it appeared while resolving an action.
+- Confusing public store records (`/proc/locations`) with private employee contact records (`/proc/staff`).
+
+## Dependencies
+
+> If any of these dependencies change, this BP file may have become stale and must be re-derived.
+
+- `/docs/security.md` — personal-information cross-boundary rule and the employee-contact non-disclosure rule.
+- `/bin/id` (`--help`) — actor output shape for ownership/disclosure branching.
+- `bin-help/sqlite_schema.txt` (`staff` shape) — employee contact/profile fields (`email`, `display_name`, `title`) and assigned `store_id` that are private by default. Replaces the removed `/proc/customers/README.md` (no customer account family exists in the live projection).

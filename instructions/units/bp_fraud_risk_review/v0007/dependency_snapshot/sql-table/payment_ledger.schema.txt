@@ -1,0 +1,16 @@
+TABLE payment_ledger  PK(id)
+  record_path                  TEXT     NOT NULL  -- /proc/payment-ledger/<customer_id>/<id>.json
+  id                           TEXT     NOT NULL
+  order_id                     TEXT
+  basket_id                    TEXT              -> carts.id
+  archived                     INTEGER           -- present as true on archived payments
+  customer_id                  TEXT     NOT NULL
+  store_id                     TEXT     NOT NULL  -> locations.id
+  amount_cents                 INTEGER  NOT NULL
+  currency                     TEXT     NOT NULL
+  status                       TEXT     NOT NULL  -- paid, requires_3ds_action
+  created_at                   TEXT     NOT NULL
+  payment_method_fingerprint   TEXT     NOT NULL
+  device_fingerprint           TEXT     NOT NULL
+  observed_lat                 REAL     NOT NULL
+  observed_lon                 REAL     NOT NULL

@@ -1,0 +1,5 @@
+TABLE cart_lines  PK(basket_id, line_number)
+  basket_id    TEXT     NOT NULL  -> carts.id
+  line_number  INTEGER  NOT NULL  -- array order in carts.lines, 1-based
+  sku          TEXT     NOT NULL  -> catalog.sku
+  quantity     INTEGER  NOT NULL

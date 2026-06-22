@@ -1,0 +1,41 @@
+{
+  "unit_id": "bp_dispatch",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "A brand-new dispatch-planning domain was added: AGENTS.MD routes 'plan a dispatch wave pointed to a .md file' to the new /docs/dispatch.md, which defines a wave-file -> package/lane TSV optimization that returns one assignments JSON object maximizing expected net profit. No prior BP covers it; it is information/planning (no commerce mutation) and warrants its own atomic BP.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/dispatch.md",
+      "sha256": "721ed4506208401d7a28a01c0ed858bff503b048da326d314d0eeffb6d02635c",
+      "why": "The wave-file -> package/lane TSV flow, route connectivity rule, priority semantics, the maximize-expected-net-profit objective, the late/missed penalty rule, and the required output JSON shape."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "Defines /uploads as the input-artifact root for the wave and TSV files."
+    },
+    {
+      "kind": "bin_help",
+      "path": "cat.help.txt",
+      "sha256": "3454221c52058ad69f9c1b9652e2e755808adb2f4f73b6d806256d0a04cf7e96",
+      "why": "The file read tool for the wave and TSV inputs."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove bp_dispatch from the registry and bp_index routing."
+  },
+  "no_semantic_change": false
+}

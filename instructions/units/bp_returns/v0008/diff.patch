@@ -1,0 +1,11 @@
+--- bp_returns/v0007/content.md
++++ bp_returns/v0008/content.md
+@@ -27,7 +27,7 @@
+ 
+ 1. Read the return via `/proc/return-workflows/<customer_id>/<id>.json` (or reconcile across families by reading the linked payment).
+ 2. Reconcile: `return.payment_id` resolves under `/proc/payment-ledger/` and `return.payment_id == payment.id`. If a non-archived leg fails to resolve, or resolved customer ids contradict, treat as `OUTCOME_NONE_UNSUPPORTED` — the record set is inconsistent. An archived payment with a missing cart file is normal cold storage for lookup.
+-3. For yes/no questions about whether a return is in a given state, compare `status` to the requested token and answer with the `TRUE(1)` / `FALSE(0)` token (see [submission_terminal](submission_terminal.md)). For id/shape lookups, answer in the literal format the instruction demands. No tool runs.
++3. For yes/no questions about whether a return is in a given state, compare `status` to the requested token and answer with the yes/no token defined in the live `/AGENTS.MD` (see [submission_terminal](submission_terminal.md)). For id/shape lookups, answer in the literal format the instruction demands. No tool runs.
+ 
+ ### B. Refund approval (employee path)
+ 

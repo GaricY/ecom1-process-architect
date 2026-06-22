@@ -1,0 +1,77 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0008",
+  "parent": "v0007",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "All cited SQL tables were renamed and customer_accounts was removed; /proc/README.md was removed so record families/path conventions come from the schema; with /bin/sql down there is no SQL record_path column to copy, so refs are the live /proc path read via /bin/jq|cat; the topic-doc table adds availability/dispatch/catalogue-lookup and updates the refund tool; /uploads input-artifact grounding now cites /docs/attachments.md; public product/store paths resolve to /proc/catalog and /proc/locations.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Cross-boundary rule and personal-information disclosure boundary."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "Defines /uploads as the request-named input-artifact root for class-1 grounding."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape for customer/employee/guest branching."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "b20995a36e83ebd579ae0a1ed17325389c98efc3b49c06fd7669f4fe13e037e2",
+      "why": "Customer ownership, store pointer, status, and basket record path."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_ledger",
+      "sha256": "c2165a0cd07ee41e6e5639ebba8aae2ac79035c9a3cb18f7075fe53ae52adef3",
+      "why": "Customer ownership, basket/store pointers, status, and payment record path."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return_workflows",
+      "sha256": "9624f76fde57a89e7e451a81559889958ade5e33b296f413e0fc7f3974001791",
+      "why": "Customer ownership, payment pointer, status, and return record path."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "b0d6a870456671698221bb3c3b79843f22f120985a8106cca404834b80ee30de",
+      "why": "Public catalogue product record path and SKU fields."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "ffb2755c24996a548b3c8f4225f51c5a68bd1102fb8dc62d036a56c0e6cbf383",
+      "why": "Public store record path and location fields."
+    },
+    {
+      "kind": "sql_table",
+      "path": "staff",
+      "sha256": "d8e313c7601423b5232f22714590fa24933bc308e9934b8bf2dd60687a32064f",
+      "why": "Employee contact/profile records that are private by default."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore v0007 content (old SQL table list incl. customer_accounts, /proc/README.md, SQL record_path-column language, old topic-doc table with /bin/payments refund routing)."
+  },
+  "no_semantic_change": false
+}

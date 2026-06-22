@@ -1,0 +1,7 @@
+TABLE location_inventory  PK(store_id, sku)
+  store_id  TEXT     NOT NULL  -> locations.id
+  sku       TEXT     NOT NULL  -> catalog.sku
+  on_hand   INTEGER  NOT NULL
+  reserved  INTEGER  NOT NULL
+  -- same-day availability is max(on_hand - reserved, 0)
+  -- missing SKU in a store inventory means same-day availability 0

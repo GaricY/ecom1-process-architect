@@ -1,0 +1,27 @@
+--- bp_dispatch/v0001/content.md
++++ bp_dispatch/v0002/content.md
+@@ -6,7 +6,7 @@
+ 
+ ## Inputs
+ 
+-- Request-named input artifacts (the task points you to these — typically under `/uploads/` per `/docs/attachments.md`):
++- Request-named input artifacts (the task points you to these — typically under `/storage/` per `/docs/attachments.md`):
+   - the dispatch wave `.md` file — names the package TSV and the lane TSV for that wave;
+   - the package TSV — one row per package: item to move, source store, destination store, delivery due time, and the margin earned if it arrives;
+   - the lane TSV — one row per directed transport link: origin, destination, capacity per trip, ETA, trip cost, and `delay_hint`.
+@@ -42,7 +42,7 @@
+ 
+ ## Refs to set in scratchpad
+ 
+-- The request-named input artifacts the plan is derived from: the wave `.md` file, the package TSV, and the lane TSV (their absolute live paths, e.g. under `/uploads/`). These are class-1 input artifacts — see [refs](refs.md).
++- The request-named input artifacts the plan is derived from: the wave `.md` file, the package TSV, and the lane TSV (their absolute live paths, e.g. under `/storage/`). These are class-1 input artifacts — see [refs](refs.md).
+ - `/docs/dispatch.md` — the applied planning policy.
+ - Do not cite commerce `/proc/...` records unless the wave inputs reference them and the answer is derived from them.
+ 
+@@ -60,5 +60,5 @@
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+ - `/docs/dispatch.md` — the wave-file → package/lane TSV flow, route connectivity rule, priority semantics, the maximize-expected-net-profit objective, the late/missed penalty rule, and the required output JSON shape.
+-- `/docs/attachments.md` — defines `/uploads` as the input-artifact root for the wave/TSV files.
++- `/docs/attachments.md` — defines `/storage` as the input-artifact root for the wave/TSV files.
+ - `bin-help/cat.help.txt` — the file read tool for the wave and TSV inputs.

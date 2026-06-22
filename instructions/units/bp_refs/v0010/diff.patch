@@ -1,0 +1,46 @@
+--- bp_refs/v0009/content.md
++++ bp_refs/v0010/content.md
+@@ -8,7 +8,7 @@
+ 
+ A `ref` is any object the answer is **derived from or grounded in** — cite it by its absolute **live** path (`/AGENTS.MD`: "provide full path to the object"). Three classes, ordered by how easily they are missed:
+ 
+-1. **Request-named input artifacts** — any file or document the task instruction itself points you to and that you read to build the answer. Bind to the role ("the task told me to read this, and I used it"), **not** to a folder name: it may live under `/uploads/` (per `/docs/attachments.md`, the upload root for receipts, OCR output, customer-supplied documents), an attachment path, or a pasted document. Same boundaries as any record: an artifact tied to the current request/actor is citeable; one exposing another customer's data follows the cross-boundary/privacy branch below.
++1. **Request-named input artifacts** — any file or document the task instruction itself points you to and that you read to build the answer. Bind to the role ("the task told me to read this, and I used it"), **not** to a folder name: it may live under `/storage/` (per `/docs/attachments.md`, the upload root for receipts, OCR output, customer-supplied documents), an attachment path, or a pasted document. Same boundaries as any record: an artifact tied to the current request/actor is citeable; one exposing another customer's data follows the cross-boundary/privacy branch below.
+ 2. **Applied policy docs** — every `/docs/...` policy whose rule actually shaped the decision.
+ 3. **Records read or identified** — identity-scoped and public `/proc/...` records, per the actor/ownership branches below.
+ 
+@@ -18,7 +18,7 @@
+ 
+ - `/docs/security.md` — the cross-boundary and personal-information rule.
+ - `/bin/id` / `ws.id()` — actor type and roles.
+-- Request-named input artifacts — any file/document the task points you to and reads to build the answer (e.g. an uploaded receipt under `/uploads/`); see the grounding principle.
++- Request-named input artifacts — any file/document the task points you to and reads to build the answer (e.g. an uploaded receipt under `/storage/`); see the grounding principle.
+ - The live `/proc/...` path of every record you read — read records with `/bin/jq` / `/bin/cat` (`ws.read`). The ref is the absolute path of the JSON file itself; `/bin/sql` is unavailable, so there is no SQL `record_path` column to copy — use the live path you read.
+ - Topic BPs — decide which policy docs and records were actually applied.
+ 
+@@ -31,7 +31,7 @@
+ - Employee actor on a requested employee-shaped action: cite policy docs plus the action target even on role denial or unsupported state.
+ - Guest actor: no customer-owned record can pass ownership. Treat identity-scoped record requests as cross-boundary unless the task is purely public catalogue/store discovery.
+ 
+-Identity-scoped record families are carts (`/proc/carts`), payments (`/proc/payment-ledger`), returns (`/proc/return-workflows`), and employee contact/profile records (`/proc/staff`). Public records are catalogue products (`/proc/catalog`) and stores (`/proc/locations`).
++Identity-scoped record families are carts (`/proc/carts`), payments (`/proc/payment-ledger`), returns (`/proc/return-workflows`), and employee contact/profile records (`/proc/employees`). Public records are catalogue products (`/proc/catalog`) and stores (`/proc/locations`).
+ 
+ ## Topic policy docs
+ 
+@@ -80,7 +80,7 @@
+ ## What not to include
+ 
+ - Operational background / decoy docs. See [background_decoys](background_decoys.md).
+-- Local snapshot-mirror paths under the `vault/` prefix or any `bin-help/...` path — refs always point at the **live** workspace. This exclusion does not cover live request paths such as `/uploads/...`, which are real workspace objects and must be cited when used.
++- Local snapshot-mirror paths under the `vault/` prefix or any `bin-help/...` path — refs always point at the **live** workspace. This exclusion does not cover live request paths such as `/storage/...`, which are real workspace objects and must be cited when used.
+ - Policy docs you opened but did not apply.
+ - Foreign identity-scoped `/proc/...` records on customer cross-boundary denials.
+ - Private contact data records unless [privacy_and_disclosure](privacy_and_disclosure.md) allows disclosure.
+@@ -118,6 +118,6 @@
+ > If any of these dependencies change, this BP file may have become stale and must be re-derived.
+ 
+ - `/docs/security.md` — cross-boundary rule and personal-information disclosure boundary.
+-- `/docs/attachments.md` — defines `/uploads` as the request-named input-artifact root for class-1 grounding.
++- `/docs/attachments.md` — defines `/storage` as the request-named input-artifact root for class-1 grounding.
+ - `/bin/id` (`--help`) — actor output shape used for customer/employee/guest branching.
+ - `bin-help/sqlite_schema.txt` — record families and their live `record_path` conventions (`carts`, `payment_ledger`, `return_workflows`, `catalog`, `locations`, `staff`); replaces the removed `/proc/README.md` manifest. Identity-scoped vs public split is read from here.

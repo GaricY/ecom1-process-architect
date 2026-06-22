@@ -1,0 +1,48 @@
+{
+  "unit_id": "bp_checkout",
+  "version": "v0006",
+  "parent": "v0005",
+  "status": "active",
+  "created_at": "2026-05-30T09:46:43+00:00",
+  "created_by": "human",
+  "mode": "refresh",
+  "trigger": {
+    "command": "hand-edit",
+    "run_id": "20260530-123952",
+    "task_ids": [
+      "t001"
+    ],
+    "analysis": ".tasks/task-035/plan.md"
+  },
+  "rationale": "Drop dead sql_table deps. /bin/sql cluster is down on ecom1-prod, so bin-help/sqlite_schema.txt is the outage error and every sql_table dep is permanently stale, flooding attention/unit-diffs (run 20260530-123952/0001-t001). The warehouse is now read from the /proc file projection (ws.proc/read_json/jq, executor_core v0014), so table-name deps no longer model a real dependency. Content unchanged; only the structured dependency contract drops the sql_table entries (kept: workspace docs + command bin-helps). A future refresh/world_refresh can re-add table deps if /bin/sql recovers.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "The basket-item-edit gate set, the checkout gate set, the same-day availability formula, and the store-floor caveats."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/ownership gate applied via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "checkout.help.txt",
+      "sha256": "65ef4279c83faf04c0c854f078421aad488f6059621f449ef6d9f54c6f4814ad",
+      "why": "Checkout tool signature <basket_id>."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability per SKU at a store record path for the checkout line gate."
+    }
+  ],
+  "rollback": {
+    "strategy": "Revert to v0005 (bp_admin rollback bp_checkout --from v0005, or retire the new version) to restore the sql_table deps if /bin/sql recovers and table-keyed staleness is wanted."
+  },
+  "no_semantic_change": false
+}

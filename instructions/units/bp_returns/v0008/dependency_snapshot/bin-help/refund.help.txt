@@ -1,0 +1,10 @@
+# /bin/refund --help
+# bin-help contract: v2
+# exit_code: 0
+
+## stdout
+Usage: refund <subcommand> [args]
+
+Subcommands:
+  approve <return_id> Mark a return as waiting for refund finalization.
+  close <return_id>   Close a return refund workflow.

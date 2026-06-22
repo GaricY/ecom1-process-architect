@@ -1,0 +1,53 @@
+{
+  "unit_id": "bp_basket_lifecycle",
+  "version": "v0005",
+  "parent": "v0004",
+  "status": "active",
+  "created_at": "2026-05-30T09:37:50+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lxo2EAak1LfTiqBzQQN1HM74Fax",
+    "baseline_version": "v0004",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260530-110804/0001-t001-vm2-world-refresh-2",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Basket family renamed /proc/baskets -> /proc/carts; /proc/baskets/README.md and /proc/payments/README.md removed so record shape/status/discount semantics and archived-payment context come from the schema (carts/cart_lines, payment_ledger.archived); new 'abandoned' status added to the enum; /bin/sql down -> list/read carts via /bin/jq|cat.",
+  "dependencies": [
+    {
+      "kind": "bin_help",
+      "path": "jq.help.txt",
+      "sha256": "047679dc66110adce99a3f041efcf89a86e739e86c09c96caf24e728e877f287",
+      "why": "JSON read tool for cart lookups now that /bin/sql is unavailable."
+    },
+    {
+      "kind": "bin_help",
+      "path": "cat.help.txt",
+      "sha256": "3454221c52058ad69f9c1b9652e2e755808adb2f4f73b6d806256d0a04cf7e96",
+      "why": "Raw record read tool for cart JSON."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "b20995a36e83ebd579ae0a1ed17325389c98efc3b49c06fd7669f4fe13e037e2",
+      "why": "Basket id, status, store pointer, created_at, discount object."
+    },
+    {
+      "kind": "sql_table",
+      "path": "cart_lines",
+      "sha256": "b01ea8eb3b82ae3a5bcd21e5e3296c72fb69c79cb3e47f492e4c87926d0896d5",
+      "why": "Basket line shape (sku, quantity)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment_ledger",
+      "sha256": "c2165a0cd07ee41e6e5639ebba8aae2ac79035c9a3cb18f7075fe53ae52adef3",
+      "why": "archived flag and cold-storage semantics where a payment outlives its cart (replaces the removed /proc/payments/README.md)."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore v0004 content (/proc/baskets paths, /proc/baskets/README.md + /proc/payments/README.md dependencies, shopping_baskets/shopping_basket_items SQL tables, no abandoned status)."
+  },
+  "no_semantic_change": false
+}

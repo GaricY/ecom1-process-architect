@@ -110,8 +110,15 @@ class FingerprintIndex:
             )
         schema_text = schema_path.read_text(encoding="utf-8", errors="replace")
         table = re.escape(key.path)
+        # A table block is its `TABLE <name>` header plus the following
+        # 2-space-indented column lines (and any blank lines between them).
+        # Match greedily and let the block end at the first line that is
+        # neither — the next `TABLE`, the trailing `## Enumerations …`
+        # appendix, or EOF. An earlier `(?=^TABLE |\Z)` lookahead only
+        # recognised the first and last of those, so the *last* table
+        # before the appendix never matched and was reported absent.
         match = re.search(
-            rf"(?m)^TABLE {table}(?: [^\n]*)?\n(?:(?:  [^\n]*)?\n)*?(?=^TABLE |\Z)",
+            rf"(?m)^TABLE {table}(?: [^\n]*)?\n(?:(?:  [^\n]*)?\n)*",
             schema_text,
         )
         if not match:
