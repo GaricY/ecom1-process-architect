@@ -2,7 +2,7 @@
   "unit_id": "bp_refs_and_submission",
   "version": "v0002",
   "parent": "v0001",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-21T06:54:18+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -18,7 +18,7 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-094726/0006-t25-vm2-LxHWJLD2VdjKc2HcryWTrTshdPn-process-architect",
     "queue_priority": "failure_fix"
   },
-  "rationale": "Executor was a customer actor (cust_*) asked to perform an employee-only mutation (apply a basket discount) on the customer's own basket. The basket's customer_id matched ws.id().user, so this was an own-record / capability-gap case, not a cross-boundary case. Executor correctly returned OUTCOME_DENIED_SECURITY (customer lacks discount_manager) but dropped /proc/baskets/<id>.json from refs because the unit's customer-actor section only described the cross-boundary rule (refs = policy-docs only). The grader rejected the answer with 'answer missing required reference /proc/baskets/<id>.json'. Fix: add an explicit 'Customer-actor own-record exception' that mirrors the existing employee-actor exception \u2014 when record.customer_id == ws.id().user, the action target stays in refs even on capability-gap denial \u2014 and rewrite the actor-type branching and pre-submission checklist so ownership is checked before deciding refs.",
+  "rationale": "Executor was a customer actor (cust_*) asked to perform an employee-only mutation (apply a basket discount) on the customer's own basket. The basket's customer_id matched ws.id().user, so this was an own-record / capability-gap case, not a cross-boundary case. Executor correctly returned OUTCOME_DENIED_SECURITY (customer lacks discount_manager) but dropped /proc/baskets/<id>.json from refs because the unit's customer-actor section only described the cross-boundary rule (refs = policy-docs only). The grader rejected the answer with 'answer missing required reference /proc/baskets/<id>.json'. Fix: add an explicit 'Customer-actor own-record exception' that mirrors the existing employee-actor exception — when record.customer_id == ws.id().user, the action target stays in refs even on capability-gap denial — and rewrite the actor-type branching and pre-submission checklist so ownership is checked before deciding refs.",
   "dependencies": [
     {
       "kind": "workspace",
@@ -36,5 +36,7 @@
   "rollback": {
     "strategy": "Create a new version from v0001 content if the added own-record exception turns out to broaden refs incorrectly (e.g. graders treat customer's own /proc paths as cross-boundary in some flow we missed)."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

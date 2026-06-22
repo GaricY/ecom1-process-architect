@@ -2,7 +2,7 @@
   "unit_id": "bp_checkout",
   "version": "v0001",
   "parent": null,
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-21T00:00:00+00:00",
   "created_by": "task-008-migration",
   "mode": "initial_migration",
@@ -15,5 +15,7 @@
   "dependencies": [],
   "rollback": {
     "strategy": "Manual: retire this version or create a rollback version via bp_admin."
-  }
+  },
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

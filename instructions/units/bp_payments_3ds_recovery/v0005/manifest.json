@@ -2,16 +2,16 @@
   "unit_id": "bp_payments_3ds_recovery",
   "version": "v0005",
   "parent": "v0004",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-22T02:58:29+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
   "trigger": {
     "source": "manual_replay",
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260522-052443/0004-t41-vm2-LxLArLnghx6U2HXokVAALyyZKSx-process-architect",
-    "note": "task-012 redo \u2014 replay rejected failure_fix PAs"
+    "note": "task-012 redo — replay rejected failure_fix PAs"
   },
-  "rationale": "Trial graded FAIL with 'answer missing required reference /docs/payments/3ds-retry-window-2024-07-17.md' on an OUTCOME_OK 3DS recovery. The Executor correctly ran identity, status-table, and attempt-count gates, then performed the policy-update sweep exactly as the v0004 BP described \u2014 listing /docs/policy-updates/, /docs/current-updates/, /docs/ops-policy-notes/, /docs/catalogue-addenda/. All four returned 'not found'. The Executor concluded no update applied and called /bin/payments recover-3ds. But the actual override was a date-stamped sibling to the topic doc itself, living in /docs/payments/ next to /docs/payments/3ds.md. /docs/README.md grounds the rule on 'check under /docs for dated policy updates' \u2014 scoped to /docs, not to a fixed four-folder list \u2014 and v0004 narrowed the rule to a fixed list that does not cover topic-folder siblings. The new version splits the sweep into Class A (the topic doc's own folder /docs/payments/) and Class B (the four cross-workflow folders, retained), requires listing both in the same snippet, treats every entry in /docs/payments/ other than 3ds.md as a candidate update, and adds a refs / anti-pattern bullet covering /docs/payments/<file>.md as the matching-update path family. Outcomes, Refs, Anti-patterns and Dependencies are updated to keep the rule consistent across the unit; /docs/README.md is re-added as a declared dependency since the sweep-scope rule is derived directly from its 'check under /docs' wording (it is present in the current vault dump).",
+  "rationale": "Trial graded FAIL with 'answer missing required reference /docs/payments/3ds-retry-window-2024-07-17.md' on an OUTCOME_OK 3DS recovery. The Executor correctly ran identity, status-table, and attempt-count gates, then performed the policy-update sweep exactly as the v0004 BP described — listing /docs/policy-updates/, /docs/current-updates/, /docs/ops-policy-notes/, /docs/catalogue-addenda/. All four returned 'not found'. The Executor concluded no update applied and called /bin/payments recover-3ds. But the actual override was a date-stamped sibling to the topic doc itself, living in /docs/payments/ next to /docs/payments/3ds.md. /docs/README.md grounds the rule on 'check under /docs for dated policy updates' — scoped to /docs, not to a fixed four-folder list — and v0004 narrowed the rule to a fixed list that does not cover topic-folder siblings. The new version splits the sweep into Class A (the topic doc's own folder /docs/payments/) and Class B (the four cross-workflow folders, retained), requires listing both in the same snippet, treats every entry in /docs/payments/ other than 3ds.md as a candidate update, and adds a refs / anti-pattern bullet covering /docs/payments/<file>.md as the matching-update path family. Outcomes, Refs, Anti-patterns and Dependencies are updated to keep the rule consistent across the unit; /docs/README.md is re-added as a declared dependency since the sweep-scope rule is derived directly from its 'check under /docs' wording (it is present in the current vault dump).",
   "dependencies": [
     {
       "kind": "workspace",
@@ -41,5 +41,7 @@
   "rollback": {
     "strategy": "If the new Class-A sweep over /docs/payments/ mis-fires (e.g. grader rejects a topic-folder sibling that turned out not to match, or treats the topic-folder sibling rule as out-of-scope for this BP), create a new version from v0004 content to restore the four-folder-only sweep."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

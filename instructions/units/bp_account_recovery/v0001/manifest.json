@@ -2,7 +2,7 @@
   "unit_id": "bp_account_recovery",
   "version": "v0001",
   "parent": null,
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T23:08:58+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -49,5 +49,7 @@
   "rollback": {
     "strategy": "Delete business_processes/account_recovery.md from the registry and revert bp_index to v0007; no other unit references it."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

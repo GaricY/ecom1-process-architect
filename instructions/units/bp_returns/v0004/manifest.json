@@ -2,7 +2,7 @@
   "unit_id": "bp_returns",
   "version": "v0004",
   "parent": "v0003",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-28T18:31:45+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -55,5 +55,7 @@
   "rollback": {
     "strategy": "Restore bp_returns v0003 content (returns/baskets/payments join names, path cite) and drop the added sql_table dependencies if the rename mapping proves wrong."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

@@ -2,7 +2,7 @@
   "unit_id": "bp_refs_and_submission",
   "version": "v0003",
   "parent": "v0002",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-21T09:43:37+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -18,7 +18,7 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-123446/0004-t28-vm2-LxHtGgjvgLJYRfXqaZyTHkX7Jgs-process-architect",
     "queue_priority": "failure_fix"
   },
-  "rationale": "Executor was a customer actor (cust_*) asked to apply a basket discount on their own basket (own-record case). The request also asked the executor to first 'confirm' the manager for a specific named store. Executor correctly denied at the capability gate (customer lacks discount_manager) and correctly kept the own basket in refs, but dropped /proc/stores/<basket.store_id>.json \u2014 the public store record that the request named (by store display name) and that the discount policy's manager-store-match gate would have read. The grader rejected with 'answer missing required reference /proc/stores/<id>.json'. v0002 already says public records 'may always appear' but does not require them; the executor read that as permissive. Fix: promote 'public records named or implicated by the request' from optional to required in every actor/ownership branch, add a 'Public-record sweep' step to the pre-submission checklist, expand the own-record exception example to include the store, and add an anti-pattern entry for dropping such public records. Generalises across discount (basket.store_id), checkout (basket_lines[*].sku), and any future request that names a store/SKU.",
+  "rationale": "Executor was a customer actor (cust_*) asked to apply a basket discount on their own basket (own-record case). The request also asked the executor to first 'confirm' the manager for a specific named store. Executor correctly denied at the capability gate (customer lacks discount_manager) and correctly kept the own basket in refs, but dropped /proc/stores/<basket.store_id>.json — the public store record that the request named (by store display name) and that the discount policy's manager-store-match gate would have read. The grader rejected with 'answer missing required reference /proc/stores/<id>.json'. v0002 already says public records 'may always appear' but does not require them; the executor read that as permissive. Fix: promote 'public records named or implicated by the request' from optional to required in every actor/ownership branch, add a 'Public-record sweep' step to the pre-submission checklist, expand the own-record exception example to include the store, and add an anti-pattern entry for dropping such public records. Generalises across discount (basket.store_id), checkout (basket_lines[*].sku), and any future request that names a store/SKU.",
   "dependencies": [
     {
       "kind": "workspace",
@@ -36,5 +36,7 @@
   "rollback": {
     "strategy": "Create a new version from v0002 content if the promoted public-record rule turns out to over-include (e.g. graders flag refs containing stores/SKUs the request did not actually lean on)."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

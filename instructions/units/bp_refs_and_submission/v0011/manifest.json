@@ -2,7 +2,7 @@
   "unit_id": "bp_refs_and_submission",
   "version": "v0011",
   "parent": "v0009",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-24T03:30:00+00:00",
   "created_by": "human",
   "mode": "failure_fix",
@@ -15,7 +15,9 @@
     ],
     "answer_outcome": "OUTCOME_OK",
     "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260523-185835/0038-t38-vm2-LxRGjjpcUA3rS4ipYFviDdQhnPf",
-    "co_failure_task_ids": ["t40"],
+    "co_failure_task_ids": [
+      "t40"
+    ],
     "queue_priority": "human_authored",
     "validation_run": "20260524-022803 (t38 solo): score=100% with this prompt"
   },
@@ -43,5 +45,7 @@
   "rollback": {
     "strategy": "If the multi-axis sweep / density refinement / temporal scoping rules regress on tasks where (a) only one location axis is meaningful in the schema, or (b) the brief intends multiple temporally-distant hits as one cohort, revert to v0009 by creating a new version from v0009 content. The narrow rollback is dropping the temporal-scoping paragraph (rule 6) and matching anti-pattern, keeping multi-axis and density-refinement edits."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

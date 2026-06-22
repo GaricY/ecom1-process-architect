@@ -2,7 +2,7 @@
   "unit_id": "bp_returns",
   "version": "v0008",
   "parent": "v0007",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T09:04:42+00:00",
   "created_by": "human",
   "mode": "manual_refactor",
@@ -71,5 +71,7 @@
   "rollback": {
     "strategy": "Retire this version to fall back to v0007 if removing explicit topic-level payload wording causes return state answers to lose their required format."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

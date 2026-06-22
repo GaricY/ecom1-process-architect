@@ -2,7 +2,7 @@
   "unit_id": "bp_payments_3ds_recovery",
   "version": "v0004",
   "parent": "v0003",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-22T01:30:11+00:00",
   "created_by": "process_architect",
   "mode": "refresh",
@@ -14,7 +14,7 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260522-042352/0001-t01-vm2-LxL2sBVA7ij1LDniEeVKCUTXwBv-process-architect-refresh-bp_payments_3ds_recovery",
     "queue_priority": "async_refresh"
   },
-  "rationale": "Two dep changes drove this refresh. (1) /docs/README.md is no longer present in the workspace dump (it was a declared dep in v0003 but is absent from current-dependencies/ and is no longer reachable for ws.read). The previous version quoted README directly and named it as a dependency; both are removed. The policy-update sweep behaviour itself is preserved \u2014 it is graded-required, as established by the v0003 failure where the grader rejected an OUTCOME_OK answer for missing /docs/policy-updates/<file>.md in refs \u2014 but its prose is rewritten so the rule stands on its own (folder family enumerated inline, cross-reference to [date_and_time] kept for the scope-dimension grammar) instead of citing README. (2) bin-help/payments.help.txt now exposes approve-refund and refund alongside recover-3ds; the prior 'Only subcommand; no other payments verb exists' claim is wrong. Tools and Anti-patterns now name recover-3ds as the only verb this BP authorises and explicitly warn against invoking the refund verbs from a 3DS recovery flow. The three unchanged deps (/docs/payments/3ds.md, /docs/checkout.md, /docs/security.md \u2014 empty patches) retain their roles unchanged.",
+  "rationale": "Two dep changes drove this refresh. (1) /docs/README.md is no longer present in the workspace dump (it was a declared dep in v0003 but is absent from current-dependencies/ and is no longer reachable for ws.read). The previous version quoted README directly and named it as a dependency; both are removed. The policy-update sweep behaviour itself is preserved — it is graded-required, as established by the v0003 failure where the grader rejected an OUTCOME_OK answer for missing /docs/policy-updates/<file>.md in refs — but its prose is rewritten so the rule stands on its own (folder family enumerated inline, cross-reference to [date_and_time] kept for the scope-dimension grammar) instead of citing README. (2) bin-help/payments.help.txt now exposes approve-refund and refund alongside recover-3ds; the prior 'Only subcommand; no other payments verb exists' claim is wrong. Tools and Anti-patterns now name recover-3ds as the only verb this BP authorises and explicitly warn against invoking the refund verbs from a 3DS recovery flow. The three unchanged deps (/docs/payments/3ds.md, /docs/checkout.md, /docs/security.md — empty patches) retain their roles unchanged.",
   "dependencies": [
     {
       "kind": "workspace",
@@ -44,5 +44,7 @@
   "rollback": {
     "strategy": "If the rewritten policy-update sweep prose (no longer anchored on /docs/README.md) mis-fires, create a new version from v0003 content and re-add /docs/README.md as a dep once it is restored in the workspace; if the new tool-surface anti-pattern about approve-refund / refund mis-fires, drop just that anti-pattern bullet in a follow-up version."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

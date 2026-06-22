@@ -2,7 +2,7 @@
   "unit_id": "bp_discount",
   "version": "v0010",
   "parent": "v0009",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-29T00:11:57+00:00",
   "created_by": "human",
   "mode": "failure_fix",
@@ -74,5 +74,7 @@
   "rollback": {
     "strategy": "Revert to v0009 if a blind re-run shows the target-resolution rule causes over-citation of /docs/checkout.md on discount tasks where checkout rules were not actually applied, or otherwise regresses discount tasks."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

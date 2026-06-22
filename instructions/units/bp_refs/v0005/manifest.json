@@ -2,7 +2,7 @@
   "unit_id": "bp_refs",
   "version": "v0005",
   "parent": "v0004",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-28T19:48:25+00:00",
   "created_by": "human",
   "mode": "failure_fix",
@@ -22,7 +22,7 @@
     "queue_priority": "human_authored",
     "analysis": ".tasks/task-024/analysis.md + .tasks/task-024/bp_refs_review.md"
   },
-  "rationale": "Failure-driven fix for run 20260528-214615 (t52 + t53, both 0%). The only score_detail was \"answer missing required reference '/uploads/receipt_ocr_*.txt'\": the agent read the OCR receipt as the sole source of the old prices/SKUs/quantities but never cited it. bp_refs had no category for request-named input artifacts \u2014 its closed-world model enumerated only /proc record families and /docs policies, and /uploads sits outside all of them. Adds a 'Grounding principle' section (path-agnostic: bind to the artifact's role, not the /uploads folder name, since a future run may call it /incoming etc.), a 'What to include' bullet, an Inputs line, an input-artifact checklist step (renumbering 4-7 -> 5-8), and an anti-pattern. Also restores the original live-vs-mirror rationale to the vault exclusion (compressed to 'Local vault/... paths.' during the bp_refs_and_submission -> bp_refs decomposition, commit 56d6dd6) so /uploads is unambiguously citeable. Actor/ownership branches, public-record sweep, discovery set-equality, topic-doc routing, and the dependency contract are unchanged. Analysis: .tasks/task-024/analysis.md + bp_refs_review.md.",
+  "rationale": "Failure-driven fix for run 20260528-214615 (t52 + t53, both 0%). The only score_detail was \"answer missing required reference '/uploads/receipt_ocr_*.txt'\": the agent read the OCR receipt as the sole source of the old prices/SKUs/quantities but never cited it. bp_refs had no category for request-named input artifacts — its closed-world model enumerated only /proc record families and /docs policies, and /uploads sits outside all of them. Adds a 'Grounding principle' section (path-agnostic: bind to the artifact's role, not the /uploads folder name, since a future run may call it /incoming etc.), a 'What to include' bullet, an Inputs line, an input-artifact checklist step (renumbering 4-7 -> 5-8), and an anti-pattern. Also restores the original live-vs-mirror rationale to the vault exclusion (compressed to 'Local vault/... paths.' during the bp_refs_and_submission -> bp_refs decomposition, commit 56d6dd6) so /uploads is unambiguously citeable. Actor/ownership branches, public-record sweep, discovery set-equality, topic-doc routing, and the dependency contract are unchanged. Analysis: .tasks/task-024/analysis.md + bp_refs_review.md.",
   "dependencies": [
     {
       "kind": "workspace",
@@ -82,5 +82,7 @@
   "rollback": {
     "strategy": "Revert to v0004 by creating a new version from v0004 content if the input-artifact rule causes over-citing (e.g. agents citing every file in an input folder) that regresses precision-capped scoring. Narrow rollback: drop only the 'Request-named input artifacts' What-to-include bullet + grounding-principle class 1, keeping the vault-exclusion rewording."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

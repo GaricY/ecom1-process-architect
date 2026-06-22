@@ -2,7 +2,7 @@
   "unit_id": "bp_index",
   "version": "v0002",
   "parent": "v0001",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-22T02:15:37+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -13,10 +13,12 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260522-050537/0001-t01-vm2-LxL8MFEQKwZDZZfwSXC5oQQXFPE-process-architect-world-refresh-v0001",
     "queue_priority": "world_refresh"
   },
-  "rationale": "The returns row in the 'When to read what' table claimed 'no dedicated decision policy' for returns \u2014 drift on /docs/README.md adds /docs/returns.md to the Active Decision Policies table, so that claim is now wrong. The Mutation gate section also enumerated /bin/checkout, /bin/discount, /bin/payments recover-3ds as the mutating tool list without /bin/payments approve-refund / refund; the cross-cutting principles did not call out that refund mutation splits by actor kind (employee approval vs owning-customer finalization). Refresh to (a) rewrite the returns row to point at the two refund workflows and the matching tool subcommands, (b) add a fourth cross-cutting principle covering the actor-kind split, and (c) extend the Mutation gate's tool list, role examples, and state-gate examples to cover the refund-approval and refund-finalization gates.",
+  "rationale": "The returns row in the 'When to read what' table claimed 'no dedicated decision policy' for returns — drift on /docs/README.md adds /docs/returns.md to the Active Decision Policies table, so that claim is now wrong. The Mutation gate section also enumerated /bin/checkout, /bin/discount, /bin/payments recover-3ds as the mutating tool list without /bin/payments approve-refund / refund; the cross-cutting principles did not call out that refund mutation splits by actor kind (employee approval vs owning-customer finalization). Refresh to (a) rewrite the returns row to point at the two refund workflows and the matching tool subcommands, (b) add a fourth cross-cutting principle covering the actor-kind split, and (c) extend the Mutation gate's tool list, role examples, and state-gate examples to cover the refund-approval and refund-finalization gates.",
   "dependencies": [],
   "rollback": {
     "strategy": "Create a new version from v0001 content if the new returns row over-triggers the BP (e.g. the Executor consults bp_returns for plain product / catalogue lookups because the request mentioned the word 'return' in passing) or if the actor-kind cross-cutting principle conflicts with a future role consolidation."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

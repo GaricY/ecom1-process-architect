@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0017",
   "parent": "v0016",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-30T07:20:50+00:00",
   "created_by": "codex",
   "mode": "failure_fix",
@@ -74,5 +74,7 @@
   "rollback": {
     "strategy": "Revert to v0016 if the grader requires product refs for observed zero-quantity rows on pure availability counts, or if non-pure catalogue identity/match refs regress."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

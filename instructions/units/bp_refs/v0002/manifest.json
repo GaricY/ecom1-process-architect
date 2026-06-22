@@ -2,7 +2,7 @@
   "unit_id": "bp_refs",
   "version": "v0002",
   "parent": "v0001",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-26T15:30:16+00:00",
   "created_by": "codex",
   "mode": "failure_fix",
@@ -71,5 +71,7 @@
   "rollback": {
     "strategy": "Create a new version from v0001 if the message hygiene check conflicts with a domain-specific answer format."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

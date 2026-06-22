@@ -2,7 +2,7 @@
   "unit_id": "bp_payments_3ds_recovery",
   "version": "v0011",
   "parent": "v0010",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T23:08:58+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -52,5 +52,7 @@
   "rollback": {
     "strategy": "rollback to v0010 (content identical; only dependency hashes were re-stamped)"
   },
-  "no_semantic_change": true
+  "no_semantic_change": true,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

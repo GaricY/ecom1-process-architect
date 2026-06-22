@@ -2,7 +2,7 @@
   "unit_id": "bp_policy_update_scan",
   "version": "v0002",
   "parent": "v0001",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-26T08:51:53+00:00",
   "created_by": "codex",
   "mode": "refresh",
@@ -23,5 +23,7 @@
   "rollback": {
     "strategy": "Create a new version from v0001 if the root-/docs exception causes a domain BP to miss a valid update location."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

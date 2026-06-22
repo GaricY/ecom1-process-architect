@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0007",
   "parent": "v0006",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-21T12:19:34+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -18,7 +18,7 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-151002/0008-t08-vm2-LxJEegubLZRKBGa78CiDWn4vMLK-process-architect",
     "queue_priority": "failure_fix"
   },
-  "rationale": "On a catalogue claim verification ('a support note claims we stock <variant> in <family> with storage_type X AND color_family Y AND volume Z l, answer <NO> with the checked SKU if the extra catalogue claim is absent'), the Executor correctly determined no product in the family matched all three attributes and chose to cite the SKU matching attribute 1 (storage_type) and attribute 3 (volume), dropping the middle attribute (color). The grader required the SKU matching attribute 1 and attribute 2 (storage_type + color), dropping the last attribute (volume): the trial failed with 'answer missing required reference /proc/catalog/.../STO-<sku-matching-type+color>.json'. The existing v0006 covers count/availability shapes for product_discovery but says nothing about how to pick the 'checked SKU' for a multi-attribute claim verification when no product matches the full combination. This edit adds step 7 'Catalogue claim verification' with a deterministic longest-prefix-in-claim-attribute-order procedure: filter by attribute 1, then 1+2, then 1+2+3, etc., and cite the candidate set produced by the longest non-empty prefix; never skip an earlier claim attribute to match a later one. Matching anti-patterns name the exact grader error and call out the spurious-LIKE-substring pitfall the Executor also hit while exploring product_properties. The Refs section gains a matching bullet. Dependencies are unchanged in shape (still /docs/README.md, /AGENTS.MD, sql.help.txt, date.help.txt, id.help.txt) \u2014 sql.help.txt's 'why' is widened slightly to call out the product_properties / families / product_kinds tables that step 7 leans on.",
+  "rationale": "On a catalogue claim verification ('a support note claims we stock <variant> in <family> with storage_type X AND color_family Y AND volume Z l, answer <NO> with the checked SKU if the extra catalogue claim is absent'), the Executor correctly determined no product in the family matched all three attributes and chose to cite the SKU matching attribute 1 (storage_type) and attribute 3 (volume), dropping the middle attribute (color). The grader required the SKU matching attribute 1 and attribute 2 (storage_type + color), dropping the last attribute (volume): the trial failed with 'answer missing required reference /proc/catalog/.../STO-<sku-matching-type+color>.json'. The existing v0006 covers count/availability shapes for product_discovery but says nothing about how to pick the 'checked SKU' for a multi-attribute claim verification when no product matches the full combination. This edit adds step 7 'Catalogue claim verification' with a deterministic longest-prefix-in-claim-attribute-order procedure: filter by attribute 1, then 1+2, then 1+2+3, etc., and cite the candidate set produced by the longest non-empty prefix; never skip an earlier claim attribute to match a later one. Matching anti-patterns name the exact grader error and call out the spurious-LIKE-substring pitfall the Executor also hit while exploring product_properties. The Refs section gains a matching bullet. Dependencies are unchanged in shape (still /docs/README.md, /AGENTS.MD, sql.help.txt, date.help.txt, id.help.txt) — sql.help.txt's 'why' is widened slightly to call out the product_properties / families / product_kinds tables that step 7 leans on.",
   "dependencies": [
     {
       "kind": "bin_help",
@@ -42,5 +42,7 @@
   "rollback": {
     "strategy": "Create a new version from v0006 content if the longest-prefix-in-claim-order rule causes Executors to under-cite catalogue rows on claim-verification tasks where the grader expected an alternative tie-break (e.g. citing all near-matches regardless of attribute order)."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

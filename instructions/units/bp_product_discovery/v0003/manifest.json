@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0003",
   "parent": "v0001",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-21T01:23:38+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -24,11 +24,13 @@
       "kind": "bin_help",
       "path": "sql.help.txt",
       "sha256": "a66a4727ffea2a183221f61b8ad593b209d827bb3c28fb1e260ebf2731f7c6cc",
-      "why": "Table shapes for products, inventory, stores, and product_kinds \u2014 the BP names these tables in step 2 and in the count-restriction translation."
+      "why": "Table shapes for products, inventory, stores, and product_kinds — the BP names these tables in step 2 and in the count-restriction translation."
     }
   ],
   "rollback": {
     "strategy": "Create a new version from v0001 content if the new step-3 matching grammar or the date-dismissal anti-pattern proves too aggressive (e.g. starts applying updates that were genuinely retired)."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

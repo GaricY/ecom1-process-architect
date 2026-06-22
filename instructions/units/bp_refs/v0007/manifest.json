@@ -2,7 +2,7 @@
   "unit_id": "bp_refs",
   "version": "v0007",
   "parent": "v0006",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-29T11:30:59+00:00",
   "created_by": "codex",
   "mode": "world_refresh",
@@ -78,5 +78,7 @@
   "rollback": {
     "strategy": "Revert to v0006 if proc manifest drift should be tracked solely by world_baseline instead of this unit."
   },
-  "no_semantic_change": true
+  "no_semantic_change": true,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

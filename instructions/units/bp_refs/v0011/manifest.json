@@ -2,7 +2,7 @@
   "unit_id": "bp_refs",
   "version": "v0011",
   "parent": "v0010",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-19T17:06:00+00:00",
   "created_by": "human",
   "mode": "manual_refactor",
@@ -28,5 +28,7 @@
   "rollback": {
     "strategy": "Retire this version to fall back to v0010 if removing topic-specific public-record or topic-doc guidance from refs causes under-citation before topic BPs are corrected."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

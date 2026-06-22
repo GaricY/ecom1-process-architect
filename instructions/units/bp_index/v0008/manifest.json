@@ -2,7 +2,7 @@
   "unit_id": "bp_index",
   "version": "v0008",
   "parent": "v0007",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T23:08:58+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -13,10 +13,12 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260619-020237/0001-t01-vm2-LytyPHmU2wGp5TfqXF2urPUbwsN-process-architect-world-refresh-v0004",
     "queue_priority": "blocking_refresh"
   },
-  "rationale": "A new mutating capability (/bin/account-recovery) plus a new /docs/security.md customer-only rule create a new routable domain. Add a routing row for business_processes/account_recovery.md (Mutating: /bin/account-recovery send-email-link) and a cross-cutting principle so the executor reaches the new BP; the new tool is automatically covered by the \u00a74 mutation gate via its Mutating-column entry.",
+  "rationale": "A new mutating capability (/bin/account-recovery) plus a new /docs/security.md customer-only rule create a new routable domain. Add a routing row for business_processes/account_recovery.md (Mutating: /bin/account-recovery send-email-link) and a cross-cutting principle so the executor reaches the new BP; the new tool is automatically covered by the §4 mutation gate via its Mutating-column entry.",
   "dependencies": [],
   "rollback": {
     "strategy": "Restore bp_index v0007 (drop the account_recovery routing row and principle 9); the rest of the index is unchanged."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

@@ -2,7 +2,7 @@
   "unit_id": "bp_fraud_risk_review",
   "version": "v0005",
   "parent": "v0004",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-28T18:31:45+00:00",
   "created_by": "process_architect",
   "mode": "world_refresh",
@@ -79,5 +79,7 @@
   "rollback": {
     "strategy": "Restore bp_fraud_risk_review v0004 (old payments/inventory/etc. table+column names in the SQL shapes) if the rename mapping proves wrong."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

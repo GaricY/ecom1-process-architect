@@ -2,7 +2,7 @@
   "unit_id": "bp_payments_3ds_recovery",
   "version": "v0009",
   "parent": "v0008",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-29T11:30:59+00:00",
   "created_by": "codex",
   "mode": "world_refresh",
@@ -48,5 +48,7 @@
   "rollback": {
     "strategy": "Revert to v0008 if payment record README drift should be tracked only through another payment-oriented BP."
   },
-  "no_semantic_change": true
+  "no_semantic_change": true,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

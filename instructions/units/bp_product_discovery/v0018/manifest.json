@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0018",
   "parent": "v0017",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T00:26:47+00:00",
   "created_by": "human",
   "mode": "manual_refactor",
@@ -71,5 +71,7 @@
   "rollback": {
     "strategy": "Retire this version to fall back to v0017, or issue a new manual_refactor version with adjusted ledger wording."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

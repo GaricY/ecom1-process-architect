@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0009",
   "parent": "v0008",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-26T08:28:15+00:00",
   "created_by": "codex",
   "mode": "refresh",
@@ -35,5 +35,7 @@
   "rollback": {
     "strategy": "Create a new version from v0008 if the delegated catalogue-count update rule misses required dated reporting updates."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

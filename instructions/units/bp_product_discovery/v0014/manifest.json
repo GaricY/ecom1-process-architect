@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0014",
   "parent": "v0013",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-28T20:37:49+00:00",
   "created_by": "human",
   "mode": "failure_fix",
@@ -18,7 +18,7 @@
     "queue_priority": "human_authored",
     "analysis": ".tasks/task-024/token_regression.md + token_home_consolidation.md"
   },
-  "rationale": "Token-contract consolidation (companion). Step 6 drops the inline 'For yes/no include <YES>... for a count <COUNT:N>' clause \u2014 the lone surviving correct copy, but a duplicate that contradicted the (broken) executor_core/bp_index versions and let the agent resolve the conflict the wrong way \u2014 in favour of a pointer to submission_terminal Answer format. Keeps the product-discovery-owned availability/store reply-shaping rule and its existing /AGENTS.MD prose dependency. Dependency contract unchanged (prose-only). Analysis: .tasks/task-024/token_regression.md + token_home_consolidation.md.",
+  "rationale": "Token-contract consolidation (companion). Step 6 drops the inline 'For yes/no include <YES>... for a count <COUNT:N>' clause — the lone surviving correct copy, but a duplicate that contradicted the (broken) executor_core/bp_index versions and let the agent resolve the conflict the wrong way — in favour of a pointer to submission_terminal Answer format. Keeps the product-discovery-owned availability/store reply-shaping rule and its existing /AGENTS.MD prose dependency. Dependency contract unchanged (prose-only). Analysis: .tasks/task-024/token_regression.md + token_home_consolidation.md.",
   "dependencies": [
     {
       "kind": "bin_help",
@@ -72,5 +72,7 @@
   "rollback": {
     "strategy": "Revert to v0013 if discovery yes/no answers miss the pointer; if so, re-add the one-line token clause to step 6."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

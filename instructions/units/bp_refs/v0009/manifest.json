@@ -2,7 +2,7 @@
   "unit_id": "bp_refs",
   "version": "v0009",
   "parent": "v0008",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T08:01:43+00:00",
   "created_by": "human",
   "mode": "failure_fix",
@@ -83,5 +83,7 @@
   "rollback": {
     "strategy": "Create a new version from the parent content if this refactor-completion wording over-constrains executor behavior."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

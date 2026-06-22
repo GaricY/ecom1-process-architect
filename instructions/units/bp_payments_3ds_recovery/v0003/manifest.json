@@ -2,7 +2,7 @@
   "unit_id": "bp_payments_3ds_recovery",
   "version": "v0003",
   "parent": "v0002",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-21T11:40:33+00:00",
   "created_by": "process_architect",
   "mode": "failure_fix",
@@ -18,7 +18,7 @@
     "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260521-143355/0002-t41-vm2-LxJ9usrGFAVdH4YmkHT8ij9yhQL-process-architect",
     "queue_priority": "failure_fix"
   },
-  "rationale": "Trial graded FAIL with 'answer missing required reference /docs/policy-updates/3ds-retry-lockout-2024-07-17.md' on an OUTCOME_OK 3DS recovery. The customer / basket / payment / status-table gates all passed, and the Executor ran /bin/payments recover-3ds correctly, but it never swept the dated-update folders named by /docs/README.md ('Before applying an active decision policy, check under /docs for dated policy updates that name the same workflow, record, or operating day'). A matching update under /docs/policy-updates/ named the specific payment under review and imposed a retry lockout window \u2014 the Executor missed it because the previous BP only described the legacy /docs/payments/3ds.md gates and the /docs/checkout.md prerequisite, with no mandatory sweep across /docs/policy-updates/ etc. before the mutation. The new version adds a 'Policy-update sweep' step between the eligibility gates and the recover-3ds call: list each dated-update folder named in /docs/README.md, identify matching updates by payment id, basket id, customer id, 3DS / payment-recovery workflow keywords, or operating day (per the scope-dimension grammar already in [date_and_time]), read each match, apply its override (lockout windows compared against /bin/date, hard suspensions, altered caps), cite every matching update path in refs regardless of outcome. The sweep is gated on identity-matched flows only \u2014 the cross-boundary OUTCOME_DENIED_SECURITY branch still cites policy docs only. Inputs, Outcomes, Refs, Anti-patterns and Dependencies are updated to keep the rule consistent across the unit.",
+  "rationale": "Trial graded FAIL with 'answer missing required reference /docs/policy-updates/3ds-retry-lockout-2024-07-17.md' on an OUTCOME_OK 3DS recovery. The customer / basket / payment / status-table gates all passed, and the Executor ran /bin/payments recover-3ds correctly, but it never swept the dated-update folders named by /docs/README.md ('Before applying an active decision policy, check under /docs for dated policy updates that name the same workflow, record, or operating day'). A matching update under /docs/policy-updates/ named the specific payment under review and imposed a retry lockout window — the Executor missed it because the previous BP only described the legacy /docs/payments/3ds.md gates and the /docs/checkout.md prerequisite, with no mandatory sweep across /docs/policy-updates/ etc. before the mutation. The new version adds a 'Policy-update sweep' step between the eligibility gates and the recover-3ds call: list each dated-update folder named in /docs/README.md, identify matching updates by payment id, basket id, customer id, 3DS / payment-recovery workflow keywords, or operating day (per the scope-dimension grammar already in [date_and_time]), read each match, apply its override (lockout windows compared against /bin/date, hard suspensions, altered caps), cite every matching update path in refs regardless of outcome. The sweep is gated on identity-matched flows only — the cross-boundary OUTCOME_DENIED_SECURITY branch still cites policy docs only. Inputs, Outcomes, Refs, Anti-patterns and Dependencies are updated to keep the rule consistent across the unit.",
   "dependencies": [
     {
       "kind": "workspace",
@@ -48,5 +48,7 @@
   "rollback": {
     "strategy": "If the new Policy-update sweep mis-fires (e.g. grader rejects a dated update path that turned out not to match, or graders stop requiring update paths in refs), create a new version from v0002 content to restore the three-doc-only refs rule without the dated-update sweep."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

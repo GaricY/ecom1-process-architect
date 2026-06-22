@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0020",
   "parent": "v0019",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-06-18T09:04:42+00:00",
   "created_by": "human",
   "mode": "manual_refactor",
@@ -83,5 +83,7 @@
   "rollback": {
     "strategy": "Retire this version to fall back to v0019 if the terminal delegation weakens product claim-verification payload requirements."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

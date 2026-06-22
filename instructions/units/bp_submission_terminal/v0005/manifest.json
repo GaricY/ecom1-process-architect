@@ -2,7 +2,7 @@
   "unit_id": "bp_submission_terminal",
   "version": "v0005",
   "parent": "v0004",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-29T12:00:14+00:00",
   "created_by": "codex",
   "mode": "failure_fix",
@@ -23,5 +23,7 @@
   "rollback": {
     "strategy": "Revert to v0004 if this terminal guard conflicts with a future dedicated action BP that intentionally adds a supported workflow."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

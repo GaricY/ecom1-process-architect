@@ -2,7 +2,7 @@
   "unit_id": "bp_fraud_risk_review",
   "version": "v0003",
   "parent": "v0002",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-26T12:09:38+00:00",
   "created_by": "codex",
   "mode": "failure_fix",
@@ -65,5 +65,7 @@
   "rollback": {
     "strategy": "Retire v0003 and fall back to v0002 if mandatory hard sweep causes broad false-positive unions or systematic over-inclusion of soft-only clusters."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

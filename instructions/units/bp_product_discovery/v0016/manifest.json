@@ -2,7 +2,7 @@
   "unit_id": "bp_product_discovery",
   "version": "v0016",
   "parent": "v0015",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-29T14:31:11+00:00",
   "created_by": "human",
   "mode": "failure_fix",
@@ -74,5 +74,7 @@
   "rollback": {
     "strategy": "Revert to v0015 if gating refs on an observed store_inventory row drops a product ref the grader required on a non->=K availability question, or if non-pure / claim-verification refs regress."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }

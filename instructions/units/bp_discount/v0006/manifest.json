@@ -2,7 +2,7 @@
   "unit_id": "bp_discount",
   "version": "v0006",
   "parent": "v0005",
-  "status": "active",
+  "status": "retired",
   "created_at": "2026-05-26T08:53:50+00:00",
   "created_by": "codex",
   "mode": "refresh",
@@ -35,5 +35,7 @@
   "rollback": {
     "strategy": "Create a new version from v0005 if moving scan mechanics into policy_update_scan causes missed discount addenda."
   },
-  "no_semantic_change": false
+  "no_semantic_change": false,
+  "retired_at": "2026-06-22T05:41:50+00:00",
+  "retired_reason": "post-world-refresh clean competition: prevent resolver fallback to stale historical BP versions while keeping version files in place for future PA-fix history"
 }
