@@ -1,0 +1,192 @@
+--- executor_core/v0013/content.md
++++ executor_core/v0014/content.md
+@@ -50,12 +50,15 @@
+ 
+ - `business_processes/` — the operating manual (entry point:
+   `index.md`).
+-- `bin-help/sqlite_schema.txt` — canonical warehouse schema, FK edges,
+-  column types, primary keys, **plus SQL conventions** (dialect
+-  gotchas, the EAV property layout, lowercase text-value conventions,
+-  family/grouping structure). The concrete table and column names live
+-  in this file — read them here, never assume them from memory. Consult
+-  before writing any SQL — even a "simple" one.
++- `bin-help/sqlite_schema.txt` — the warehouse **map**: families, fields,
++  FK edges, primary keys, the EAV property layout, family/grouping
++  structure. When `/bin/sql` is up this is the live SQL schema; when it
++  is down (cluster outage) it is the map of the file-shaped `/proc`
++  projection that holds the same data. The concrete family/field names
++  live in this file — read them here, never assume them from memory.
++  Names can lag the live world (the runtime relocates files between
++  trials), so treat it as a map and confirm shape with one live read.
++  Consult before any warehouse read — even a "simple" one.
+ - `bin-help/<tool>.help.txt` — `--help` output for each `/bin/<tool>`.
+ - `vault/` — fresh mirror of live `/docs`, `/bin/README`, and every
+   `AGENTS.MD` / `README.md`, taken at trial start.
+@@ -75,9 +78,10 @@
+ 2. `Read` every per-process file the index points to (typically 1–3:
+    `identity_and_auth`, `refs`, `submission_terminal`, and the topic BP).
+ 3. `Read bin-help/sqlite_schema.txt` whenever the task is data-shaped
+-   (catalogue, inventory, basket, payment, customer). Skim the "SQL
+-   conventions" header even on a task that "obviously" does not need
+-   SQL — half the wasted snippets come from skipping this.
++   (catalogue, inventory, basket, payment, customer). It is the family
++   map and record-shape reference for every warehouse read — skim it
++   even on a task that "obviously" does not need it; half the wasted
++   snippets come from skipping this.
+ 
+ Then write snippet 1.
+ 
+@@ -110,7 +114,8 @@
+    answer_submitted}`.
+ 
+ Do not merge unresolved investigation into the terminal call. If a
+-`ws.read`, `ws.list`, `ws.tree`, `ws.sql_rows`, `/bin/*`, or helper
++`ws.read`, `ws.read_json`, `ws.list`, `ws.tree`, `ws.proc`,
++`ws.sql_rows`, `/bin/*`, or helper
+ result could change `message`, `outcome`, or `refs`, run it in a
+ non-terminal snippet first and wait for its output. The snippet that
+ calls `submit_and_exit` is for an already-decided answer; it may still
+@@ -133,11 +138,13 @@
+ Reads (return dicts):
+ 
+ - `ws.read(path, number=False, start_line=0, end_line=0)` → `{path, content, content_type, sha256, truncated}`. File body is **`content`** (string), not `lines`/`stdout`/`text`. JSON files: `json.loads(res["content"])` before accessing fields.
++- `ws.read_json(path)` → the parsed JSON object, with its absolute `record_path` injected. Use this for `/proc/...` records instead of hand-rolling `json.loads(ws.read(path)["content"])` — it raises on truncation / bad JSON instead of half-parsing.
+ - `ws.list(path="/")` → `{path, entries: [{name, path, kind, content_type}]}`
+ - `ws.tree(root="", level=2)` → `{root: {name, kind, content_type, children: [...]}, truncated}`
+ - `ws.find(root="/", name="", kind="all"|"files"|"dirs", limit=10)` → `{paths: [str], truncated}`
+ - `ws.search(root="/", pattern="", limit=10)` → `{matches: [{path, line, line_text}], truncated}`
+ - `ws.stat(path)` → `{path, kind, content_type, writable}`
++- `ws.proc(family, scope="", limit=5000)` → `{"records": [ {<fields>, "record_path": "/proc/..."}, ... ], "count": int, "truncated": bool}`. **The primary way to read the warehouse** while `/bin/sql` is down: loads every JSON record under a `/proc` family. See "Reading warehouse data" below.
+ 
+ `truncated=True` → response was cut; narrow the scope and re-issue.
+ 
+@@ -150,19 +157,22 @@
+ 
+ - `ws.exec_tool(path, args=None, stdin="")` — the only generic invocation
+   surface (e.g. `ws.exec_tool("/bin/checkout", args=["--basket", bid])`).
+-- `ws.sql_rows(query, limit=1000)` — **the primary way to read SQL.**
+-  Returns `{"rows": list[dict], "row_count": int, "truncated": bool}`,
+-  capped at `limit`. Raises `RuntimeError(stderr)` on SQL error. See
+-  "Calling SQL" below.
+-- `ws.sql(query, json_output=True)` — raw `/bin/sql` invocation returning
+-  `{exit_code, stdout, stderr}`. Escape hatch — use it for non-SELECT
+-  (`EXPLAIN`, `PRAGMA`), text mode (`json_output=False`), or when you
+-  want to inspect stderr without raising. **Do not use for normal
+-  SELECTs** — on large results the harness appends a plaintext footer
+-  like `warning: result truncated at 100 rows` after the JSON array,
+-  so a naive `json.loads(res["stdout"])` will fail with
+-  `JSONDecodeError`. Use `ws.sql_rows` for SELECTs and let it handle
+-  paging.
++- `ws.jq(filter, path="", stdin="", raw=False)` — thin `/bin/jq` wrapper
++  for spot-checks on a JSON record (`keys`, one field, a quick
++  `.array[]` walk). **Minimal jq only**: `.`, `keys`, `length`,
++  `.field`, `.a.b`, `.arr[0]`, `.arr[]` — no pipes, no `select()`, no
++  `map()`. For anything richer, `ws.read_json` + Python is strictly more
++  powerful. Returns the raw `{stdout, exit_code, stderr}`.
++- `ws.sql_rows(query, limit=1000)` / `ws.sql(query, json_output=True)` —
++  SQL against the warehouse DB. **Recovery path only: the PowerTools SQL
++  cluster is currently down in prod**, so these raise a cluster-down
++  `RuntimeError`. Read the warehouse from `/proc` (`ws.proc` /
++  `ws.read_json`) instead — do not retry a cluster-down call in a loop.
++  If a trial's `/bin/sql` is back up, `ws.sql_rows` is the primary
++  SELECT reader again — `{"rows": [...], "row_count": int, "truncated":
++  bool}`, capped at `limit`, paging past the harness 100-row cap; `ws.sql`
++  is the raw escape hatch for `EXPLAIN`/`PRAGMA`/text mode. See "Reading
++  warehouse data" below.
+ - `ws.date()` — shortcut on `/bin/date`. Already run for you at trial
+   start:
+ 
+@@ -185,44 +195,63 @@
+ 
+ `bin-help/` contains the live `--help` output for each `/bin/<tool>`.
+ Browse it with `Read` before calling unfamiliar tools. The warehouse
+-DB schema and SQL conventions live alongside in
+-`bin-help/sqlite_schema.txt` — **consult before writing any SQL**.
+-
+-### Calling SQL
+-
+-For every SELECT use `ws.sql_rows`:
++family map and record shapes live alongside in
++`bin-help/sqlite_schema.txt` — **consult before any warehouse read**.
++
++### Reading warehouse data
++
++The warehouse (catalogue, inventory, baskets, payments, returns, staff)
++is a **file-shaped JSON projection** under `/proc/<family>/.../<id>.json`.
++The "tables" in `sqlite_schema.txt` are nested fields of one record —
++a record's line items, a store's inventory array, a product's property
++object — so read the record and walk those in Python.
++
++**`/bin/sql` is down in prod** (the SQL cluster is unreachable). Default
++to the `/proc` path; reach for `ws.sql_rows` only if a given trial's
++`/bin/sql` actually answers. Never retry a cluster-down SQL call in a
++loop — switch to `/proc`.
++
++**Family names can differ per trial.** The runtime relocates files
++(e.g. `stores` vs `locations`, `returns` vs `return-workflows`). List
++`/proc` live to get this trial's families before you scan — never
++hard-code a family name from memory or from another trial:
+ 
+ ```python
+-res = ws.sql_rows("SELECT col_a, col_b FROM some_table WHERE some_fk = 7")
+-# res == {"rows": [{"col_a": "...", "col_b": "..."}, ...],
+-#         "row_count": N, "truncated": False}
+-# SQL error → RuntimeError(stderr) — surfaces as a snippet exception
++families = [e["name"] for e in ws.list("/proc")["entries"]
++            if e["kind"] == "NODE_KIND_DIR"]
+ ```
+ 
+-`row_count` is `len(res["rows"])`. `truncated=True` means the result
+-hit the `limit` cap (default 1000) **and** at least one more row
+-existed — you got the first `limit` rows. To page further, re-issue
+-the query with explicit `LIMIT/OFFSET` and a stable `ORDER BY`:
++**Narrow first, then read.** To find specific records, grep content with
++`ws.search` or match paths with `ws.find`, then `ws.read_json` the hits —
++do not bulk-load a whole family just to locate one row:
+ 
+ ```python
+-PAGE = 500
+-rows, offset = [], 0
+-while True:
+-    res = ws.sql_rows(
+-        f"SELECT * FROM some_table ORDER BY some_id LIMIT {PAGE} OFFSET {offset}"
+-    )
+-    rows.extend(res["rows"])
+-    if res["row_count"] < PAGE:
+-        break
+-    offset += PAGE
++hits = ws.search(root="/proc/<family>", pattern="<text>", limit=20)
++rec  = ws.read_json(hits["matches"][0]["path"])   # parsed dict + record_path
+ ```
+ 
+-Bump `limit=` on a single call when you know the answer is bounded
+-(e.g. `ws.sql_rows(q, limit=5000)`) — cheaper than rolling your own
+-pager. The harness paginates under the hood; you only need explicit
+-`LIMIT/OFFSET` when you want to walk past `limit`.
+-
+-`ws.sql(query)` is the raw escape hatch — see the `ws` surface section.
++**Bulk-scan with `ws.proc`** for aggregations / joins over a whole
++family — it is the `SELECT * FROM <table>` replacement:
++
++```python
++res  = ws.proc("<family>")              # or ws.proc("<family>", "<partition>")
++# res == {"records": [ {<fields>, "record_path": "/proc/..."}, ... ],
++#         "count": N, "truncated": False}
++rows = res["records"]
++# join in Python: index one family by id, walk another's line items
++```
++
++`truncated=True` means the scan hit `limit` — raise `limit=` or pass a
++`scope` partition to narrow. Families are small (tens to low hundreds of
++records), so a whole-family scan is a handful of reads.
++
++**Confirm shape live.** `sqlite_schema.txt` is a map and can lag the live
++world. One `ws.read_json` of a sample record shows the actual fields for
++this trial — trust that over the map when they disagree.
++
++**Refs.** Cite a record's `record_path` (every `ws.proc` / `ws.read_json`
++record carries it). Assemble the final `refs` list through
++`business_processes/refs.md`.
+ 
+ ## scratchpad vs state
+ 

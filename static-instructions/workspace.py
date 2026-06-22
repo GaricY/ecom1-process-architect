@@ -3,8 +3,9 @@
 Wraps the BitGN ECOM runtime ConnectRPC client and exposes a single tidy
 surface for the agent:
 
-    ws.tree(...), ws.list(...), ws.read(...), ws.search(...), ws.find(...),
-    ws.stat(...), ws.sql(...), ws.exec_tool(...), ws.date(), ws.id(),
+    ws.tree(...), ws.list(...), ws.read(...), ws.read_json(...),
+    ws.search(...), ws.find(...), ws.stat(...), ws.proc(...), ws.jq(...),
+    ws.sql(...), ws.exec_tool(...), ws.date(), ws.id(),
     ws.answer(scratchpad, verify), ws.write(...), ws.delete(...)
 
 `submit_and_exit(...)` is exposed at the prelude level on top of `ws.answer`
@@ -206,6 +207,104 @@ class Workspace:
         )
         return response
 
+    def read_json(self, path: str) -> dict:
+        """`ws.read` + `json.loads`, with `record_path` injected.
+
+        The warehouse is a file-shaped JSON projection under `/proc/...`
+        (the primary way to read it while `/bin/sql` is down). This removes
+        the easy-to-drop `json.loads(ws.read(path)["content"])` boilerplate
+        and fails loudly on truncation or invalid JSON instead of returning
+        a half-parsed record.
+
+        Returns the parsed object. For a dict record the absolute `path` is
+        stored under `record_path` (without clobbering a real field) so you
+        can cite it directly in refs.
+        """
+        res = self.read(path)
+        if res.get("truncated"):
+            raise RuntimeError(
+                f"ws.read_json: {path} was truncated by the read RPC; "
+                "re-read in line ranges and assemble the JSON yourself."
+            )
+        content = res.get("content", "")
+        try:
+            obj = json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"ws.read_json: {path} is not valid JSON: {exc}; "
+                f"head={content[:200]!r}"
+            ) from exc
+        if isinstance(obj, dict):
+            obj.setdefault("record_path", path)
+        return obj
+
+    def proc(self, family: str, scope: str = "", *, limit: int = 5000) -> dict:
+        """Load every JSON record under a `/proc` family as parsed dicts.
+
+        Since `/bin/sql` went down the warehouse is served as a file-shaped
+        projection: `/proc/<family>/<partition>/<id>.json`. This is the
+        bulk-scan primitive — the replacement for `SELECT * FROM <table>`
+        for whole-family work (aggregations, joins). For a single known
+        record use `ws.read_json`; to narrow first use `ws.search` (content)
+        or `ws.find` (path glob), then `ws.read_json` the hits.
+
+        `family` — a `/proc` family name (`"catalog"`, `"carts"`, ...) or a
+                   full `/proc/...` root. **Family names can differ per
+                   trial** (the runtime relocates them, e.g. `stores` vs
+                   `locations`, `returns` vs `return-workflows`) — list
+                   `/proc` live to see this trial's names, do not assume.
+        `scope`  — optional partition subdir to narrow the scan (a customer
+                   id, brand, city, store id — the first segment under the
+                   family).
+
+        Returns `{"records": [ {<fields...>, "record_path": "/proc/..."} ],
+        "count": int, "truncated": bool}`. Each record carries its absolute
+        `record_path` — cite that in refs.
+
+        Reads go through `ws.read` (audited WITH the response payload) so the
+        Process Architect can still rebuild `vault/proc/` from the trace. Do
+        not reroute this through `/bin/cat`.
+        """
+        root = family if family.startswith("/") else f"/proc/{family.strip('/')}"
+        if scope:
+            root = f"{root.rstrip('/')}/{scope.strip('/')}"
+        try:
+            found = self.find(root=root, name="", kind="files", limit=limit + 1)
+        except Exception as exc:
+            # A missing root makes `find` raise "not found" (it does not return
+            # an empty result). Family names vary per trial, so the likeliest
+            # cause is a stale family name — surface the live family list.
+            if family.startswith("/"):
+                raise
+            fams = self._proc_families()
+            fam_key = family.strip("/")
+            if scope and fam_key in fams:
+                raise RuntimeError(
+                    f"ws.proc: nothing under {root!r}. Family {fam_key!r} "
+                    f"exists but scope {scope!r} did not resolve — check the "
+                    "partition value (a customer id / brand / city / store id)."
+                ) from exc
+            raise RuntimeError(
+                f"ws.proc: /proc family {fam_key!r} not found. /proc families "
+                f"in this trial: {fams}. Family names can differ per trial — "
+                "pass one of these."
+            ) from exc
+        paths = sorted(p for p in found.get("paths", []) if p.endswith(".json"))
+        truncated = bool(found.get("truncated")) or len(paths) > limit
+        records = [self.read_json(p) for p in paths[:limit]]
+        return {"records": records, "count": len(records), "truncated": truncated}
+
+    def _proc_families(self) -> list[str]:
+        """Live `/proc` family dir names (they can differ per trial)."""
+        try:
+            return [
+                e["name"]
+                for e in self.list("/proc").get("entries", [])
+                if e.get("kind") == "NODE_KIND_DIR"
+            ]
+        except Exception:
+            return []
+
     # ── filesystem mutations ──────────────────────────────────────────────
     def write(self, path: str, content: str, if_match_sha256: str = "") -> dict:
         self._audit("write", {"path": path, "bytes": len(content)})
@@ -233,6 +332,43 @@ class Workspace:
             self._vm.exec(ExecRequest(path=path, args=argv, stdin=stdin))
         )
 
+    def jq(
+        self,
+        filter: str,
+        path: str = "",
+        *,
+        stdin: str = "",
+        raw: bool = False,
+    ) -> dict:
+        """Thin wrapper over `/bin/jq` (added to the runtime when `/bin/sql`
+        went down).
+
+        **Minimal jq only** — the runtime build supports just `.`, `keys`,
+        `length`, `.field`, `.nested.field`, `.array[0]`, `.array[]`. No
+        pipes, no `select()`, no `map()`, no arithmetic. For anything richer
+        read the record with `ws.read_json` and filter in Python (strictly
+        more powerful). Use this for spot-checks: a record's `keys`, one
+        field, a quick `.array[]` walk.
+
+        Returns the exec dict `{stdout, exit_code, stderr}`; jq prints one
+        JSON value per output line (text), so the caller decides how to parse
+        `stdout`. The runtime's `/bin/jq` prepends a `PowerTools E-Commerce
+        OS jq` banner line to stdout on every call — this strips it so
+        `stdout` is the bare jq result. Raises on non-zero exit.
+        """
+        args = (["-r"] if raw else []) + [filter]
+        if path:
+            args.append(path)
+        res = self.exec_tool("/bin/jq", args=args, stdin=stdin)
+        if res["exit_code"] != 0:
+            raise RuntimeError(
+                res["stderr"] or f"ws.jq: /bin/jq failed (exit {res['exit_code']})"
+            )
+        banner = "PowerTools E-Commerce OS jq\n"
+        if res.get("stdout", "").startswith(banner):
+            res["stdout"] = res["stdout"][len(banner):]
+        return res
+
     def sql(self, query: str, json_output: bool = True) -> dict:
         args = ["--json"] if json_output else []
         return self.exec_tool("/bin/sql", args=args, stdin=query)
@@ -255,8 +391,21 @@ class Workspace:
         """
         res = self.sql(query)
         if res["exit_code"] != 0:
+            stderr = res["stderr"] or ""
+            if "cluster is down" in stderr or "Login timeout" in stderr:
+                first = stderr.splitlines()[0] if stderr else "login timeout"
+                raise RuntimeError(
+                    "ws.sql: the PowerTools SQL cluster is unreachable. The "
+                    "warehouse is also exposed as a file-shaped projection — "
+                    "read it from /proc instead: ws.proc(<family>) for a whole "
+                    "family, ws.read_json(<path>) for one record, ws.jq(...) "
+                    "for a quick field pull. List /proc to see this trial's "
+                    "families (names can differ per trial). Family map: "
+                    f"bin-help/sqlite_schema.txt. Retry SQL only once the "
+                    f"cluster has recovered. Original error: {first}"
+                )
             raise RuntimeError(
-                res["stderr"]
+                stderr
                 or f"ws.sql_rows: /bin/sql failed (exit {res['exit_code']})"
             )
         stdout = res["stdout"]

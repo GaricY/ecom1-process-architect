@@ -1,0 +1,18 @@
+--- executor_core/v0014/content.md
++++ executor_core/v0015/content.md
+@@ -345,3 +345,15 @@
+ not restated here — deliberately, so the contract cannot drift across copies.
+ The format clause and the yes/no token are easy to drop, so re-read the
+ instruction and that section before composing `message`.
++
++**The live `/AGENTS.MD` is the authority for every answer-format token.**
++That section *derives* its literal tokens (the yes/no token, the SKU-lookup
++rule, any other fixed reply shape) from the merchant reply-styling contract
++in `/AGENTS.MD`, which is part of the live world and can change between
++trials. A specific token spelled out in a business-process file — including
++the section that owns this contract — is a **snapshot** that may quote an
++older copy of `/AGENTS.MD`. Before submitting, read the current `/AGENTS.MD`
++and take the required token from it verbatim; if it disagrees with a token a
++BP spells out (or a BP calls some token "retired"), the live `/AGENTS.MD`
++wins. If the world-drift ATTENTION block flags `/AGENTS.MD` as changed, open
++its diff and re-derive the token before composing `message`.

@@ -43,6 +43,7 @@ from bitgn.vm.ecom.ecom_pb2 import (
     NODE_KIND_FILE,
     ExecRequest,
     FindRequest,
+    ListRequest,
     ReadRequest,
     TreeRequest,
 )
@@ -50,7 +51,8 @@ from connectrpc.code import Code
 from connectrpc.errors import ConnectError
 from google.protobuf.json_format import MessageToDict
 
-from .sql_schema import format_from_csv
+from .proc_schema import build_recovered_schema_doc
+from .sql_schema import format_from_csv, parse_csv_rows
 
 READ_WORKERS = 10
 EXEC_WORKERS = 10
@@ -312,6 +314,22 @@ SQLITE_SCHEMA_QUERY = (
     "where sql is not null order by type, name;"
 )
 SQLITE_SCHEMA_FILE = "sqlite_schema.txt"
+
+# Fallback for when `/bin/sql` is unavailable (the PROD MS SQL cluster outage):
+# the warehouse is still served as a file-shaped JSON projection under /proc, so
+# we sample records per family and reconstruct the schema doc (see
+# `_recover_schema_from_proc` + `orchestrator.proc_schema`). The header note is
+# fixed text describing the recovery provenance.
+PROC_SCHEMA_RECOVERY_NOTE = (
+    "Recovered from live /proc JSON records via /bin/jq and /bin/cat. "
+    "/bin/sql is unavailable in this prod runtime"
+)
+# Records read per /proc family for inference — enough to surface optional
+# fields + enum values; FK detection is prefix-based so it survives sampling
+# gaps. Sampled evenly across the family's partitions.
+PROC_SCHEMA_SAMPLE_PER_FAMILY = 60
+# Upper bound on the per-family find() (it also yields the total record count).
+PROC_SCHEMA_FIND_LIMIT = 10000
 
 # Subdirectory inside every per-trial task_dir where stream/audit/manifest
 # artifacts live. Working docs (scratchpad/state/answer/result) and inputs
@@ -827,21 +845,124 @@ def _format_help_doc(*, tool: str, exit_code: int, stdout: str, stderr: str) -> 
     return f"{header}{body_stdout}{body_stderr}"
 
 
-def _build_sqlite_schema_doc(harness_url: str) -> str:
-    """Run the sqlite_schema discovery query and format the result.
+def _list_proc_families(vm) -> list[str]:
+    """Live `/proc` family directory names (they vary per trial)."""
+    try:
+        res = vm.list(ListRequest(path="/proc"))
+    except Exception:
+        return []
+    d = MessageToDict(res, preserving_proto_field_name=True)
+    return [
+        name
+        for e in d.get("entries", [])
+        if e.get("kind") == "NODE_KIND_DIR"
+        and (name := (e.get("name") or "").strip("/"))
+    ]
 
-    On any failure (transport, /bin/sql exit≠0, parse error producing empty
-    output) writes a placeholder noting the failure with the raw stdout/
-    stderr — bootstrap stays robust and the agent can still re-run the
-    discovery query itself.
+
+def _sample_proc_family(vm, harness_url: str, family: str) -> dict | None:
+    """find() + parallel-read a representative record sample for one family.
+
+    Returns `{"records", "total", "sampled", "truncated"}` or None when the
+    family has no readable JSON records. Records are sampled evenly across the
+    sorted path list so optional fields / enum values from every partition have
+    a chance to appear. Our own `__sample__.json` fixtures (if any leaked in)
+    are skipped by basename.
+    """
+    root = f"/proc/{family}"
+    try:
+        found = vm.find(
+            FindRequest(
+                root=root, name="", kind=NODE_KIND_FILE, limit=PROC_SCHEMA_FIND_LIMIT
+            )
+        )
+    except Exception:
+        return None
+    fd = MessageToDict(found, preserving_proto_field_name=True)
+    paths = sorted(
+        p
+        for p in fd.get("paths", [])
+        if p.endswith(".json") and not p.rsplit("/", 1)[-1].startswith("__")
+    )
+    if not paths:
+        return None
+    total = len(paths)
+    truncated = bool(fd.get("truncated"))
+    if total > PROC_SCHEMA_SAMPLE_PER_FAMILY:
+        step = total / PROC_SCHEMA_SAMPLE_PER_FAMILY
+        idx = sorted({int(i * step) for i in range(PROC_SCHEMA_SAMPLE_PER_FAMILY)})
+        sample_paths = [paths[i] for i in idx if i < total]
+    else:
+        sample_paths = paths
+    fetched = _read_paths_parallel(harness_url, sample_paths, workers=READ_WORKERS)
+    records: list[dict] = []
+    for p in sample_paths:
+        r = fetched.get(p)
+        if r is None:
+            continue
+        content_bytes, _sha = r
+        try:
+            obj = json.loads(content_bytes.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if isinstance(obj, dict):
+            records.append(obj)
+    if not records:
+        return None
+    return {
+        "records": records,
+        "total": total,
+        "sampled": len(records),
+        "truncated": truncated,
+    }
+
+
+def _recover_schema_from_proc(harness_url: str) -> str | None:
+    """Reconstruct the warehouse schema doc from the live /proc projection.
+
+    Bootstrap fallback used ONLY when `/bin/sql` is unavailable. Lists /proc
+    families, samples each, and renders via `proc_schema`. Returns the rendered
+    doc, or None when /proc is absent / unreadable (caller keeps the diagnostic
+    placeholder). Inference is fully data-driven — no family/column names are
+    hard-coded, so it tracks per-trial /proc renames.
+    """
+    vm = make_vm(harness_url)
+    families = _list_proc_families(vm)
+    if not families:
+        return None
+    samples: dict[str, dict] = {}
+    for fam in families:
+        s = _sample_proc_family(vm, harness_url, fam)
+        if s:
+            samples[fam] = s
+    if not samples:
+        return None
+    return build_recovered_schema_doc(samples, note=PROC_SCHEMA_RECOVERY_NOTE)
+
+
+def _build_sqlite_schema_doc(harness_url: str) -> str:
+    """Build `bin-help/sqlite_schema.txt`.
+
+    Primary path: the `/bin/sql` sqlite_schema discovery query (dev, and any
+    prod runtime where the SQL cluster is up) → `format_from_csv`, byte-for-byte
+    unchanged. When `/bin/sql` is unavailable — transport error, non-zero exit
+    (the PROD MS SQL cluster outage), or an empty result — fall back to
+    reconstructing the schema from the live /proc JSON projection
+    (`_recover_schema_from_proc`). Only if that ALSO yields nothing do we write
+    the diagnostic placeholder, so bootstrap stays robust either way and the
+    agent always gets a usable family/field/join map.
     """
     vm = make_vm(harness_url)
     try:
         res = vm.exec(ExecRequest(path="/bin/sql", args=[SQLITE_SCHEMA_QUERY]))
     except Exception as exc:
+        recovered = _recover_schema_from_proc(harness_url)
+        if recovered:
+            return recovered
         return (
             "# SQLite schema (warehouse DB) — query via /bin/sql\n"
             f"# [sqlite_schema fetch failed: {exc}]\n"
+            "# [/proc recovery unavailable]\n"
             f"# Re-run: /bin/sql '{SQLITE_SCHEMA_QUERY}'\n"
         )
 
@@ -849,12 +970,22 @@ def _build_sqlite_schema_doc(harness_url: str) -> str:
     stdout = res.stdout or ""
     stderr = res.stderr or ""
     if exit_code != 0:
+        recovered = _recover_schema_from_proc(harness_url)
+        if recovered:
+            return recovered
         return (
             "# SQLite schema (warehouse DB) — query via /bin/sql\n"
             f"# [sqlite_schema query exit_code={exit_code}]\n"
             f"# stderr: {stderr.strip()}\n"
+            "# [/proc recovery unavailable]\n"
             f"# Re-run: /bin/sql '{SQLITE_SCHEMA_QUERY}'\n"
         )
+
+    if not parse_csv_rows(stdout):
+        # SQL answered but produced no tables — try /proc before the placeholder.
+        recovered = _recover_schema_from_proc(harness_url)
+        if recovered:
+            return recovered
     return format_from_csv(stdout)
 
 
