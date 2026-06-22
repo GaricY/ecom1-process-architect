@@ -1,0 +1,8 @@
+TABLE returns  PK(id)  -- /proc/returns/<partition>/<id>.json
+  id           TEXT  NOT NULL
+  order_id     TEXT  NOT NULL
+  customer_id  TEXT  NOT NULL
+  payment_id   TEXT  NOT NULL  -> payment-ledger.id
+  status       TEXT  NOT NULL
+  reason_code  TEXT  NOT NULL
+  created_at   TEXT  NOT NULL

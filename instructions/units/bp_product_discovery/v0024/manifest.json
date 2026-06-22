@@ -1,0 +1,58 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0024",
+  "parent": "v0023",
+  "status": "active",
+  "created_at": "2026-06-22T12:13:05+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t007",
+    "trial_id": "vm2-Lz6V4hPBwnemMgPogB6EFdex3LA",
+    "score": 0.0,
+    "score_detail": [
+      "Answer should be \"1\""
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-144841/0007-t007-vm2-Lz6V4hPBwnemMgPogB6EFdex3LA",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-144841/0007-t007-vm2-Lz6V4hPBwnemMgPogB6EFdex3LA-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: domain_policy (bp_product_discovery) \u2014 the matching method, not refs. Trial t007 asked 'how many products match powertools sizing calculator download, price below the ceiling \u2014 number only'; gold count is 1, the Executor answered 0. The Executor resolved the free-text request by concatenating each record's name/properties/hierarchy ids and requiring EVERY request word to be a literal substring (an AND over raw text). Only one record carried the literal token for the discriminating descriptor and it sat just over the price ceiling, so the conjunction collapsed to 0; genuine matches were dropped because the catalogue expresses the same concept with a different word (e.g. a 'quantity' calculator template) and via kind_id/family_id rather than the verbatim request token. This is a distinct facet from v0022/v0023, which only fixed which surviving records to cite on existence/count answers \u2014 they assume descriptors are already resolved to crisp predicates and never address how a bag-of-words request maps to catalogue fields, so this extends rather than re-adds a reverted rule. Fix (single focused edit, no new branch): in the existence/match/count branch step 1, instruct resolving each descriptor to the catalogue dimension it names (brand->brand, type/purpose word->kind_id/family_id/name, delivery/format word->the matching properties entry, price ceiling->price_cents) and treat a descriptor as satisfied when the relevant field denotes that concept \u2014 including via a synonym or a kind_id/family_id \u2014 rather than requiring a literal substring; plus one matching anti-pattern. The conjunction discipline ('match every requested spec'), the price-ceiling strictness, and the cite-only-the-surviving-cohort refs rule from v0023 are all preserved.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/catalogue-lookup.md",
+      "sha256": "f8dda622bdc22e308b6593947a11fbf8df31c5b1c1cff0627c5dbfe1327ced86",
+      "why": "Authorises resolving a request via product name, hierarchy fields, brand, prices, fulfillment type, return policy and properties \u2014 the source for mapping each descriptor to a catalogue dimension, and the clarify-and-cite-candidates rule the count branch distinguishes itself from."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "/uploads as the input root and the cross-check-against-canonical-records rule for the comparison-against-an-input scenario this BP still owns."
+    },
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "961e2ea2f3dbc22cd0ab0b11c4b9fd857d5f096a3c6a1d72e469868a034083a8",
+      "why": "The exactly-one-match SKU-lookup rule and the TRUE(1)/FALSE(0) yes/no token used for the existence verdict shape."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "The descriptor-to-dimension rule names brand, kind_id, family_id, name, price_cents and properties as the fields the existence/count predicates test; schema drift on these columns would invalidate the match/near-miss rule."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start (drives 'my' handling); contract change affects step 1 of the process."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0023 content if the descriptor-to-dimension matching rule over-broadens matches (e.g. starts counting synonym-only near-misses); that drops the step-1 mapping sentence and its anti-pattern while keeping the existence/match/count branch, refs scoping, and all other scenarios intact."
+  },
+  "no_semantic_change": false
+}

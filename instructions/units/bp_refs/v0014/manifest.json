@@ -1,0 +1,40 @@
+{
+  "unit_id": "bp_refs",
+  "version": "v0014",
+  "parent": "v0013",
+  "status": "active",
+  "created_at": "2026-06-22T12:38:49+00:00",
+  "created_by": "process_architect",
+  "mode": "failure_fix",
+  "trigger": {
+    "task_id": "t022",
+    "trial_id": "vm2-Lz6V4hPBwnemMgPogB6EFdex3LR",
+    "score": 0.0,
+    "score_detail": [
+      "answer refs for family \"/proc/catalog\" mismatch: missing [], extra [/proc/catalog/Bosch Professional/PT-SND-BOS-GEX125-DUST.json]"
+    ],
+    "answer_outcome": "OUTCOME_OK",
+    "failed_task_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-144841/0022-t022-vm2-Lz6V4hPBwnemMgPogB6EFdex3LR",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-144841/0022-t022-vm2-Lz6V4hPBwnemMgPogB6EFdex3LR-process-architect",
+    "queue_priority": "failure_fix"
+  },
+  "rationale": "Owning layer: refs_safety (shared request-named-input class), and this is a PA regression to narrow rather than a new patch. The verdict (FALSE/OK) and availability math were correct; the only grader failure was a /proc/catalog refs mismatch \u2014 extra [PT-SND-BOS-GEX125-DUST.json], missing []. The request named that SKU only as an exclusion ('but not <id>') to disambiguate which discs accessory set was meant (CASE vs DUST); DUST's own inventory never entered the answer, so the grader treats it as a rejected candidate, not a citation. bp_refs v0013 was created by process_architect for this exact catalog-exclusion family on the OPPOSITE failure (DUST missing) and added a blanket invariant that ANY request-named exclusion, 'including ... which candidate you selected,' is decision evidence and must be cited. The Executor's scratchpad shows it cited DUST explicitly as a 'request-named exclusion,' i.e. it followed v0013 verbatim. v0013 over-generalised by sweeping pure product-disambiguation into the cite rule. The fix narrows the rule to the genuine distinction (which bp_product_discovery already encodes for filter-excluded near-misses): cite a request-named id only when its OWN facts enter the answer \u2014 a reported cohort member, or a value subtracted from / bounding the reported aggregate \u2014 and keep a record named only to pick which other record the answer is about in considered_not_cited, uncited. This preserves the legitimate subtraction/scope-bound case v0013 targeted while fixing the disambiguation case. Cross-unit consistency checked: bp_availability_and_inventory cites only a 'tested member of the count/verdict' (DUST is not tested), and bp_submission_terminal delegates include/exclude to refs.md/topic BP, so no sibling drift.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Cross-boundary and employee-contact-detail prohibition still gates whether any request-named record identifier is safe to cite; the narrowed cite/don't-cite rule must defer to it."
+    },
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "da52f17b6f351219c95beea778a8056af7715fe2b8e1a7910a0be7bc066c3bfe",
+      "why": "Grounding rule ('ground every referenced object in its live path') and the clarification 'cite every candidate' rule that the request-named-identifier citation taxonomy rests on."
+    }
+  ],
+  "rollback": {
+    "strategy": "Create a new version from v0013 content if narrowing causes under-citation of request-named exclusions; that restores the blanket 'any named exclusion / candidate selection must be cited' rule."
+  },
+  "no_semantic_change": false
+}
