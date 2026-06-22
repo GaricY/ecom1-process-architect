@@ -1,0 +1,38 @@
+{
+  "unit_id": "bp_submission_terminal",
+  "version": "v0010",
+  "parent": "v0009",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh",
+    "restamp_unchanged": [
+      "/AGENTS.MD"
+    ]
+  },
+  "rationale": "world_refresh: PA reviewed this BP and recorded it as unchanged; orchestrator re-stamped drifted dependency hashes (/AGENTS.MD) so the unit re-matches the refreshed world instead of falling back stale. No content change.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "961e2ea2f3dbc22cd0ab0b11c4b9fd857d5f096a3c6a1d72e469868a034083a8",
+      "why": "Live answer-format contract: the yes/no <YES>/<NO> token and response-shaping rules the terminal preflight reads from the live /AGENTS.MD rather than hardcoding."
+    },
+    {
+      "kind": "static",
+      "path": "static-instructions/runtime_prelude.py",
+      "sha256": "2f787b9df781b53149e0d6f80dc64b3ccb796ba47103ad992c726d3cf4200397",
+      "why": "Defines submit_and_exit as the terminal helper that writes the answer via ws.answer and exits the snippet."
+    }
+  ],
+  "rollback": {
+    "strategy": "rollback to v0009 (content identical; only dependency hashes were re-stamped)"
+  },
+  "no_semantic_change": true
+}

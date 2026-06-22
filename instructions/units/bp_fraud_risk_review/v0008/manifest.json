@@ -1,0 +1,59 @@
+{
+  "unit_id": "bp_fraud_risk_review",
+  "version": "v0008",
+  "parent": "v0007",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "SQL is unavailable (/bin/sql PROD cluster down); the schema is the reconstructed /proc projection. Re-derived to read /proc/payment-ledger JSON and aggregate in Python, with renamed fields (created_at, status, observed_lat/observed_lon, archived bool, three_ds object) and family renames (carts/locations/return-workflows/catalog). Dropped the customer-home-coordinate axis because no customer-account record exists. Hard-sweep methodology preserved.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "093458ac37aebb524ad2b900ce87bbc3f622f9213eea4655be05fcae3c875e03",
+      "why": "Legitimate 3DS workflow-state transitions used for payment invariant checks."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment-ledger",
+      "sha256": "92cf24f14f6e1c6e65c02a56031594b04785ed4991da75ce130a0963f348fbb1",
+      "why": "Primary risk record: fingerprints, created_at, status, observed_lat/lon, amount_cents, lines, three_ds, archived, join keys."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "701e7e5e5c6f4fea9501ca31fb8714601efc33ac1fce250545854bc4ab3d5acb",
+      "why": "Basket/customer/store joins and archive context."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "e012cad9a04636c2d4b01364e3fcaa4ee0e07fbc2148f2d30a0e61c179e0ee68",
+      "why": "Branch lat/lon and inventory (on_hand/reserved) for store-distance and reserve arithmetic."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return-workflows",
+      "sha256": "5f39892c9021c7b66e2ce342d82c8d94436cc38d30d7b700a7625f83b16af96c",
+      "why": "Return/payment workflow joins."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "price_cents for amount/line reconciliation."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_fraud_risk_review v0007 content with its SQL queries and customer_accounts/stores/shopping_baskets dependencies."
+  },
+  "no_semantic_change": false
+}

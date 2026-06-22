@@ -1,0 +1,53 @@
+{
+  "unit_id": "bp_returns",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "returns.md rewritten: refund tools moved to /bin/refund approve / /bin/refund close (was /bin/payments approve-refund / refund); statuses approved -> refund_pending -> closed; closure now gates on customer-id + linked payment only (return-workflows has no basket_id, so the linked-basket gate is dropped). Records under /proc/return-workflows and /proc/payment-ledger. Employee invoking closure is unsupported (employees.md). SQL removed.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/returns.md",
+      "sha256": "bc8772f89f206d1675cd6489af1ce288c4c3b0342b89a6ab6165afec83dcd641",
+      "why": "Both-step gate set, refund_manager role, the approved->refund_pending->closed sequence, the /bin/refund tool names, and the no-hand-edit rule."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/ownership/role rule named as a prerequisite by returns.md."
+    },
+    {
+      "kind": "bin_help",
+      "path": "refund.help.txt",
+      "sha256": "34e52181664df21d396ef359407eb90e3fbc079748431ab3d8aff50676f7b7c3",
+      "why": "approve <return_id> and close <return_id> signatures."
+    },
+    {
+      "kind": "sql_table",
+      "path": "return-workflows",
+      "sha256": "5f39892c9021c7b66e2ce342d82c8d94436cc38d30d7b700a7625f83b16af96c",
+      "why": "Return id, status, customer_id, payment_id, reason_code."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment-ledger",
+      "sha256": "92cf24f14f6e1c6e65c02a56031594b04785ed4991da75ce130a0963f348fbb1",
+      "why": "Linked payment id, status (the paid gate), and archived flag."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_returns v0008 content with its /bin/payments refund tools, the linked-basket finalization gate, and shopping_baskets/payment_transactions SQL dependencies."
+  },
+  "no_semantic_change": false
+}

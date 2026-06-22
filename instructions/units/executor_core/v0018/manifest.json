@@ -1,0 +1,20 @@
+{
+  "unit_id": "executor_core",
+  "version": "v0018",
+  "parent": "v0017",
+  "status": "active",
+  "created_at": "2026-06-19T00:32:33+00:00",
+  "created_by": "human",
+  "mode": "prod_runtime_contract",
+  "trigger": {
+    "task": ".tasks/task-005/task.md",
+    "plan": ".tasks/task-005/plan.md",
+    "purpose": "generic degraded-runtime executor contract for prod SQL outage"
+  },
+  "rationale": "Teach executor_core the generic degraded data-store contract: when bootstrap recovered sqlite_schema.txt from the live /proc projection, treat /bin/sql as unavailable and read data through /proc JSON records instead of probing ws.sql_rows. This is prod-only runtime/tooling guidance, not task-specific world knowledge.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Retire/delete v0018 to return to v0017 for dev or any runtime where SQL-first executor guidance is preferred."
+  },
+  "no_semantic_change": false
+}

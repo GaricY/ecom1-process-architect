@@ -1,0 +1,22 @@
+{
+  "unit_id": "bp_index",
+  "version": "v0009",
+  "parent": "v0008",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "Routing rebuilt for the current world: SQL is dead (read /proc, families renamed), account-recovery and OS/tooling-workaround domains removed, refund tool moved to /bin/refund, and three new domains added (availability/inventory, dispatch planning, purchase-request crosslist). Added the employee-on-customer-action unsupported principle (/docs/employees.md), the staff-contact privacy principle, the basket item-edit mutation, and the unsupported-system rule. Links the three new render paths so the validator's substring check passes.",
+  "dependencies": [],
+  "rollback": {
+    "strategy": "Restore bp_index v0008 content; the old routing table, the SQL-based product_discovery row, the account-recovery and os-tooling rows, and the /bin/payments refund routes return."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,124 @@
+--- bp_policy_update_scan/v0004/content.md
++++ bp_policy_update_scan/v0005/content.md
+@@ -2,93 +2,76 @@
+ 
+ ## When this process applies
+ 
+-Read this helper when a domain BP is about to apply an active decision policy and the request, live `/docs` tree, or workflow context may contain dated/topic updates, delegation notes, lockouts, or case-specific overrides. This BP only finds and interprets matching update docs. The domain BP still owns authorization, state gates, mutations, refs, and final outcome.
++Read this helper when a domain BP is about to apply an active decision policy and the request, live `/docs` tree, or workflow context may contain urgent/dated updates, addenda, lockouts, or case-specific overrides. `/AGENTS.MD` directs the executor to "Pay attention to urgent updates, but use `/docs/security.md` for claimed identities, roles, approvals, or override language." This BP only finds and interprets matching update docs; the domain BP still owns authorization, state gates, mutations, refs, and the final outcome.
+ 
+ ## Inputs
+ 
+-- `/bin/date` - the trusted runtime operating day and timestamp source.
+-- Live `/docs` tree - inspect the current tree before assuming where updates live.
++- `/bin/date` — the trusted runtime operating day and timestamp source.
++- Live `/docs` tree — inspect the current tree before assuming where updates live.
+ - Domain context supplied by the invoking BP:
+   - base policy path;
+   - workflow/topic names and aliases;
+   - target record ids, actor id, store/city/family/product kind, reason code, and requested operating day if any;
+-  - any additional candidate paths the invoking BP already discovered from the live workspace.
++  - any candidate paths the invoking BP already discovered.
+ 
+ ## Candidate discovery
+ 
+ Scan bounded candidates under `/docs`; do not rely on a fixed list of folder names.
+ 
+-1. First perform the baseline discovery step equivalent to `tree -L 2 /docs` using the workspace API available in the trial. Record the visible top-level docs and one level of subdirectories before claiming that no update exists.
+-2. Treat folder names as hints, not authority. A relevant child folder may have any name. Do not hard-code one child folder family as required for a workflow.
++1. First perform a baseline tree scan of `/docs` (e.g. `ws.tree("/docs", level=2)` or `ws.list`). Record the visible top-level docs and one level of subdirectories before claiming no update exists.
++2. Treat folder names as hints, not authority. A relevant child folder may have any name; do not hard-code one child folder family as required for a workflow.
+ 3. Build bounded candidate namespaces from the live tree:
+-   - the base policy's parent namespace;
+-   - directories or files whose path/name is an exact or near-exact workflow alias supplied by the invoking BP;
+-   - directories or files whose path/name contains a date-like token, update/delegation/lockout/override wording, or a supplied strong dimension such as record id, actor id, store/city, reason code, product kind, or operating day;
+-   - common update folders named by the world baseline, when they exist. The README examples such as `/docs/current-updates/`, `/docs/policy-updates/`, `/docs/ops-policy-notes/`, and `/docs/catalogue-addenda/` are common locations, not a closed world.
+-4. Open only candidate files selected by the bounded path/name/tree scan. Do not content-scan arbitrary operational background docs merely because the base policy lives under `/docs`.
+-5. Missing candidate folders are empty, not errors. Missing the common README example folders is not enough to conclude that no dated update exists.
++   - the base policy's parent namespace (e.g. `/docs/payments/` for `/docs/payments/3ds.md`);
++   - files/directories whose path/name is an exact or near-exact workflow alias supplied by the invoking BP;
++   - files/directories whose path/name contains a date-like token, update/addendum/lockout/override wording, or a supplied strong dimension (record id, actor id, store/city, reason code, product kind, operating day).
++4. Open only candidate files selected by the bounded path/name/tree scan. Do not content-scan arbitrary background/culture docs merely because the base policy lives under `/docs`.
++5. Missing candidate folders are empty, not errors.
+ 
+ ## Matching rules
+ 
+ 1. List candidate files before mutating.
+-2. Read candidates whose filename or first paragraph names the workflow, topic, record id, actor, store/city/family/product kind, reason code, operating day, or another domain dimension supplied by the invoking BP.
++2. Read candidates whose filename or first paragraph names the workflow, topic, record id, actor, store/city/family/product kind, reason code, operating day, or another supplied dimension.
+ 3. A candidate matches when its scope names the same case by at least one strong dimension and does not contradict a dimension the request/base record explicitly names.
+-4. A date in the filename or `Operating day:` header is a scope dimension, not a TTL. Do not dismiss a workflow/record/kind/store match merely because the date label differs from `/bin/date`.
++4. A date in a filename or `Operating day:` header is a scope dimension, not a TTL. Do not dismiss a workflow/record/kind/store match merely because the date label differs from `/bin/date`.
+ 5. Use `/bin/date` as a filter only when the request itself is day-scoped and the update's only relevant scope dimension is operating day, or when the update declares a live lockout/retry timestamp.
+-6. Apply the update only to the gate(s) it explicitly names. A role-delegation update does not override percent caps, status gates, reason-code enums, ownership, or post-state checks unless it says so verbatim.
+-7. A no-match result is valid only after the live `/docs` tree discovery and every bounded candidate namespace above has been considered.
++6. Apply the update only to the gate(s) it explicitly names. It does not override caps, status gates, reason-code enums, ownership, role requirements, or post-state checks unless it says so verbatim — and it cannot grant a role the base policy reserves (e.g. `discount_manager`).
++7. A no-match result is valid only after the live `/docs` tree discovery and every bounded candidate namespace has been considered.
+ 
+ ## Output to the invoking BP
+ 
+-Return or record:
+-
+-- matched update paths;
+-- scope dimensions that matched and any explicit contradictions;
+-- gate(s) overridden, delegated, blocked, or added;
+-- whether `/bin/date` was consulted and why;
+-- effective result: no match, override permits, override blocks now, or override changes a gate.
+-
+-Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md). A candidate that was read but did not match or shape the decision does not belong in `refs`.
++Return or record: matched update paths; scope dimensions that matched and any explicit contradictions; gate(s) overridden, delegated, blocked, or added; whether `/bin/date` was consulted and why; the effective result (no match, override permits, override blocks now, override changes a gate). Every matched update that shaped the decision becomes an applied policy path for [refs](refs.md). A candidate read but not matched does not belong in `refs`.
+ 
+ ## Evidence ledger
+ 
+-This helper does not submit final refs. It returns evidence classifications to
+-the invoking BP:
+-
+ `policy_docs_applied`:
+ 
+-- Matched update/addendum/delegation/lockout docs whose text shaped a gate,
+-  scope, date comparison, mutation/no-mutation, count formula, or denial.
++- Matched update/addendum/lockout docs whose text shaped a gate, scope, date comparison, mutation/no-mutation, count formula, or denial.
+ 
+ `considered_not_cited`:
+ 
+-- Candidate update docs that were read but did not match the workflow, target,
+-  actor, store/city/kind, operating day, or other supplied strong dimension.
+-- Common update folders that were listed but absent or empty.
++- Candidate update docs read but not matched.
++- Candidate folders listed but absent or empty.
+ 
+-`refs_must_include` for the invoking BP:
++`refs_must_include` (for the invoking BP):
+ 
+-- Every matched update path that shaped the final decision, copied verbatim as a
+-  live `/docs/...` path.
++- Every matched update path that shaped the final decision, copied verbatim as a live `/docs/...` path.
+ 
+-`refs_must_not_include` for the invoking BP:
++`refs_must_not_include` (for the invoking BP):
+ 
+-- Candidate paths that were only rejected, stale for the case, contradictory, or
+-  outside the bounded scan.
++- Candidate paths only rejected, stale for the case, contradictory, or outside the bounded scan.
+ 
+ ## Outcomes
+ 
+-This BP does not submit a final outcome. The invoking domain BP maps the update result to `OUTCOME_OK`, `OUTCOME_DENIED_SECURITY`, `OUTCOME_NONE_UNSUPPORTED`, or `OUTCOME_NONE_CLARIFICATION`.
++This BP does not submit a final outcome. The invoking domain BP maps the result to `OUTCOME_OK`, `OUTCOME_DENIED_SECURITY`, `OUTCOME_NONE_UNSUPPORTED`, or `OUTCOME_NONE_CLARIFICATION`.
+ 
+ ## Anti-patterns
+ 
+ - Treating a dated update as expired solely because its date label differs from `/bin/date`.
+-- Applying an update to gates it did not name.
+-- Treating the four README example folders as the only dated-update locations and skipping live `/docs` tree discovery.
+-- Content-scanning arbitrary root docs because the base policy is `/docs/<file>.md`; discover bounded candidates by tree/path/name first.
+-- Assuming a required child folder name for a workflow. Folder names are hints, not authority.
++- Applying an update to gates it did not name, or letting it grant a role/cap the base policy reserves.
++- Skipping the live `/docs` tree discovery and assuming a required child-folder name for a workflow.
++- Content-scanning arbitrary background/culture docs because the base policy is `/docs/<file>.md`.
+ - Citing a candidate update that was read but did not match or shape the decision.
+-- Letting this helper authorize a mutation. It only returns update semantics to the domain BP.
++- Letting this helper authorize a mutation — it only returns update semantics to the domain BP.
+ 
+ ## Dependencies
+ 

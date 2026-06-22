@@ -1,0 +1,35 @@
+{
+  "unit_id": "bp_dispatch_planning",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "New domain: /docs/dispatch.md plus the AGENTS.MD route ('plan a dispatch wave and pointed to a .md file') define a wave-routing/assignment planning task whose deliverable is a single JSON assignment object optimized for expected net profit. No existing BP covers it; it is information/planning, not a commerce mutation.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/dispatch.md",
+      "sha256": "721ed4506208401d7a28a01c0ed858bff503b048da326d314d0eeffb6d02635c",
+      "why": "Wave/package/lane model, routing constraints, the expected-net-profit objective, and the exact output JSON schema."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "/uploads as the root for the request-named wave and TSV input files."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove the bp_dispatch_planning unit and its render path and its bp_index route."
+  },
+  "no_semantic_change": false
+}

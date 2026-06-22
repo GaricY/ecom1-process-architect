@@ -1,0 +1,93 @@
+--- bp_purchase_request_crosslist/none/content.md
++++ bp_purchase_request_crosslist/v0001/content.md
+@@ -0,0 +1,90 @@
++# Purchase Request Crosslist
++
++## When this process applies
++
++A request to process an **uploaded competitor purchase-request OCR** and produce a **crosslist TSV report**: match each requested competitor line against the PowerTools catalogue and report match status, availability, and fulfillable quantity per line. `/docs/purchase-request-crosslist.md` is the authoritative policy and fixes the exact report schema. Information/report task — the deliverable is a TSV report file; it does not mutate commerce records. Reuses catalogue matching from [product_discovery](product_discovery.md) and availability from [availability_and_inventory](availability_and_inventory.md).
++
++## Inputs
++
++- Live workspace paths:
++  - The uploaded competitor OCR and crosslist TSV under `/uploads` (`/docs/attachments.md`: uploads are evidence for the artifact, cross-checked against canonical records).
++  - `/proc/catalog/<...>.json` — to match requested lines to exactly one product (`name` + every spec → `properties`).
++  - `/proc/locations/<...>.json` — the target branch's inventory and `is_open`.
++  - `/docs/purchase-request-crosslist.md` — matching rules, reason strings, and report schema.
++- Tools: `/bin/availability` (same-day availability), `/bin/cat`/`/bin/jq`, `/bin/id`. SQL is unavailable — read `/proc` JSON directly.
++
++## Process
++
++From `/docs/purchase-request-crosslist.md`:
++
++1. Resolve the target PowerTools branch from the OCR. Competitor codes are **not** PowerTools SKUs.
++2. Match a requested line only when the requested item description **and every listed spec** match one catalogue product exactly. OCR spec labels with spaces correspond to catalogue `properties` keys with underscores (e.g. "pack count" → `pack_count`).
++3. Use the **normalized catalogue product name** for `requested_description` when the request description resolves to a catalogue product, even if a listed spec conflicts.
++4. If a requested spec conflicts with the catalogue product, do **not** substitute another item: set `match_status` exactly `property_mismatch`, leave `matched_sku` and `matched_product_name` blank, and set `available_today` and `fulfillable_qty` to `0`.
++5. For exact matches, set `match_status` exactly `exact`. `available_today` is `max(on_hand - reserved, 0)` at the target branch (missing SKU → `0`). `fulfillable_qty` is `min(requested_qty, available_today)` **only when `branch_open` is true**; otherwise `0`. `short_qty` is the unmet remainder (`requested_qty - fulfillable_qty`).
++6. Use these `reason` values **exactly**:
++   - `requested properties do not exactly match catalogue product`
++   - `target branch is closed today`
++   - `exact property match; requested quantity available today`
++   - `exact property match; branch has insufficient same-day stock`
++7. Report columns must be **exactly**, tab-separated, no quotes, no total row:
++
++   ```text
++   line_no, competitor_code, requested_description, requested_qty, branch_id, branch_open, match_status, matched_sku, matched_product_name, available_today, fulfillable_qty, short_qty, reason
++   ```
++
++8. Write the report to the permitted scratch/report path. Do not mutate catalogue, store, or inventory records.
++
++## Outcomes
++
++- `OUTCOME_OK`: the crosslist TSV is produced with the exact columns, the correct per-line `match_status`/`reason`, and the availability/fulfillable computation.
++- `OUTCOME_NONE_CLARIFICATION`: the OCR does not resolve to a single target branch.
++- `OUTCOME_NONE_UNSUPPORTED`: the uploaded OCR/TSV inputs are missing or unreadable.
++
++## Evidence ledger
++
++`request_named_inputs`:
++
++- The uploaded competitor OCR and crosslist TSV — load-bearing answer evidence; cite their live `/uploads/...` paths.
++
++`policy_docs_applied`:
++
++- `/docs/purchase-request-crosslist.md` for the matching rules, reason strings, and schema.
++
++`answer_records`:
++
++- The target `/proc/locations/<id>.json` branch and the matched `/proc/catalog/<sku>.json` records.
++
++`considered_not_cited`:
++
++- Catalogue products read and rejected for a `property_mismatch` line.
++
++`refs_must_include`:
++
++- `/docs/purchase-request-crosslist.md`, the request-named OCR/TSV input paths, the target branch record, and the matched catalogue records the report identifies.
++
++`refs_must_not_include`:
++
++- Rejected/sibling catalogue candidates and `bin-help` paths.
++
++`post_state_records`:
++
++- none; the only write is the report file (not a commerce record).
++
++## Anti-patterns
++
++- Treating a competitor code as a PowerTools SKU.
++- Substituting another item when a spec conflicts — emit `property_mismatch` with blank `matched_sku`/`matched_product_name` and `0`/`0`.
++- Computing `fulfillable_qty` as non-zero when `branch_open` is false.
++- Using any `reason`/`match_status` string other than the exact values, adding quotes, changing column order, or adding a total row.
++- Mutating catalogue/store/inventory records — this BP writes only the report file.
++
++## Dependencies
++
++> If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
++
++- `/docs/purchase-request-crosslist.md` — branch resolution, the description-plus-every-spec exact-match rule, the spec-label↔property-key mapping, the four exact reason strings, the `match_status` values, the availability/fulfillable formulas, and the exact column schema.
++- `/docs/attachments.md` — `/uploads` as the root for the request-named OCR and crosslist TSV.
++- `/bin/availability` (`--help`) — same-day availability used for `available_today`/`fulfillable_qty`.
++- `catalog` (`/proc/catalog`) — product `name` and `properties` for exact matching.
++- `locations` (`/proc/locations`) — target branch `is_open` and inventory (`on_hand`/`reserved`).

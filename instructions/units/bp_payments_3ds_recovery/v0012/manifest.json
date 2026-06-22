@@ -1,0 +1,65 @@
+{
+  "unit_id": "bp_payments_3ds_recovery",
+  "version": "v0012",
+  "parent": "v0011",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "3ds.md rewritten: eligibility now keys on payment.customer_id == /bin/id (not /proc/baskets ownership); records live under /proc/payment-ledger and /proc/carts; 2-attempt cap; 3ds-status1 gated on three_ds.retry_after vs /bin/date with a 30-minute new-challenge delay. /bin/payments now exposes only recover-3ds (refund verbs moved to /bin/refund). Replaced the old dated-update lockout flow with the doc's native retry_after logic. Customer-only; employee identity is unsupported (employees.md). SQL removed.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/payments/3ds.md",
+      "sha256": "093458ac37aebb524ad2b900ce87bbc3f622f9213eea4655be05fcae3c875e03",
+      "why": "Gate set, 3DS status table, retry_after/30-minute behaviour, 2-attempt cap, and the security.md+checkout.md prerequisite line."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "Prerequisite policy 3DS recovery defers to."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity / cross-boundary rule cited on the denial branch and the ownership-matched bundle."
+    },
+    {
+      "kind": "bin_help",
+      "path": "payments.help.txt",
+      "sha256": "64b9da8211c8d06c7abf5ffda82dc5be04cccefac756c541f81acdaee3f26f95",
+      "why": "Tool signature; this BP authorises recover-3ds only."
+    },
+    {
+      "kind": "bin_help",
+      "path": "date.help.txt",
+      "sha256": "9fa7f21898b94ed163ae01e1cf5eceec037a25f722cf3ea35bde4cd2c881e2aa",
+      "why": "Trusted clock for the 3ds-status1 retry_after window."
+    },
+    {
+      "kind": "sql_table",
+      "path": "payment-ledger",
+      "sha256": "92cf24f14f6e1c6e65c02a56031594b04785ed4991da75ce130a0963f348fbb1",
+      "why": "Payment status, customer_id, basket_id, and the three_ds object."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "701e7e5e5c6f4fea9501ca31fb8714601efc33ac1fce250545854bc4ab3d5acb",
+      "why": "Linked basket id, status, and customer_id."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_payments_3ds_recovery v0011 content with its /proc/baskets ownership, policy_update_scan lockout flow, and /bin/payments refund anti-patterns."
+  },
+  "no_semantic_change": false
+}

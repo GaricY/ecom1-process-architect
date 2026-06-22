@@ -1,0 +1,47 @@
+{
+  "unit_id": "bp_privacy_and_disclosure",
+  "version": "v0006",
+  "parent": "v0005",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "SQL is gone and there is no customer_accounts table or /proc/customers family, so customer email/home-coordinate disclosure content no longer applies. Re-centered on the live private surface: staff contact details. security.md now forbids customers/guests receiving direct employee contact details or employee profile references as a workaround; /docs/employees.md separates employee and customer accounts.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Personal-information, cross-boundary, and the explicit employee-contact-detail / profile-workaround prohibition."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/employees.md",
+      "sha256": "a6a92899e0a1029cab1dbd979c73c2d03dc5f4ccb8e2b29146970cfeb082a1d9",
+      "why": "Separation of employee and customer accounts."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor output shape for ownership/disclosure branching."
+    },
+    {
+      "kind": "sql_table",
+      "path": "staff",
+      "sha256": "79074693f82e1096d38500c9e67c87909a36f41fc8a65af6e44c5fd8aa826267",
+      "why": "The staff record carries the private email/profile contact fields and operational title/role/store_id."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_privacy_and_disclosure v0005 content and its customer_accounts/employee_accounts SQL and /proc/customers/README dependencies."
+  },
+  "no_semantic_change": false
+}

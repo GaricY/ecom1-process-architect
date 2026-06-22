@@ -1,0 +1,446 @@
+--- v0005/snapshot/bin-help/account-recovery.help.txt
++++ v0006/snapshot/bin-help/account-recovery.help.txt
+@@ -1,7 +0,0 @@
+-# /bin/account-recovery --help
+-# bin-help contract: v2
+-# exit_code: 0
+-
+-## stdout
+-Usage: account-recovery send-email-link <customer_id> <destination_email>
+-Creates an outgoing account email-change verification request. Read /docs/security.md before use.
+--- v0005/snapshot/bin-help/availability.help.txt
++++ v0006/snapshot/bin-help/availability.help.txt
+@@ -0,0 +1,7 @@
++# /bin/availability --help
++# bin-help contract: v2
++# exit_code: 0
++
++## stdout
++Usage: availability <store_record_path|-> <sku>...
++Prints same-day availability as max(on_hand - reserved, 0); missing SKUs return 0.
+--- v0005/snapshot/bin-help/cat.help.txt
++++ v0006/snapshot/bin-help/cat.help.txt
+@@ -0,0 +1,6 @@
++# /bin/cat --help
++# bin-help contract: v2
++# exit_code: 0
++
++## stdout
++Usage: cat [--number|-n] [path ...]
+--- v0005/snapshot/bin-help/claude.help.txt
++++ v0006/snapshot/bin-help/claude.help.txt
+@@ -1,17 +0,0 @@
+-# /bin/claude --help
+-# bin-help contract: v2
+-# exit_code: 1
+-
+-## stdout
+-
+-
+-## stderr
+-+----------------+
+-|  Embrace AI   |
+-|    /AI\        |
+-+----------------+
+-
+-account not authorized
+-
+-Read the docs to see whether you are eligible for the Embrace AI initiative.
+-Get in touch with your store manager to confirm approved access, then follow through the onboarding process.
+--- v0005/snapshot/bin-help/codex.help.txt
++++ v0006/snapshot/bin-help/codex.help.txt
+@@ -1,17 +0,0 @@
+-# /bin/codex --help
+-# bin-help contract: v2
+-# exit_code: 1
+-
+-## stdout
+-
+-
+-## stderr
+-+----------------+
+-|  Embrace AI   |
+-|    /AI\        |
+-+----------------+
+-
+-account not authorized
+-
+-Read the docs to see whether you are eligible for the Embrace AI initiative.
+-Get in touch with your store manager to confirm approved access, then follow through the onboarding process.
+--- v0005/snapshot/bin-help/jq.help.txt
++++ v0006/snapshot/bin-help/jq.help.txt
+@@ -0,0 +1,8 @@
++# /bin/jq --help
++# bin-help contract: v2
++# exit_code: 0
++
++## stdout
++PowerTools E-Commerce OS jq
++Usage: jq [-r|--raw-output] <filter> [path|-]
++Minimal filters: ., keys, length, .field, .field.nested, .array[0], .array[]
+--- v0005/snapshot/bin-help/payments.help.txt
++++ v0006/snapshot/bin-help/payments.help.txt
+@@ -6,6 +6,4 @@
+ Usage: payments <subcommand> [args]
+ 
+ Subcommands:
+-  recover-3ds <payment_id>   Start a fresh 3DS challenge for a 3DS payment.
+-  approve-refund <return_id> Mark an approved return as waiting for refund finalization.
+-  refund <return_id>         Finalize a refund for a return record.
++  recover-3ds <payment_id>   Start a fresh 3DS challenge for an eligible payment.
+--- v0005/snapshot/bin-help/refund.help.txt
++++ v0006/snapshot/bin-help/refund.help.txt
+@@ -0,0 +1,10 @@
++# /bin/refund --help
++# bin-help contract: v2
++# exit_code: 0
++
++## stdout
++Usage: refund <subcommand> [args]
++
++Subcommands:
++  approve <return_id> Mark a return as waiting for refund finalization.
++  close <return_id>   Close a return refund workflow.
+--- v0005/snapshot/bin-help/sql.help.txt
++++ v0006/snapshot/bin-help/sql.help.txt
+@@ -1,36 +1,11 @@
+ # /bin/sql --help
+ # bin-help contract: v2
+-# exit_code: 0
++# exit_code: 1
+ 
+ ## stdout
+-# /bin/sql
+ 
+-Run a read-only SQLite query over the ecommerce world.
+ 
+-Send SQL on stdin, or pass SQL as arguments:
+-
+-  /bin/sql 'select product_sku, product_name, record_path from product_variants limit 5'
+-
+-Default output is CSV with a header row. Pass --json for JSON rows.
+-
+-SQLite exposes the schema through sqlite_schema:
+-
+-  /bin/sql 'select name, sql from sqlite_schema where sql is not null order by type, name;'
+-
+-Useful tables:
+-
+-- product_categories(product_category_id, product_category_name, product_department)
+-- product_kinds(product_kind_id, product_category_id, product_kind_name)
+-- product_families(product_family_id, product_category_id, product_kind_id, brand, series, model, product_family_name, properties)
+-- product_variants(product_sku, record_path, product_category_id, product_kind_id, product_family_id, brand, series, model, product_name, price_cents, price_currency, properties)
+-- product_variant_properties(product_sku, property_key, property_value_text, property_value_number)
+-- stores(store_id, record_path, store_name, city, is_open, latitude, longitude)
+-- store_inventory(store_id, product_sku, on_hand_quantity, reserved_quantity, available_today_quantity, incoming_quantity, next_arrival_in_days)
+-- employee_accounts(employee_id, record_path, employee_display_name, employee_email, job_title, store_id)
+-- employee_role_assignments(employee_id, role_code)
+-- customer_accounts(customer_id, record_path, customer_display_name, customer_email, home_city, home_latitude, home_longitude)
+-- shopping_baskets(basket_id, record_path, customer_id, store_id, basket_status, basket_created_at, discount_percent, discount_reason_code, discount_issuer_employee_id)
+-- shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)
+-- payment_transactions(payment_id, record_path, basket_id, is_archived_basket_reference, customer_id, store_id, payment_amount_cents, payment_currency, payment_status, payment_created_at, payment_method_fingerprint, device_fingerprint, observed_latitude, observed_longitude, three_ds_status, three_ds_failure_reason, three_ds_attempts, three_ds_max_attempts)
+-- payment_transaction_items(payment_id, line_number, product_sku, purchased_quantity, item_unit_price_cents)
+-- return_requests(return_id, record_path, basket_id, customer_id, payment_id, return_status, return_reason_code, return_created_at)
++## stderr
++Sqlcmd: Error: Microsoft ODBC Driver 18 for SQL Server : Login timeout expired.
++Sqlcmd: Error: Microsoft ODBC Driver 18 for SQL Server : TCP Provider: The wait operation timed out.
++Sqlcmd: Error: Microsoft ODBC Driver 18 for SQL Server : A network-related or instance-specific error occurred while establishing a connection to SQL Server. The PowerTools PROD MS SQL cluster is down. Wait 8 seconds and retry.
+--- v0005/snapshot/bin-help/sqlite_schema.txt
++++ v0006/snapshot/bin-help/sqlite_schema.txt
+@@ -1,191 +1,117 @@
+-# SQLite schema (warehouse DB) — query via /bin/sql
+-# 15 tables, 28 indexes
++# Warehouse schema — reconstructed from the live /proc projection.
++# Recovered from live /proc JSON records because /bin/sql is unavailable in this runtime.
++# Structure only: tables, columns, types, nullability, relationships. Record
++# counts, column values, and open-ended map keys are NOT shown; they are
++# data (vary per trial), not schema. Each TABLE is one
++# /proc/<family>/<partition>/<id>.json record type; nested arrays are child
++# tables. Read /proc live for actual data: ws.read(path) for one record,
++# ws.list('/proc') / ws.find(...) for discovery. /proc is the source of truth.
+ 
+-## SQL conventions (read me before the first query)
++## Foreign-key edges (inferred from /proc id references)
++  carts.discount.issuer_id     -> staff.id
++  carts.lines.sku              -> catalog.sku
++  carts.store_id               -> locations.id
++  locations.inventory.sku      -> catalog.sku
++  payment-ledger.basket_id     -> carts.id
++  payment-ledger.lines.sku     -> catalog.sku
++  payment-ledger.store_id      -> locations.id
++  return-workflows.payment_id  -> payment-ledger.id
++  staff.store_id               -> locations.id
+ 
+-Dialect: **SQLite**. No `ILIKE`, no `RETURNING`, no `::cast`, no `now()`.
+-`LIKE` is case-insensitive for ASCII; for explicit case-fold use
+-`LOWER(col) LIKE LOWER('…')`.
+-`HAVING` requires `GROUP BY` (no MySQL/PG-style alias filter) — to
+-filter on a computed expression, wrap as a subquery:
+-`SELECT * FROM (SELECT …, x AS y FROM …) WHERE y > N`.
++## Families
+ 
+-## Foreign-key edges
+-  employee_accounts.store_id             → stores.store_id
+-  employee_role_assignments.employee_id  → employee_accounts.employee_id
+-  payment_transaction_items.payment_id   → payment_transactions.payment_id
+-  payment_transaction_items.product_sku  → product_variants.product_sku
+-  payment_transactions.customer_id       → customer_accounts.customer_id
+-  payment_transactions.store_id          → stores.store_id
+-  return_requests.basket_id              → shopping_baskets.basket_id
+-  return_requests.customer_id            → customer_accounts.customer_id
+-  return_requests.payment_id             → payment_transactions.payment_id
+-  shopping_basket_items.basket_id        → shopping_baskets.basket_id
+-  shopping_basket_items.product_sku      → product_variants.product_sku
+-  shopping_baskets.customer_id           → customer_accounts.customer_id
+-  shopping_baskets.store_id              → stores.store_id
+-  store_inventory.product_sku            → product_variants.product_sku
+-  store_inventory.store_id               → stores.store_id
++TABLE carts  PK(id)  -- /proc/carts/<partition>/<id>.json
++  id           TEXT           NOT NULL
++  customer_id  TEXT           NOT NULL
++  store_id     TEXT           NOT NULL  -> locations.id
++  status       TEXT           NOT NULL
++  created_at   TEXT           NOT NULL
++  lines        ARRAY<object>  NOT NULL  -- child table carts.lines
++  discount     OBJECT         -- nested object
++      percent      INTEGER  NOT NULL
++      reason_code  TEXT     NOT NULL
++      issuer_id    TEXT     NOT NULL  -> staff.id
+ 
+-## Tables (alphabetical)
++  TABLE carts.lines  -- one row per element of carts.lines
++    sku       TEXT     NOT NULL  -> catalog.sku
++    quantity  INTEGER  NOT NULL
+ 
+-TABLE customer_accounts  PK(customer_id)
+-  customer_id            TEXT  NOT NULL
+-  record_path            TEXT  NOT NULL
+-  customer_display_name  TEXT  NOT NULL
+-  customer_email         TEXT  NOT NULL
+-  home_city              TEXT  NOT NULL
+-  home_latitude          REAL  NOT NULL
+-  home_longitude         REAL  NOT NULL
+-  INDEX customer_accounts_city_idx   (home_city)
+-  INDEX customer_accounts_email_idx  (customer_email)
++TABLE catalog  PK(id)  -- /proc/catalog/<partition>/<id>.json
++  id                INTEGER  NOT NULL
++  sku               TEXT     NOT NULL
++  name              TEXT     NOT NULL
++  brand             TEXT     NOT NULL
++  category_id       TEXT     NOT NULL
++  kind_id           TEXT     NOT NULL
++  family_id         TEXT     NOT NULL
++  price_cents       INTEGER  NOT NULL
++  fulfillment_type  INTEGER  NOT NULL
++  return_policy     INTEGER  NOT NULL
++  properties        OBJECT   NOT NULL
+ 
+-TABLE employee_accounts  PK(employee_id)
+-  employee_id            TEXT  NOT NULL
+-  record_path            TEXT  NOT NULL
+-  employee_display_name  TEXT  NOT NULL
+-  employee_email         TEXT  NOT NULL
+-  job_title              TEXT  NOT NULL
+-  store_id               TEXT  NOT NULL  → stores.store_id
+-  INDEX employee_accounts_email_idx  (employee_email)
+-  INDEX employee_accounts_store_idx  (store_id)
++TABLE locations  PK(id)  -- /proc/locations/<partition>/<id>.json
++  id              TEXT           NOT NULL
++  name            TEXT           NOT NULL
++  address_line_1  TEXT           NOT NULL
++  postal_code     TEXT           NOT NULL
++  city            TEXT           NOT NULL
++  country_code    TEXT           NOT NULL
++  is_open         BOOLEAN        NOT NULL
++  lat             REAL           NOT NULL
++  lon             REAL           NOT NULL
++  inventory       ARRAY<object>  NOT NULL  -- child table locations.inventory
+ 
+-TABLE employee_role_assignments  PK(employee_id, role_code)
+-  employee_id  TEXT  NOT NULL  → employee_accounts.employee_id
+-  role_code    TEXT  NOT NULL
+-  INDEX employee_role_assignments_role_idx  (role_code)
++  TABLE locations.inventory  -- one row per element of locations.inventory
++    sku       TEXT           NOT NULL  -> catalog.sku
++    on_hand   INTEGER        NOT NULL
++    reserved  INTEGER        NOT NULL
++    incoming  ARRAY<object>  -- child table locations.inventory.incoming
+ 
+-TABLE payment_transaction_items  PK(payment_id, line_number)
+-  payment_id             TEXT     NOT NULL  → payment_transactions.payment_id
+-  line_number            INTEGER  NOT NULL
+-  product_sku            TEXT     NOT NULL  → product_variants.product_sku
+-  purchased_quantity     INTEGER  NOT NULL
+-  item_unit_price_cents  INTEGER  NOT NULL
+-  INDEX payment_transaction_items_sku_idx  (product_sku)
++    TABLE locations.inventory.incoming  -- one row per element of locations.inventory.incoming
++      quantity         INTEGER  NOT NULL
++      arrival_in_days  INTEGER  NOT NULL
+ 
+-TABLE payment_transactions  PK(payment_id)
+-  payment_id                    TEXT     NOT NULL
+-  record_path                   TEXT     NOT NULL
+-  basket_id                     TEXT     NOT NULL
+-  is_archived_basket_reference  INTEGER  NOT NULL
+-  customer_id                   TEXT     NOT NULL  → customer_accounts.customer_id
+-  store_id                      TEXT     NOT NULL  → stores.store_id
+-  payment_amount_cents          INTEGER  NOT NULL
+-  payment_currency              TEXT     NOT NULL
+-  payment_status                TEXT     NOT NULL
+-  payment_created_at            TEXT     NOT NULL
+-  payment_method_fingerprint    TEXT     NOT NULL
+-  device_fingerprint            TEXT     NOT NULL
+-  observed_latitude             REAL     NOT NULL
+-  observed_longitude            REAL     NOT NULL
+-  three_ds_status               TEXT
+-  three_ds_failure_reason       TEXT
+-  three_ds_attempts             INTEGER
+-  three_ds_max_attempts         INTEGER
+-  INDEX payment_transactions_basket_idx              (basket_id)
+-  INDEX payment_transactions_created_at_idx          (payment_created_at)
+-  INDEX payment_transactions_customer_idx            (customer_id)
+-  INDEX payment_transactions_device_fingerprint_idx  (device_fingerprint)
+-  INDEX payment_transactions_method_fingerprint_idx  (payment_method_fingerprint)
+-  INDEX payment_transactions_status_idx              (payment_status)
+-  INDEX payment_transactions_store_idx               (store_id)
++TABLE payment-ledger  PK(id)  -- /proc/payment-ledger/<partition>/<id>.json
++  id                          TEXT           NOT NULL
++  order_id                    TEXT
++  basket_id                   TEXT           -> carts.id
++  customer_id                 TEXT           NOT NULL
++  store_id                    TEXT           NOT NULL  -> locations.id
++  amount_cents                INTEGER        NOT NULL
++  currency                    TEXT           NOT NULL
++  status                      TEXT           NOT NULL
++  created_at                  TEXT           NOT NULL
++  payment_method_fingerprint  TEXT           NOT NULL
++  device_fingerprint          TEXT           NOT NULL
++  observed_lat                REAL           NOT NULL
++  observed_lon                REAL           NOT NULL
++  lines                       ARRAY<object>  NOT NULL  -- child table payment-ledger.lines
++  three_ds                    OBJECT         -- nested object
++      status          TEXT     NOT NULL
++      attempts        INTEGER  NOT NULL
++      max_attempts    INTEGER  NOT NULL
++      retry_after     TEXT
++      failure_reason  TEXT
++  archived                    BOOLEAN
+ 
+-TABLE product_categories  PK(product_category_id)
+-  product_category_id    TEXT  NOT NULL
+-  product_category_name  TEXT  NOT NULL
+-  product_department     TEXT  NOT NULL
++  TABLE payment-ledger.lines  -- one row per element of payment-ledger.lines
++    sku               TEXT     NOT NULL  -> catalog.sku
++    quantity          INTEGER  NOT NULL
++    unit_price_cents  INTEGER  NOT NULL
+ 
+-TABLE product_families  PK(product_family_id)
+-  product_family_id    TEXT  NOT NULL
+-  product_category_id  TEXT  NOT NULL
+-  product_kind_id      TEXT  NOT NULL
+-  brand                TEXT  NOT NULL
+-  series               TEXT  NOT NULL
+-  model                TEXT  NOT NULL
+-  product_family_name  TEXT  NOT NULL
+-  properties           TEXT  NOT NULL
++TABLE return-workflows  PK(id)  -- /proc/return-workflows/<partition>/<id>.json
++  id           TEXT  NOT NULL
++  order_id     TEXT  NOT NULL
++  customer_id  TEXT  NOT NULL
++  payment_id   TEXT  NOT NULL  -> payment-ledger.id
++  status       TEXT  NOT NULL
++  reason_code  TEXT  NOT NULL
++  created_at   TEXT  NOT NULL
+ 
+-TABLE product_kinds  PK(product_kind_id)
+-  product_kind_id      TEXT  NOT NULL
+-  product_category_id  TEXT  NOT NULL
+-  product_kind_name    TEXT  NOT NULL
+-
+-TABLE product_variant_properties  PK(product_sku, property_key)
+-  product_sku            TEXT  NOT NULL
+-  property_key           TEXT  NOT NULL
+-  property_value_text    TEXT  NOT NULL
+-  property_value_number  REAL
+-  INDEX product_variant_properties_key_text_idx  (property_key, property_value_text)
+-
+-TABLE product_variants  PK(product_sku)
+-  product_sku          TEXT     NOT NULL
+-  record_path          TEXT     NOT NULL
+-  product_category_id  TEXT     NOT NULL
+-  product_kind_id      TEXT     NOT NULL
+-  product_family_id    TEXT     NOT NULL
+-  brand                TEXT     NOT NULL
+-  series               TEXT     NOT NULL
+-  model                TEXT     NOT NULL
+-  product_name         TEXT     NOT NULL
+-  price_cents          INTEGER  NOT NULL
+-  price_currency       TEXT     NOT NULL
+-  properties           TEXT     NOT NULL
+-  INDEX product_variants_brand_idx  (brand)
+-  INDEX product_variants_kind_idx   (product_kind_id)
+-
+-TABLE return_requests  PK(return_id)
+-  return_id           TEXT  NOT NULL
+-  record_path         TEXT  NOT NULL
+-  basket_id           TEXT  NOT NULL  → shopping_baskets.basket_id
+-  customer_id         TEXT  NOT NULL  → customer_accounts.customer_id
+-  payment_id          TEXT  NOT NULL  → payment_transactions.payment_id
+-  return_status       TEXT  NOT NULL
+-  return_reason_code  TEXT  NOT NULL
+-  return_created_at   TEXT  NOT NULL
+-  INDEX return_requests_basket_idx    (basket_id)
+-  INDEX return_requests_customer_idx  (customer_id)
+-  INDEX return_requests_payment_idx   (payment_id)
+-  INDEX return_requests_status_idx    (return_status)
+-
+-TABLE shopping_basket_items  PK(basket_id, line_number)
+-  basket_id           TEXT     NOT NULL  → shopping_baskets.basket_id
+-  line_number         INTEGER  NOT NULL
+-  product_sku         TEXT     NOT NULL  → product_variants.product_sku
+-  requested_quantity  INTEGER  NOT NULL
+-  INDEX shopping_basket_items_sku_idx  (product_sku)
+-
+-TABLE shopping_baskets  PK(basket_id)
+-  basket_id                    TEXT     NOT NULL
+-  record_path                  TEXT     NOT NULL
+-  customer_id                  TEXT     NOT NULL  → customer_accounts.customer_id
+-  store_id                     TEXT     NOT NULL  → stores.store_id
+-  basket_status                TEXT     NOT NULL
+-  basket_created_at            TEXT     NOT NULL
+-  discount_percent             INTEGER
+-  discount_reason_code         TEXT
+-  discount_issuer_employee_id  TEXT
+-  INDEX shopping_baskets_created_at_idx           (basket_created_at)
+-  INDEX shopping_baskets_customer_created_at_idx  (customer_id, basket_created_at)
+-  INDEX shopping_baskets_customer_idx             (customer_id)
+-  INDEX shopping_baskets_store_idx                (store_id)
+-
+-TABLE store_inventory  PK(store_id, product_sku)
+-  store_id                  TEXT     NOT NULL  → stores.store_id
+-  product_sku               TEXT     NOT NULL  → product_variants.product_sku
+-  on_hand_quantity          INTEGER  NOT NULL
+-  reserved_quantity         INTEGER  NOT NULL
+-  available_today_quantity  INTEGER  NOT NULL
+-  incoming_quantity         INTEGER  NOT NULL
+-  next_arrival_in_days      INTEGER
+-  INDEX store_inventory_sku_idx    (product_sku)
+-  INDEX store_inventory_store_idx  (store_id)
+-
+-TABLE stores  PK(store_id)
+-  store_id     TEXT     NOT NULL
+-  record_path  TEXT     NOT NULL
+-  store_name   TEXT     NOT NULL
+-  city         TEXT     NOT NULL
+-  is_open      INTEGER  NOT NULL
+-  latitude     REAL     NOT NULL
+-  longitude    REAL     NOT NULL
+-  INDEX stores_city_idx  (city)
++TABLE staff  PK(id)  -- /proc/staff/<partition>/<id>.json
++  id            TEXT         NOT NULL
++  display_name  TEXT         NOT NULL
++  email         TEXT         NOT NULL
++  title         TEXT         NOT NULL
++  store_id      TEXT         NOT NULL  -> locations.id
++  roles         ARRAY<TEXT>  NOT NULL

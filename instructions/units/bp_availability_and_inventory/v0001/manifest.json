@@ -1,0 +1,47 @@
+{
+  "unit_id": "bp_availability_and_inventory",
+  "version": "v0001",
+  "parent": null,
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "New domain split out from product_discovery: /docs/availability-checks.md and the new /bin/availability tool define branch availability / stock-count / inventory-export as a distinct policy with its own same-day formula (max(on_hand-reserved,0)), incoming/due-within rules, and export schema. AGENTS.MD routes 'branch inventory, availability, or stock-count questions' here specifically.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/availability-checks.md",
+      "sha256": "64056696a13636249d1d5f48db85f9d5b24332cefcbdfad83d2820b080f68080",
+      "why": "Same-day availability formula, incoming/due-within rules, read-only constraint, and inventory-export schema."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "The /bin/availability tool and its max(on_hand-reserved,0) / missing-SKU-0 contract."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "e012cad9a04636c2d4b01364e3fcaa4ee0e07fbc2148f2d30a0e61c179e0ee68",
+      "why": "Branch record and inventory rows (on_hand, reserved, incoming.arrival_in_days)."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "family_id and SKU set used to resolve products and build family exports."
+    }
+  ],
+  "rollback": {
+    "strategy": "Remove the bp_availability_and_inventory unit and its render path; fold branch availability back into product_discovery."
+  },
+  "no_semantic_change": false
+}

@@ -1,0 +1,136 @@
+--- bp_basket_lifecycle/v0005/content.md
++++ bp_basket_lifecycle/v0006/content.md
+@@ -2,97 +2,81 @@
+ 
+ ## When this process applies
+ 
+-Any request that reads, names, or asks about a `/proc/baskets/<id>.json` record. Trigger phrases: "my basket", "the last basket", a literal `basket_*` / `bsk_*` id, "basket status", or as a preliminary read inside [checkout](checkout.md), [discount](discount.md), [payments_3ds_recovery](payments_3ds_recovery.md), and [returns](returns.md). This BP is the **state registry** — it does not mutate; sibling BPs do.
++Any request that reads, names, or asks about a `/proc/carts/<id>.json` record. Trigger phrases: "my basket", "the latest basket", a literal cart id, "basket status", or as a preliminary read inside [checkout](checkout.md), [discount](discount.md), [payments_3ds_recovery](payments_3ds_recovery.md). This BP is the **state registry** — it does not mutate; sibling BPs do.
+ 
+ ## Inputs
+ 
+ - Live workspace paths:
+-  - `/proc/baskets/<id>.json` — the record being read.
+-  - `/proc/baskets/README.md` — record shape and discount object semantics.
+-  - `/proc/payments/README.md` — source for archived-payment semantics where older payments can outlive their basket file.
+-- Tools: `/bin/sql` — for batch lookups (`SELECT ... FROM shopping_baskets WHERE ...`) and reconciliation with `shopping_basket_items`. See [`bin-help/sql.help.txt`](../bin-help/sql.help.txt).
++  - `/proc/carts/<id>.json` — the cart record being read.
++  - `/proc/payment-ledger/<id>.json` — archived-payment context where older payments can outlive their cart file.
++  - `/docs/checkout.md` — basket lifecycle and "latest active basket" semantics.
++- Tools: `/bin/id` (ownership), `/bin/date` (recency, via [date_and_time](date_and_time.md)). SQL is unavailable — read JSON records directly with `ws.read` / `ws.find`.
+ 
+-**Schema note.** The on-disk basket JSON keeps its short field names (`id`, `customer_id`, `store_id`, `status`, `created_at`, `lines[].sku`, `lines[].quantity`, and a `discount` object with `percent`/`reason_code`/`issuer_id`). The SQL projection renames them: table `shopping_baskets(basket_id, record_path, customer_id, store_id, basket_status, basket_created_at, discount_percent, discount_reason_code, discount_issuer_employee_id)` and lines table `shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)`. Use the JSON names when reading the file, the SQL names when querying.
++**Record shape (from the reconstructed `/proc` projection).** A cart carries:
++`id`, `customer_id`, `store_id`, `status`, `created_at`, `lines[]` (each `{sku, quantity}`), and an optional `discount` object (`{percent, reason_code, issuer_id}`). There is no SQL projection and no `record_path` column; the cite path is the live `/proc/carts/...json` path you read.
+ 
+ ## Process
+ 
+-1. Apply [identity_and_auth](identity_and_auth.md). For a customer actor, verify `record.customer_id == /bin/id user` before reading the file or citing it; foreign basket → `OUTCOME_DENIED_SECURITY` and the path stays out of refs.
+-2. Read the record. The basket record carries:
+-   - `id, customer_id, store_id, status, created_at` (JSON fields; SQL columns `basket_id`, `customer_id`, `store_id`, `basket_status`, `basket_created_at`).
+-   - `discount_percent, discount_reason_code, discount_issuer_employee_id` (SQL columns) — combined into a `discount` object (`percent`, `reason_code`, `issuer_id`) in the file body if any of them is non-null.
+-   - basket lines (JSON `lines[]` with `sku`/`quantity`; via SQL `shopping_basket_items(basket_id, line_number, product_sku, requested_quantity)`) — note: **basket lines carry no availability flag**. Inventory must be re-checked every time. From `/proc/baskets/README.md`:
+-
+-     > Baskets do not carry availability flags; compare basket lines with store inventory when checkout eligibility matters.
+-
+-3. Determine state. From `/proc/baskets/README.md`:
+-
+-   > Basket status is lifecycle state. `active` baskets may still need inventory checks before checkout; `checked_out` baskets are historical orders and may have linked records under `/proc/payments/` and `/proc/returns/`.
+-
+-   - `active` → eligible target for [discount](discount.md) and [checkout](checkout.md). May still fail downstream gates.
+-   - `checked_out` → historical. Re-running `/bin/checkout` on it is forbidden. Eligible target for [payments_3ds_recovery](payments_3ds_recovery.md) and [returns](returns.md).
+-4. For "the last basket" / "my latest basket" wording, sort by `created_at` desc (SQL `basket_created_at`) within the actor's own baskets (customer actor) or within the request-named scope (employee actor). `created_at` is generated from world time; compare against `/bin/date` if recency matters — see [date_and_time](date_and_time.md).
+-5. For "does this basket have a discount?" — check whether the `discount` object is present (i.e. `discount_percent` is non-null in SQL). Presence blocks new discount issuance — see [discount](discount.md).
+-6. Archived-payment context: `/proc/payments/README.md` says older payments may have `basket_archived: true`, with the basket file aged out into cold storage while the payment carries its own line snapshot. If a missing basket id came from a linked payment/return, check the payment archive flag before treating the missing file as an inconsistent basket.
++1. Apply [identity_and_auth](identity_and_auth.md). For a customer actor, verify `record.customer_id == /bin/id` `user` before reading or citing it; a foreign cart → `OUTCOME_DENIED_SECURITY` and the path stays out of refs.
++2. Read the record and note `id, customer_id, store_id, status, created_at`, `lines[]`, and any `discount` object.
++3. Determine state:
++   - `active` → eligible target for [checkout](checkout.md) item-edits and checkout, and for [discount](discount.md). May still fail downstream gates.
++   - `checked_out` → historical order. Re-running `/bin/checkout` on it is forbidden. Eligible target for [payments_3ds_recovery](payments_3ds_recovery.md).
++   - Other statuses (e.g. abandoned/guest baskets) are not editable or checkout-eligible per `/docs/checkout.md`.
++4. For "the latest / newest active basket" wording, use the active basket with the latest `created_at` (`/docs/checkout.md`). For item edits this alone resolves "my basket"; do not ask for clarification just because the customer has several active baskets. For a **checkout** of "my basket" with more than one active basket possible, the request is ambiguous — see [checkout](checkout.md).
++5. Cart lines carry **no availability flag** — adding an item never reserves stock. Whenever checkout eligibility matters, re-check same-day availability at the cart `store_id` (`max(on_hand - reserved, 0)`); see [availability_and_inventory](availability_and_inventory.md).
++6. Archived-payment context: a `/proc/payment-ledger` record may have `archived: true`, its cart file aged out, and the payment carries its own `lines` snapshot. If a missing cart id came from a linked payment, check the payment `archived` flag before treating the missing file as inconsistent.
+ 
+ ## Outcomes
+ 
+-- This BP does not produce a final outcome on its own. It is a building block. The sibling BP that invoked it produces the outcome.
+-- If the basket id named in the request does not exist at all, the sibling BP should submit `OUTCOME_NONE_UNSUPPORTED` (basket missing) or `OUTCOME_NONE_CLARIFICATION` (ambiguous which basket). Exception: when the id is linked from an archived payment, the payment snapshot may be the surviving order evidence rather than a broken basket record.
++- This BP produces no final outcome on its own; the invoking sibling BP does.
++- If the cart id named in the request does not exist, the sibling BP submits `OUTCOME_NONE_UNSUPPORTED` (missing) or `OUTCOME_NONE_CLARIFICATION` (ambiguous), except when the id is linked from an archived payment whose snapshot is the surviving evidence.
+ 
+ ## Evidence ledger
+ 
+-Local placement for basket evidence:
+-
+ `actor_or_protocol_evidence`:
+ 
+-- `/bin/id` result from `identity_and_auth` for customer ownership or employee
+-  action-target branching.
++- `/bin/id` result from `identity_and_auth` for customer ownership or employee action-target branching.
+ 
+ `action_targets`:
+ 
+-- `/proc/baskets/<id>.json` when the basket is the requested target or a target
+-  selected for a sibling workflow.
++- `/proc/carts/<id>.json` when the cart is the requested target or a target selected for a sibling workflow.
+ 
+ `answer_records`:
+ 
+-- The owned basket record when answering status, discount presence, latest
+-  basket, or lifecycle questions.
+-- Candidate owned basket records on true clarification outcomes.
++- The owned cart record when answering status, discount presence, latest basket, or lifecycle questions.
++- Candidate owned carts on true clarification outcomes.
+ 
+ `considered_not_cited`:
+ 
+-- Foreign baskets located for a customer cross-boundary denial.
+-- Missing basket paths linked from archived payments when the surviving payment
+-  snapshot, not a live basket, is the evidence.
++- Foreign carts located for a cross-boundary denial.
++- Missing cart paths linked from archived payments when the payment snapshot is the evidence.
+ 
+ `refs_must_include`:
+ 
+-- `/proc/baskets/<id>.json` only if ownership passed for a customer actor or it
+-  is an employee action target.
+-- Each owned candidate basket path on `OUTCOME_NONE_CLARIFICATION`.
++- `/proc/carts/<id>.json` only if ownership passed for a customer actor or it is an employee action target.
++- Each owned candidate cart path on `OUTCOME_NONE_CLARIFICATION`.
+ 
+ `refs_must_not_include`:
+ 
+-- Foreign customer basket paths, rejected/ambiguous candidates the actor cannot
+-  see, and docs read only as registry background.
++- Foreign customer cart paths and rejected/ambiguous candidates the actor cannot see.
+ 
+ `post_state_records`:
+ 
+-- none in this BP; sibling mutating BPs own basket post-state reads.
++- none in this BP; sibling mutating BPs own cart post-state reads.
+ 
+ ## Anti-patterns
+ 
+-- Citing a foreign customer's basket path in refs because the request quoted the id (it is a personal-data leak — see [refs](refs.md)).
+-- Treating "green basket", "paper basket", "counter-ready" or any Store Desk Checkout Vocabulary phrase as a basket state. The only states are `active` and `checked_out`. The full slang list lives in `/docs/checkout.md` and in [checkout](checkout.md) anti-patterns.
+-- Assuming a basket line is available because the basket exists — basket lines have no availability flag. Re-check `store_inventory` for `(store_id, product_sku)`.
+-- Treating `created_at` from a stale dump as "now" — recency comparisons must use `/bin/date`. See [date_and_time](date_and_time.md).
++- Citing a foreign customer's cart path in refs because the request quoted the id.
++- Treating any phrase as a basket state. The only states are the `status` field values (`active`, `checked_out`, …).
++- Assuming a cart line is available because the cart exists — lines have no availability flag. Re-check `max(on_hand - reserved, 0)` for `(store_id, sku)`.
++- Treating `created_at` from a stale read as "now"; recency comparisons use `/bin/date`. See [date_and_time](date_and_time.md).
++- Trying to read a `/proc/customers` record for ownership — none exists; compare `customer_id` against `/bin/id`.
+ 
+ ## Dependencies
+ 
+ > If any of these documents change in the live workspace, this BP file may have become stale and must be re-derived.
+ 
+-- `/proc/baskets/README.md` — record shape, status semantics, discount object semantics, "no availability flag" rule.
+-- `/proc/payments/README.md` — archived-payment semantics: older payments can carry line snapshots after basket files age out.
+-- `/bin/sql` (`--help`) — `shopping_baskets` and `shopping_basket_items` table shapes used for batch lookups.
+-- SQL table `shopping_baskets` — basket id, status, store pointer, created-at, and discount columns read by this registry.
+-- SQL table `shopping_basket_items` — basket line shape (`line_number`, `product_sku`, `requested_quantity`) used in reconciliation.
++- `/docs/checkout.md` — cart status semantics and the "latest active basket" rule.
++- `carts` (`/proc/carts`) — cart id, status, store pointer, created-at, lines, and discount object shape read by this registry.
++- `payment-ledger` (`/proc/payment-ledger`) — `archived` flag and payment line snapshot for the cold-storage cart case.

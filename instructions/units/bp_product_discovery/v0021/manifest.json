@@ -1,0 +1,53 @@
+{
+  "unit_id": "bp_product_discovery",
+  "version": "v0021",
+  "parent": "v0020",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "SQL is dead; catalogue lives in /proc/catalog JSON (fields id/sku/name/brand/category_id/kind_id/family_id/price_cents/fulfillment_type/return_policy/properties). Re-scoped to catalogue identity: SKU lookup (AGENTS.MD exact-one-match / clarification-cite-all rule per catalogue-lookup.md), claim verification, and comparison-against-/uploads-input (attachments.md). Availability/stock/inventory split out to the new bp_availability_and_inventory. Cite the live /proc/catalog path, not a synthesised one.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/catalogue-lookup.md",
+      "sha256": "f8dda622bdc22e308b6593947a11fbf8df31c5b1c1cff0627c5dbfe1327ced86",
+      "why": "Catalogue resolution fields and the clarify-and-cite-candidate-SKUs rule."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/attachments.md",
+      "sha256": "97e6ec76a13a4a89a4dcf182412b41cfcbb5b9d553833f3e62adb00b93b22dfe",
+      "why": "/uploads as the input root and the cross-check-against-canonical-records rule for comparison tasks."
+    },
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "961e2ea2f3dbc22cd0ab0b11c4b9fd857d5f096a3c6a1d72e469868a034083a8",
+      "why": "The SKU-lookup answer rule (exactly one match) and the yes/no token."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "Product sku/name/hierarchy/brand/price_cents/properties used to identify products and verify claims."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor identity pulled at session start (drives 'my' handling)."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_product_discovery v0020 content with its SQL projection, product_variants tables, availability sections, and /docs/README + /proc/stores/README dependencies."
+  },
+  "no_semantic_change": false
+}

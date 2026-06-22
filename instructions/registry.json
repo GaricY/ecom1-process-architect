@@ -89,6 +89,21 @@
       "id": "bp_account_recovery",
       "kind": "business_process",
       "render_to": "business_processes/account_recovery.md"
+    },
+    {
+      "id": "bp_availability_and_inventory",
+      "kind": "business_process",
+      "render_to": "business_processes/availability_and_inventory.md"
+    },
+    {
+      "id": "bp_dispatch_planning",
+      "kind": "business_process",
+      "render_to": "business_processes/dispatch_planning.md"
+    },
+    {
+      "id": "bp_purchase_request_crosslist",
+      "kind": "business_process",
+      "render_to": "business_processes/purchase_request_crosslist.md"
     }
   ]
 }

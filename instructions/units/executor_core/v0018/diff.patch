@@ -1,0 +1,122 @@
+--- executor_core/v0017/content.md
++++ executor_core/v0018/content.md
+@@ -76,12 +76,12 @@
+ 
+ - `business_processes/` — the operating manual (entry point:
+   `index.md`).
+-- `bin-help/sqlite_schema.txt` — canonical warehouse schema, FK edges,
+-  column types, primary keys, **plus SQL conventions** (dialect
+-  gotchas, the EAV property layout, lowercase text-value conventions,
+-  family/grouping structure). The concrete table and column names live
+-  in this file — read them here, never assume them from memory. Consult
+-  before writing any SQL — even a "simple" one.
++- `bin-help/sqlite_schema.txt` — data-store map captured at bootstrap.
++  In a normal runtime it is the SQLite schema plus SQL conventions. In a
++  degraded runtime it starts with
++  `# Warehouse schema — reconstructed from the live /proc projection.`;
++  that means `/bin/sql` is unavailable and this file is a structure map
++  for `/proc/<family>/.../*.json` records, not SQL DDL.
+ - `bin-help/<tool>.help.txt` — `--help` output for each `/bin/<tool>`.
+ - `vault/` — fresh mirror of live `/docs`, `/bin/README`, and every
+   `AGENTS.MD` / `README.md`, taken at trial start.
+@@ -101,9 +101,9 @@
+ 2. `Read` every per-process file the index points to (typically 1–3:
+    `identity_and_auth`, `refs`, `submission_terminal`, and the topic BP).
+ 3. `Read bin-help/sqlite_schema.txt` whenever the task is data-shaped
+-   (catalogue, inventory, basket, payment, customer). Skim the "SQL
+-   conventions" header even on a task that "obviously" does not need
+-   SQL — half the wasted snippets come from skipping this.
++   (catalogue, inventory, basket, payment, customer). First classify the
++   data mode from its header: normal SQLite schema vs reconstructed
++   `/proc` projection. This decides whether SQL is available.
+ 
+ Then write snippet 1.
+ 
+@@ -181,19 +181,15 @@
+ 
+ - `ws.exec_tool(path, args=None, stdin="")` — the only generic invocation
+   surface (e.g. `ws.exec_tool("/bin/checkout", args=["--basket", bid])`).
+-- `ws.sql_rows(query, limit=1000)` — **the primary way to read SQL.**
+-  Returns `{"rows": list[dict], "row_count": int, "truncated": bool}`,
+-  capped at `limit`. Raises `RuntimeError(stderr)` on SQL error. See
+-  "Calling SQL" below.
++- `ws.sql_rows(query, limit=1000)` — SQL SELECT helper for normal
++  SQLite-schema runtimes only. Returns
++  `{"rows": list[dict], "row_count": int, "truncated": bool}`, capped at
++  `limit`. Raises `RuntimeError(stderr)` on SQL error. See "Reading data"
++  below.
+ - `ws.sql(query, json_output=True)` — raw `/bin/sql` invocation returning
+-  `{exit_code, stdout, stderr}`. Escape hatch — use it for non-SELECT
+-  (`EXPLAIN`, `PRAGMA`), text mode (`json_output=False`), or when you
+-  want to inspect stderr without raising. **Do not use for normal
+-  SELECTs** — on large results the harness appends a plaintext footer
+-  like `warning: result truncated at 100 rows` after the JSON array,
+-  so a naive `json.loads(res["stdout"])` will fail with
+-  `JSONDecodeError`. Use `ws.sql_rows` for SELECTs and let it handle
+-  paging.
++  `{exit_code, stdout, stderr}`. Escape hatch for normal SQLite-schema
++  runtimes only: non-SELECT (`EXPLAIN`, `PRAGMA`), text mode
++  (`json_output=False`), or inspecting stderr without raising.
+ - `ws.date()` — shortcut on `/bin/date`. Already run for you at trial
+   start:
+ 
+@@ -215,13 +211,35 @@
+   instead unless you specifically need a custom `verify` callable.
+ 
+ `bin-help/` contains the live `--help` output for each `/bin/<tool>`.
+-Browse it with `Read` before calling unfamiliar tools. The warehouse
+-DB schema and SQL conventions live alongside in
+-`bin-help/sqlite_schema.txt` — **consult before writing any SQL**.
++Browse it with `Read` before calling unfamiliar tools. The data-store map lives
++alongside in `bin-help/sqlite_schema.txt` — **consult it before reading data**.
+ 
+-### Calling SQL
++### Reading data
+ 
+-For every SELECT use `ws.sql_rows`:
++First inspect `bin-help/sqlite_schema.txt`.
++
++If it starts with
++`# Warehouse schema — reconstructed from the live /proc projection.`, treat
++SQL as unavailable for this trial. Do not spend turns probing `ws.sql_rows` or
++`ws.sql`. Use `/proc` JSON records instead:
++
++```python
++# Discover available record families.
++families = ws.list("/proc")["entries"]
++
++# Find candidate JSON records under a family named by sqlite_schema.txt.
++paths = ws.find(root="/proc/<family>", name="", kind="files", limit=50)["paths"]
++
++# Read and parse one record.
++obj = json.loads(ws.read(paths[0])["content"])
++```
++
++Use `ws.find`/`ws.list` to narrow to the relevant family and record set, then
++read JSON records with `ws.read` and `json.loads`. The recovered schema names
++families and fields; it is not a promise that the same names work in SQL.
++
++If `bin-help/sqlite_schema.txt` is the normal SQLite schema, use `ws.sql_rows`
++for SELECTs:
+ 
+ ```python
+ res = ws.sql_rows("SELECT col_a, col_b FROM some_table WHERE some_fk = 7")
+@@ -248,12 +266,13 @@
+     offset += PAGE
+ ```
+ 
+-Bump `limit=` on a single call when you know the answer is bounded
+-(e.g. `ws.sql_rows(q, limit=5000)`) — cheaper than rolling your own
+-pager. The harness paginates under the hood; you only need explicit
+-`LIMIT/OFFSET` when you want to walk past `limit`.
++Bump `limit=` on a single call when you know the answer is bounded (e.g.
++`ws.sql_rows(q, limit=5000)`) — cheaper than rolling your own pager. The
++harness paginates under the hood; you only need explicit `LIMIT/OFFSET` when
++you want to walk past `limit`.
+ 
+-`ws.sql(query)` is the raw escape hatch — see the `ws` surface section.
++`ws.sql(query)` is the raw escape hatch in normal SQLite-schema mode — see the
++`ws` surface section.
+ 
+ ## scratchpad vs state
+ 

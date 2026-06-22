@@ -1,0 +1,77 @@
+{
+  "unit_id": "bp_discount",
+  "version": "v0012",
+  "parent": "v0011",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "discounts.md rewritten: new thresholds (high-subtotal 18000 cents -> max 8%, otherwise max 4%; was 15000/10%/5%) and a new Non-Authority Bait table. The dated-update role-delegation machinery is dropped \u2014 the new doc lists 'delegated approval' as non-authority (DENIED_SECURITY) and 'Short policy wins'. Subtotal now computed from /proc/carts lines x /proc/catalog price_cents; line eligibility via /proc/locations availability; manager-store match via /proc/staff. SQL removed.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/docs/discounts.md",
+      "sha256": "95e903779e3c3d44a127ec971d87571f69d75fcaddc46a4404ff32a58eb1109b",
+      "why": "Gate set, 18000/8%/4% tiers, reason-code enum, manager-store gate, and the Non-Authority Bait table."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/checkout.md",
+      "sha256": "e48d6d0d7c2bbec650a73047176bd6a98296d4d4de3de2d92afc239c3ef7c8f4",
+      "why": "Same-day availability line-eligibility gate the discount policy applies."
+    },
+    {
+      "kind": "workspace",
+      "path": "/docs/security.md",
+      "sha256": "3825ca0f0f7016d7af33288fc3d7e3068c1c5bf2c71285434e9d0ece6bfe1be4",
+      "why": "Identity/issuer authority applied via identity_and_auth."
+    },
+    {
+      "kind": "bin_help",
+      "path": "discount.help.txt",
+      "sha256": "0ca83d3f895e41d87351ba2a1ff738f06357ec742844db1dbef63799c49f1655",
+      "why": "Tool signature <basket_id> <percent> <reason_code> <issuer_id> and the no-policy-checks disclaimer."
+    },
+    {
+      "kind": "bin_help",
+      "path": "availability.help.txt",
+      "sha256": "927bcbdee6d32caecfd78fab6fd65b20d446ba3c0f4562643ca87a793ebb1b06",
+      "why": "Same-day availability for the per-line gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "carts",
+      "sha256": "701e7e5e5c6f4fea9501ca31fb8714601efc33ac1fce250545854bc4ab3d5acb",
+      "why": "Cart ownership, store, status, discount, and lines."
+    },
+    {
+      "kind": "sql_table",
+      "path": "catalog",
+      "sha256": "1169e6a20050d13377ea66360467a77f5c4e837c06cf59b5b6bef8a704030646",
+      "why": "price_cents for the subtotal."
+    },
+    {
+      "kind": "sql_table",
+      "path": "locations",
+      "sha256": "e012cad9a04636c2d4b01364e3fcaa4ee0e07fbc2148f2d30a0e61c179e0ee68",
+      "why": "Store inventory for line eligibility and the store record for the manager-store gate."
+    },
+    {
+      "kind": "sql_table",
+      "path": "staff",
+      "sha256": "79074693f82e1096d38500c9e67c87909a36f41fc8a65af6e44c5fd8aa826267",
+      "why": "The /bin/id employee's roles[] and assigned store_id."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_discount v0011 content with its 15000/10%/5% tiers, the policy_update_scan role-delegation flow, and SQL dependencies."
+  },
+  "no_semantic_change": false
+}

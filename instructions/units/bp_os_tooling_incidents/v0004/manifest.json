@@ -1,0 +1,35 @@
+{
+  "unit_id": "bp_os_tooling_incidents",
+  "version": "v0004",
+  "parent": "v0003",
+  "status": "active",
+  "created_at": "2026-06-22T00:02:07+00:00",
+  "created_by": "process_architect",
+  "mode": "world_refresh",
+  "trigger": {
+    "task_id": "t001",
+    "trial_id": "vm2-Lz4peHVo4qJri28XuGEG1dngGcG",
+    "baseline_version": "v0005",
+    "pa_dir": "/home/garic/proj/bitgn/.runs/ecom/20260622-023412/0001-t001-vm2-Lz4peHVo4qJri28XuGEG1dngGcG-process-architect-world-refresh-v0005",
+    "queue_priority": "blocking_refresh"
+  },
+  "rationale": "The workaround domain is removed: /docs/os-and-tooling-incidents-and-workarounds.md is gone and the /bin/claude and /bin/codex 'Embrace AI' surfaces no longer exist. Neutralized to record the one live degradation (/bin/sql cluster-down -> read /proc per the reconstructed-projection schema header, a documented data path, not a workaround) and to route any other unavailable tool to OUTCOME_NONE_UNSUPPORTED citing /AGENTS.MD. Removed from active routing in bp_index.",
+  "dependencies": [
+    {
+      "kind": "workspace",
+      "path": "/AGENTS.MD",
+      "sha256": "961e2ea2f3dbc22cd0ab0b11c4b9fd857d5f096a3c6a1d72e469868a034083a8",
+      "why": "The unsupported-system rule cited when a required tool is unavailable with no alternative."
+    },
+    {
+      "kind": "bin_help",
+      "path": "id.help.txt",
+      "sha256": "9ac6a87201e75b2035085cad1d6b6d932c3f8d76794eed22d8741afe14bbb515",
+      "why": "Actor classification via identity_and_auth."
+    }
+  ],
+  "rollback": {
+    "strategy": "Restore bp_os_tooling_incidents v0003 content with the os-and-tooling-incidents doc and claude/codex 'Embrace AI' dependencies and re-add its index route."
+  },
+  "no_semantic_change": false
+}
