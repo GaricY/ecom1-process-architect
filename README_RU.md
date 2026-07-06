@@ -84,5 +84,5 @@
 
 - Игорь Ласийчук
 - Telegram: @GaricY
-- Ecom1 demo:
+- Лендинг ECOM1: [ecom1-process-architect-site](https://garicy.github.io/ecom1-process-architect-site/?lang=ru)
 - LinkedIn: https://www.linkedin.com/in/igor-lasiychuk/
