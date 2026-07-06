@@ -84,5 +84,5 @@ This leads to three key differences in Process Architect:
 
 - Igor Lasiychuk
 - Telegram: @GaricY
-- ECOM1 demo site: [site/](site/)
+- ECOM1 landing: [ecom1-process-architect-site](https://garicy.github.io/ecom1-process-architect-site/)
 - LinkedIn: https://www.linkedin.com/in/igor-lasiychuk/
