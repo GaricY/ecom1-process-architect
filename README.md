@@ -1,249 +1,88 @@
-# ecom1-process-architect
+# Process Architect: Business Process Map as Code
 
-An autonomous agent for the **BITGN Agent Challenge: E-commerce (ECOM1)**. It
-connects to the BitGN API and solves digital-store tasks inside a deterministic
-simulation — product discovery, cart/checkout, payment failures, fraud
-boundaries, returns, refunds, replacements, support — and is graded on
-**observable actions, state changes, and policy compliance**, not on prose.
+## Glossary and Repository Map
 
-## The idea
+This README is the entry point. It explains the competition context, the results, and the main idea behind the project. Details are split across dedicated documents and artifacts:
 
-I spent 15+ years implementing ERP systems, and every project starts the same
-way. Where do you begin? ~~You sit down and write code.~~ You **map the business
-processes.** The code comes later; it is only one way to express a process that
-already exists — in the policy book, in people's heads, in how the business
-actually runs.
+- **World**: documents, tools, state, and DB schema for a specific BitGN run.
+- **Executor**: the execution agent that solves a task using the rendered operating manual.
+- **Process Architect / PA**: the architect agent that analyzes failures and world drift, then publishes new process versions.
+- **Unit / business process**: an immutable version of an instruction for a specific class of operations: checkout, returns, fraud review, and so on.
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: the Process Architect internals: Instruction Store, Resolver, world drift handling, PA loop, and task lifecycle.
+- **[OPERATING.md](OPERATING.md)**: the operating runbook: startup, environment variables, and modes.
+- **`runs/`**: published run artifacts. `*.html` files are overview reports for run series, `*.png` files are leaderboard/eval screenshots, and `*.tar.gz` files are `task_dir` archives with `task.md`, `answer.json`, `result.json`, world dumps (`vault/`, `bin-help/`), attention packages, and Executor logs (`.logs/`, `instruction-selection.json`, `execute_python`).
 
-This agent is built on that instinct: the business-process map comes first, as a
-first-class artifact — and then it gets the discipline you would apply to a
-codebase. Because designing business processes and writing software have a lot in
-common: both turn messy real-world requirements into precise, composable, testable
-rules, and both rot when they grow as one ever-expanding blob nobody dares touch.
+Repository branches:
 
-So the core bet is simple: **treat the agent's operating instructions as code,
-and apply software engineering to them.**
+- **`competition-blind`**: the version used in the main blind competition.
+- **`postmortem-dev`**: refactoring and fixes in the DEV environment.
+- **`postmortem-prod`**: postmortem validation of fixes on the PROD world, evolution branch.
 
-And a second bet that follows from it: **don't hard-code the domain into the
-machinery — let the agent build it.** The orchestrator, the resolver, the
-versioned store, the PA loop — none of it knows anything about e-commerce. All
-the domain knowledge lives in the business-process units, which the agent derives
-from the live world itself (`world_create` / `world_refresh`). Point the same
-machine at a different world and it maps a new process set — the domain is the
-agent's job, not the framework's.
+## About the Competition
 
-What that means concretely:
+**BitGN Agent Challenge** is a series of competitions where autonomous agents solve tasks inside deterministic simulations of real businesses. The **ECOM1** release focuses on the operational layer of an online store: the agent does not "chat about products"; it does the store's work. It handles fuzzy product searches, builds baskets, performs checkout, recovers payments after 3DS failures, handles returns, calculates inventory, catches fraudulent payments, and attaches **evidence references** to every answer.
 
-- **Instructions are modular, versioned, immutable units.** The Executor's
-  operating manual is not one giant prompt but a set of business-process (BP)
-  units — identity & auth, checkout, discounts, fraud review, returns, refs
-  hygiene, … — each an immutable `vNNNN/` with its own content, manifest, and
-  **declared dependencies** on the world (specific docs, tool `--help`, DB
-  schema). It reads like a small codebase, not a wall of text.
-- **The "world" is the upstream those units depend on.** The organizer's docs,
-  tools, and policies are the dependency surface. When they drift, the units that
-  pinned them go *stale* — exactly like a dependency bump that breaks a module —
-  and a resolver picks, per task, the version whose dependencies still match the
-  live world.
-- **The Process Architect (PA) is the engineer in the loop.** It ships new
-  versions from feedback the way a developer responds to CI:
-  - a failing trial (the grader's score) → `failure_fix`: fix the unit behind the
-    failure — a bug fix driven by a failing test;
-  - the world drifted → `world_refresh`: an incremental refactor of the affected
-    BPs (or `refresh` for a single stale unit);
-  - a brand-new or radically different world (e.g. `dev → prod`) → `world_create`:
-    a greenfield rebuild of the whole BP set from the current world dump. The
-    initial BP set was bootstrapped exactly this way.
-- **Everything is auditable history.** Immutable `vNNNN/` with diffs and change
-  notes, a baseline snapshot of "the world as we last accepted it", and a
-  registry of active units — a git-like trail for the agent's own instructions.
+The environment is a small Unix-like system. Everything needed is available at its top level:
 
-The payoff: instead of one static prompt that nobody can safely change, the
-agent carries a modular, version-controlled, self-evolving operating manual —
-and it adapts to a changing benchmark the way well-engineered software adapts to
-changing requirements.
+- `/AGENTS.md`: local rules for a specific run, down to the exact words to use for "yes" and "no";
+- `/docs`: policies: security, discounts, returns, payment recovery;
+- `/proc`: current world state: products, stores, employees, baskets, payments;
+- `/bin`: allowed command-line utilities that the agent uses to act and verify facts. `/bin/checkout` checks out a basket, `/bin/id` reports who the request is made on behalf of (needed for permission and ownership checks), and `/bin/sql` runs queries against the store database.
 
-## How it works
+The final `answer` call accepts not only a user-facing message but also a machine-readable **outcome** (`OK`, security denial, clarification request, unsupported operation) and a list of **evidence references**. The grader strictly evaluates observable behavior: which actions were performed, which state changes were recorded, whether the correct evidence was attached, and whether the exact response format was followed. Text polish is not graded, but one extra or missing reference can zero out the whole task.
 
-- **Executor** — runs as `claude -p` inside a per-trial directory; its only
-  runtime tool is the MCP server `mcp__ecom-python__execute_python` (it writes
-  Python snippets that execute in the task VM and finish with
-  `submit_and_exit(...)`). Its prompt (`CLAUDE.md` + `business_processes/*.md`)
-  is **rendered per trial by the resolver** from the versioned store
-  `instructions/units/<id>/vNNNN/` — never a hand-maintained static file.
-- **Process Architect (PA)** — between trials, evolves the instruction units by
-  emitting a new immutable `vNNNN/`. Modes:
-  - `failure_fix` / `fix_blind` — once a trial score (or, under blind eval, the
-    Executor trace) is available, analyse each failure and fix the offending
-    unit(s).
-  - `world_refresh` — when foundational world files drift vs the latest baseline,
-    **incrementally** refresh existing BPs, add new ones for new domains, and
-    advance the baseline.
-  - `world_create` — same drift trigger, but **rebuilds the whole BP set** from
-    the current world dump (existing units are only drafts / naming anchors).
-    For a brand-new or radically different world — and how the initial BP set was
-    bootstrapped.
-  - `refresh` — a single unit whose per-unit dependency drifted.
+**What tasks look like.** Requests arrive in human language: often casual, sometimes adversarial. Two real examples from the blind PROD run:
 
-  All PA **content modes are off by default** (see [Configuration](#configuration)):
-  the mechanism stays on so drift still surfaces to the Executor, but the agent
-  does not rewrite itself unless you ask it to.
-- **Orchestrator** — deterministic Python that drives the BitGN harness loop
-  (`get_benchmark` → `start_run` → per-trial `start_trial`/`end_trial` →
-  `submit_run` → `get_run` for scores), dumps the live world (`/docs`, `/bin`,
-  every `AGENTS.md`/`README.md`, tool `--help`, SQL schema) into each trial dir,
-  resolves instructions, spawns the Executor and PA, and writes the reports.
+*1. Fuzzy availability request:*
 
-## Quickstart
+> Do you have 8 of 'bosch gex 125 accessory set with discs' (but not PT-SND-BOS-GEX125-DUST) in stock in alpenstrasse tools place?
 
-```bash
-uv sync                                    # build the venv (uv-managed)
-echo 'BITGN_API_KEY=...' > .env            # gitignored
-set -a; source .env; set +a
+One sentence contains a fuzzy product name, an exclusion (`but not ...`), a fuzzy store name, and a quantity threshold. The agent finds the right SKU and store, calculates availability, and answers in the format defined by `/AGENTS.md`.
+**Answer:** outcome `OK` / `FALSE(2)` (no; only 2 available) / evidence: store record, product card, `/docs/availability-checks.md`.
 
-# one task, NOT published to the leaderboard:
-CONCURRENCY=1 uv run python -m orchestrator.main t01 --no-submit
-# or: make smoke
-```
+*2. OCR scan to working artifact:*
 
-The default benchmark is `bitgn/ecom1-dev` (open, scored). A subset run still
-`start_trial`s **every** trial (the harness reveals `task_id` only then) and
-**submits to the leaderboard by default** — pass `--no-submit` for a smoke that
-should not be published. `make run` runs the whole benchmark; `make task
-TASKS="t01 t05"` and `make limit N=5` cover subsets.
+> Read the uploaded competitor purchase request OCR at /uploads/[redacted]_ocr.txt and create a TSV crosslist report at /exports/crosslist-[redacted].tsv.
 
-## Postmortem prod runbook
+The input is a noisy scan of a competitor's purchase request: line items are written using the competitor's codes and terms, not ours. Following `/docs/purchase-request-crosslist.md`, the agent identifies the store branch, maps each line item to our SKU, and writes the finished TSV report.
+**Answer:** outcome `OK` / path `/exports/crosslist-[redacted].tsv` / evidence: OCR file, crosslist policy, store record, and matched product cards.
 
-For a clean dev → prod postmortem run, use the detailed plan in
-[.tasks/task-005/plan.md](.tasks/task-005/plan.md). In short:
+**How the competition works.** There are two environments. In **DEV**, we prepare the agent: run tasks, inspect traces, and fix logic. Importantly, **DEV exposes the score**: the grader evaluates each task, providing a signal to evolve against. During the process, the organizer adds new tasks and adjusts the world. This is the main trap: it is easy to overfit the agent to specific DEV products, baskets, and filenames, and fail later as a result. The official score is measured during the **blind PROD window**. "Blind" means exactly that: PROD is not visible ahead of time, and the run itself has **no score**. The grader is silent; there is no task-level feedback. The world may differ radically: different task texts, different state structures, renamed policy files, different table columns. Only a few things are guaranteed: it is still e-commerce, and it will still have `AGENTS.md` and `/bin`.
 
-1. Keep the prod `executor_core` prompt as a prepared artifact
-   (`.tasks/task-005/executor_core_prod/`), not as an active dev unit.
-2. Run one submitted prod `world_refresh` carrier with
-   `--stale-resolution wait_for_refresh`.
-3. After the refresh, mark old BP versions stale/retired but keep their history;
-   the resolver must not fall back to historical active versions.
-4. Validate a short submitted prod subset with `--pa-llm-concurrency 0`.
-5. Run full prod submits frozen: `--pa-llm-concurrency 0 --no-world-refresh
-   --no-refresh --no-pa-fix`, concurrency `15`.
+## Results: Leaderboard + Postmortem Fixes
 
-## Configuration
+**Official result:** 11th place in the Hall of Fame: [Accuracy](https://bitgn.com/l/ecom1-accuracy); **15th place** in the overall [Ultimate](https://bitgn.com/l/ecom1-ultimate) ranking.
 
-Set via environment or the matching CLI flag.
+![Hall of Fame: Accuracy, @GaricY Process Architect - 11th place, 73.2/100](runs/hall-of-fame-accuracy.png)
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `BITGN_API_KEY` | — | Required for `start_run` (anonymous runs need it too). Lives in `.env`. |
-| `BITGN_HOST` / `BENCHMARK_HOST` | `https://api.bitgn.com` | Harness URL. |
-| `BENCHMARK_ID` / `BENCH_ID` | `bitgn/ecom1-dev` | Benchmark to run (`…-dev` / `…-prod`). |
-| `RUN_NAME` / `--run-name` | `@GaricY Process Architect postmortem` | Name sent to `start_run` and shown in reports/leaderboard. |
-| `CONCURRENCY` | `1` | Parallel trial workers; also bounds `start_trial` fan-out and bootstrap. |
-| `CLAUDE_MODEL` / `--model` | `claude-sonnet-4-6` | Executor model. |
-| `CLAUDE_REASONING_EFFORT` / `--effort` | `high` | Executor effort (`low`/`medium`/`high`/`xhigh`/`max`). |
-| `CLAUDE_MAX_TURNS` | `40` | Hard turn cap for the Executor. |
-| `PA_CLAUDE_MODEL` / `--process-architect-model` | `claude-opus-4-7` | PA model. |
-| `PA_CLAUDE_REASONING_EFFORT` / `--process-architect-effort` | `xhigh` | PA effort. |
-| `PA_LLM_CONCURRENCY` | `1` | Parallel PA sessions. `0` disables PA entirely (no workdirs; every submit returns `skipped`). |
-| `PA_FIX_ENABLED` / `--pa-fix` | `0` | Enable `failure_fix` + `fix_blind`. |
-| `REFRESH_ENABLED` / `--refresh` | `0` | Enable per-unit `refresh`. |
-| `WORLD_REFRESH_ENABLED` / `--world-refresh` | `0` | Enable `world_refresh`. |
-| `WORLD_CREATE_ENABLED` / `--world-create` | `0` | Use `world_create` instead of `world_refresh` for the world-PA pathway (rebuild the whole BP set). |
-| `STALE_RESOLUTION` / `--stale-resolution` | `latest_async_refresh` | `latest_async_refresh` — Executor starts on latest, refresh/world_refresh run in background. `wait_for_refresh` — resolver awaits world_refresh first; use for the first run after the world changes. |
-| `TRIAL_START_INTERVAL_SEC` | `2` | Minimum seconds between `start_trial` RPCs (spacing happens before the call, so the organizer's timer only counts real work). |
-| `BLIND_EMULATION` / `--blind-emulation` | `0` | Emulate the prod blind policy on an open benchmark: the stack sees `score=null`/empty hints; real grader output is kept in a sibling `<run_id>-score/`. |
-| `DUMP_SQL_ROWS` / `--dump-sql-rows` | `0` | If `>0`, also dump up to N rows per user table into `dump_sql/`. |
-| `RUNS_ROOT` / `--runs-root` | `../../.runs/ecom` | Run-artifacts root (relative to the repo root). Set explicitly to control where runs land. |
-| `SMOKE_TASK` | `t01` | Default task id for `make smoke`. |
+After the contest, postmortem fixes improved the dev-to-prod adaptation.
 
-Submission flags: runs **submit by default**; `--no-submit` leaves the run open
-(without `submit_run` the grader does not reveal scores, so `summary.json` stays
-`score: null` and `failure_fix` cannot fire). `--no-process-architect` disables
-only `failure_fix`/`fix_blind`; `--wait-process-architect` blocks submission on
-PA. Full flag list: `uv run python -m orchestrator.main --help`.
+![Postmortem DEV: 54.8/55](runs/postmortem-dev.png)
 
-## Reading results
+![Postmortem PROD: 0.81 across 100 trials](runs/postmortem-prod.png)
 
-After a run, `<RUNS_ROOT>/<run_id>/` contains:
+After one round of process evolution, the system reached more than 90%.
 
-- **`report.md`** — human-readable summary: header aggregates (`wall-clock` /
-  `cpu-sum` / `trial-sum` / `boot-sum`) + a per-task table (outcome, score, refs,
-  timings). `trial-sum` is the organizer's leaderboard metric (summed
-  `start_trial`→`end_trial` wall time).
-- **`summary.json`** — the same, machine-readable.
-- **`report_PA.md`** — aggregate of PA jobs (when PA ran).
-- **`run.json`** — `run_id`, `harness_run_id`, benchmark.
+![Postmortem PROD eval: 93.5/100](runs/postmortem-prod-eval.png)
 
-Inside each `NNNN-<task>-<trial>/`:
+## Idea: Business Processes as Code
 
-| Artifact | What it shows |
-| --- | --- |
-| `task.md` | The task text (randomized per run by the organizer). |
-| `CLAUDE.md`, `business_processes/` | The prompt the Executor actually saw (rendered by the resolver). |
-| `vault/`, `bin-help/`, `tree.md` | The live world dump for the task (docs, tools, DB schema). |
-| `attention/` | World delta vs baseline (drift + relocations) shown to the Executor. |
-| `answer.json`, `result.json` | Final answer (outcome, refs) and trial outcome (score, timings, turns, MCP calls). |
-| `.logs/transcript.jsonl` | Full Executor stream-json transcript. |
-| `.logs/mcp-tool-calls.jsonl`, `.logs/python/` | Every `execute_python` call and snippet — the core of "what the agent did". |
-| `.logs/instruction-selection.json` | Which unit versions the resolver chose + the world-drift it saw (the stable per-run "snapshot"). |
+I spent more than 15 years implementing ERP systems, and every project starts the same way. What do we start with? ~~We sit down and write code.~~ We **map the business processes.** Code comes later; it is only one way to express a process that already exists in policies, in people's heads, and in how the business actually works.
 
-To compare two runs, diff the **resolver selection + world-drift** in
-`instruction-selection.json`, not `task.md` — the task text is randomized
-per run.
+Designing complex AI agents seems to run into a similar problem. If an agent's instructions grow as one giant monolith, they quickly become brittle and hard to maintain.
 
-**Example runs.** `runs/` ships archived `ecom1-dev` runs you can explore offline:
+> **The main idea in plain terms:**
+> Stability through decomposition. The agent's instructions are split into independent processes with minimal dependencies. When the "live world" changes (rules, utilities, DB schemas), Executor does not break: it receives a precise diff of the mismatches and adapts on the fly. Meanwhile, Process Architect designs and publishes new versions of stale units.
 
-- `20260530-050756` — a full 53-trial run (the dev-training endpoint).
-- `20260521-123446` — a run where `failure_fix` PA **drifts four different
-  processes in one pass**: from four failing trials it fixed `identity_and_auth`,
-  `discount`, `payments_3ds_recovery`, and `refs_and_submission`. Open the
-  `*-process-architect/pa-output/` workdirs to see each fix, its rationale, and
-  the new unit version it produced.
+This leads to three key differences in Process Architect:
 
-Unpack one with `tar xzf runs/<id>.tar.gz` and browse the artifacts described
-above.
+- **Agent instructions are code.** The operating manual consists of modular, versioned, immutable units (business processes).
+- **The domain is outside the framework.** The orchestrator, Instruction Store, and architect loop know nothing about e-commerce. The agent derives domain knowledge from the live world on its own. Point the same machine at another business, and it will design a new process map.
+- **The business domain comes first; task scenarios come second.** When building the initial process map, I do not try to guess which exact requests the agent will receive. The base manual is built entirely around the enterprise itself and its policies (e.g., how a basket works, how a return is processed). A process describes how the business works, not how to solve a specific test. Later, the system adapts to the specifics of real incoming tasks naturally through unit evolution.
 
-## Repository layout
+## Contacts
 
-```
-pyproject.toml / Makefile / uv.lock   # uv-managed build + run aliases
-orchestrator/                         # deterministic Python (harness loop, resolver, PA)
-instructions/                         # versioned source of truth
-  registry.json                       #   flat unit roster
-  world.json, world_baseline/vNNNN/   #   foundational "world map" + immutable baselines
-  units/<id>/vNNNN/                   #   immutable per-unit versions (content + manifest + deps)
-  prompts/process_architect/          #   PA prompts (failure_fix / refresh / world_refresh / world_create / conflict)
-static-instructions/                  # runtime statics copied verbatim (runtime_prelude.py, workspace.py, .claude/)
-runs/                                 # archived example runs (tar.gz) — see "Reading results"
-```
-
-<details><summary>Detailed code map (orchestrator/)</summary>
-
-```
-orchestrator/
-  main.py               # CLI + harness loop + run wiring
-  config.py             # env-driven config
-  harness.py            # BitGN harness helpers
-  bootstrap.py          # PreBootstrapDumper + BinHelpBootstrapper (world dump)
-  task_dir.py           # per-trial materialisation
-  claude_runner.py      # spawn `claude -p`, stream-json transcript
-  mcp_python_server.py  # stdio MCP server with execute_python
-  python_executor.py    # snippet runner
-  session_registry.py   # opaque session id ↔ harness_url
-  report.py             # summary.json + report.md
-  sql_schema.py         # generator for bin-help/sqlite_schema.txt
-  bp_admin.py           # human-only CLI: retire / rollback / world-baseline
-  instructions/
-    store.py            #   registry, manifest, version walking
-    fingerprints.py     #   sha256 index across vault/ + bin-help/ + static/
-    world_baseline.py   #   world layer (load + drift + baseline write)
-    resolver.py         #   match-or-fallback + render task_dir
-    versioning.py       #   atomic vNNNN/ writer + registry append
-    pa_decision.py      #   decision validators + apply
-    pa_queue.py         #   priority queue + per-unit / registry locks
-    pa_runner.py        #   spawn PA Claude CLI + post-run artifacts
-    pa_workdir.py       #   per-mode workdir materialisers + ingest
-```
-
-</details>
-
-New run artifacts are written **outside** the repo, under `RUNS_ROOT`; the
-committed `runs/` here only holds example archives.
+- Igor Lasiychuk
+- Telegram: @GaricY
+- ECOM1 demo site: [site/](site/)
+- LinkedIn: https://www.linkedin.com/in/igor-lasiychuk/
